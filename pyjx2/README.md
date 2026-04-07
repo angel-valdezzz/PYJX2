@@ -153,6 +153,81 @@ data = pjx.jira.get("issue/PROJ-123")
 pjx.xray.post("testexec/12345/test", {"add": ["PROJ-123"]})
 ```
 
+## Testing
+
+### Requisitos previos
+
+```bash
+pip install -e ".[dev]"
+# o manualmente:
+pip install pytest pytest-bdd pytest-mock
+```
+
+### Ejecutar todos los tests
+
+```bash
+cd pyjx2
+python -m pytest tests/
+```
+
+### Solo tests unitarios
+
+```bash
+python -m pytest tests/unit/
+```
+
+### Solo tests de aceptación (Cucumber/BDD)
+
+```bash
+python -m pytest tests/acceptance/
+```
+
+### Ver los escenarios Gherkin mientras se ejecutan
+
+```bash
+python -m pytest tests/acceptance/ -v
+```
+
+### Filtrar por marcador
+
+```bash
+# Solo unitarios
+python -m pytest -m unit
+
+# Solo aceptación
+python -m pytest -m acceptance
+```
+
+### Estructura de los tests
+
+```
+tests/
+├── unit/                          # Tests unitarios rápidos (sin I/O)
+│   ├── test_entities.py           # Entidades de dominio
+│   ├── test_settings.py           # Carga de configuración
+│   ├── test_setup_service.py      # SetupService
+│   └── test_sync_service.py       # SyncService
+└── acceptance/                    # Tests de aceptación BDD (Cucumber/Gherkin)
+    ├── features/                  # Archivos .feature con escenarios en lenguaje natural
+    │   ├── setup_flow.feature
+    │   ├── sync_flow.feature
+    │   ├── cli_setup.feature
+    │   ├── cli_sync.feature
+    │   └── config_flow.feature
+    └── step_defs/                 # Implementación de los pasos Given/When/Then
+        ├── conftest.py            # Fixtures y pasos compartidos
+        ├── test_setup_steps.py
+        ├── test_sync_steps.py
+        ├── test_cli_steps.py
+        └── test_config_steps.py
+```
+
+Los tests de aceptación usan **pytest-bdd** y siguen la convención Cucumber:
+cada `Feature` describe un comportamiento del sistema, cada `Scenario` es un caso concreto,
+y los pasos `Given / When / Then` son implementados en Python con repositorios y servicios externos mockeados.
+
+---
+
 ## Architecture
 
 ```
