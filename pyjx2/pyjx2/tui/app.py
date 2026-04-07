@@ -49,6 +49,7 @@ class PyJX2App(App):
     }
 
     .panel {
+        height: auto;
         border: solid $primary-light;
         padding: 1 2;
         margin: 1 2;
@@ -68,8 +69,22 @@ class PyJX2App(App):
     }
 
     .field-row {
+        layout: horizontal;
         height: auto;
         margin-bottom: 1;
+    }
+
+    /* Diseño responsivo: Contraer a vista vertical (mobile default) en consolas estándar pequeñas mediante clasificador '-narrow' */
+    .-narrow .field-row {
+        layout: vertical;
+        height: auto;
+        margin-bottom: 2;
+    }
+    
+    .-narrow .field-label {
+        width: 100%;
+        padding-top: 0;
+        margin-bottom: 0;
     }
 
     .field-label {
@@ -230,6 +245,12 @@ class PyJX2App(App):
         import atexit
         atexit.register(self._kill_mkdocs)
         
+    def on_resize(self, event) -> None:
+        if event.size.width <= 95:
+            self.add_class("-narrow")
+        else:
+            self.remove_class("-narrow")
+        
     def _kill_mkdocs(self):
         import subprocess
         if getattr(self, "mkdocs_process", None) and self.mkdocs_process.poll() is None:
@@ -240,6 +261,24 @@ class PyJX2App(App):
     def action_quit(self):
         self._kill_mkdocs()
         self.exit()
+
+    def _copy_to_clipboard(self, text: str) -> None:
+        import platform
+        import subprocess
+        try:
+            os_name = platform.system()
+            if os_name == "Windows":
+                subprocess.run("clip", input=text, text=True, check=True)
+            elif os_name == "Darwin":
+                subprocess.run("pbcopy", input=text, text=True, check=True)
+            else:
+                subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, check=True)
+        except Exception as e:
+            try:
+                from textual.widgets import Log
+                self.query_one("#sec-log", Log).write_line(f"[ERROR] No se pudo copiar al portapapeles: {e}")
+            except Exception:
+                pass
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -423,6 +462,7 @@ class PyJX2App(App):
                     yield Input(placeholder="ENC:...", id="sec-encrypted", classes="field-input")
                 
                 with Horizontal(classes="btn-row"):
+                    yield Button("Copiar Token 📋", id="btn-sec-copy", classes="clear-btn")
                     yield Button("Encriptar ⬇", id="btn-sec-encrypt", classes="run-btn", variant="primary")
                     yield Button("Desencriptar ⬆", id="btn-sec-decrypt", classes="run-btn", variant="warning")
             
@@ -458,6 +498,14 @@ class PyJX2App(App):
             self._run_sync()
         elif event.button.id == "btn-sync-clear":
             self.query_one("#sync-log", Log).clear()
+        elif event.button.id == "btn-sec-copy":
+            enc_input = self.query_one("#sec-encrypted", Input)
+            val = enc_input.value.strip()
+            if val:
+                self._copy_to_clipboard(val)
+                self.query_one("#sec-log", Log).write_line(f"[ÉXITO] Token copiado al portapapeles exitosamente.")
+            else:
+                self.query_one("#sec-log", Log).write_line(f"[ERROR] No hay token encriptado para copiar.")
         elif event.button.id == "btn-sec-encrypt":
             self._run_encrypt()
         elif event.button.id == "btn-sec-decrypt":
