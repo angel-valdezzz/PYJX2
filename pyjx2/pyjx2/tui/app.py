@@ -122,6 +122,7 @@ class PyJX2App(App):
         Binding("f1", "switch_tab('setup')", "Setup"),
         Binding("f2", "switch_tab('sync')", "Sync"),
         Binding("f3", "switch_tab('config')", "Config"),
+        Binding("f4", "switch_tab('security')", "Security"),
     ]
 
     TITLE = "pyjx2 — Jira/Xray Automation"
@@ -142,6 +143,8 @@ class PyJX2App(App):
                 yield self._compose_sync_tab()
             with TabPane("Config (F3)", id="config"):
                 yield self._compose_config_tab()
+            with TabPane("Security (F4)", id="security"):
+                yield self._compose_security_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
 
@@ -279,6 +282,34 @@ class PyJX2App(App):
                 )
         return []
 
+    def _compose_security_tab(self) -> ComposeResult:
+        with ScrollableContainer():
+            yield Static("Security — Encrypt / Decrypt local secrets", classes="panel-title")
+            with Container(classes="panel"):
+                yield Static(
+                    "Use this tool to generate an encrypted token for your pyjx2 configuration files.\n"
+                    "It uses a local 128-bit AES scheme with a static key for basic local obfuscation.",
+                    markup=True,
+                )
+            
+            with Container(classes="panel"):
+                yield Static("Encryption Toolbox", classes="panel-title")
+                with Horizontal(classes="field-row"):
+                    yield Label("Plain Password", classes="field-label")
+                    yield Input(placeholder="Your secret text", id="sec-plain", classes="field-input")
+                with Horizontal(classes="field-row"):
+                    yield Label("Encrypted Token", classes="field-label")
+                    yield Input(placeholder="ENC:...", id="sec-encrypted", classes="field-input")
+                
+                with Horizontal(classes="btn-row"):
+                    yield Button("Encrypt ⬇", id="btn-sec-encrypt", classes="run-btn", variant="primary")
+                    yield Button("Decrypt ⬆", id="btn-sec-decrypt", classes="run-btn", variant="warning")
+            
+            yield Static("Result Messages", classes="panel-title")
+            yield Log(id="sec-log", highlight=True)
+
+        return []
+
     # ── Event handlers ─────────────────────────────────────────────────────────
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -290,6 +321,10 @@ class PyJX2App(App):
             self._run_sync()
         elif event.button.id == "btn-sync-clear":
             self.query_one("#sync-log", Log).clear()
+        elif event.button.id == "btn-sec-encrypt":
+            self._run_encrypt()
+        elif event.button.id == "btn-sec-decrypt":
+            self._run_decrypt()
 
     def _get_input(self, widget_id: str) -> str:
         return self.query_one(f"#{widget_id}", Input).value.strip()
@@ -408,3 +443,28 @@ class PyJX2App(App):
 
     def action_switch_tab(self, tab_id: str) -> None:
         self.query_one("#tabs", TabbedContent).active = tab_id
+
+    def _run_encrypt(self) -> None:
+        plain = self._get_input("sec-plain")
+        if not plain:
+            self._log("sec-log", "[ERROR] Plain password is empty.")
+            return
+        from ..infrastructure.security.encryption import SymmetricEncryptionService
+        svc = SymmetricEncryptionService()
+        encrypted = svc.encrypt(plain)
+        self.query_one("#sec-encrypted", Input).value = encrypted
+        self._log("sec-log", f"[SUCCESS] Encrypted successfully")
+
+    def _run_decrypt(self) -> None:
+        encrypted = self._get_input("sec-encrypted")
+        if not encrypted:
+            self._log("sec-log", "[ERROR] Encrypted token is empty.")
+            return
+        from ..infrastructure.security.encryption import SymmetricEncryptionService
+        svc = SymmetricEncryptionService()
+        try:
+            decrypted = svc.decrypt(encrypted)
+            self.query_one("#sec-plain", Input).value = decrypted
+            self._log("sec-log", f"[SUCCESS] Decrypted successfully")
+        except Exception as e:
+            self._log("sec-log", f"[ERROR] Could not decrypt token: {e}")

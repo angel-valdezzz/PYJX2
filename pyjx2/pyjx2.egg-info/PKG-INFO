@@ -10,5 +10,6 @@ Requires-Dist: rich>=13
 Requires-Dist: textual>=0.40
 Requires-Dist: toml>=0.10
 Requires-Dist: jsonschema>=4
+Requires-Dist: cryptography>=41.0.0
 Dynamic: author
 Dynamic: requires-python

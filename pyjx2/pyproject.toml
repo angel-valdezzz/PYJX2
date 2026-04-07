@@ -14,6 +14,7 @@ dependencies = [
     "textual>=0.40",
     "toml>=0.10",
     "jsonschema>=4",
+    "cryptography>=41.0.0",
 ]
 
 [project.scripts]

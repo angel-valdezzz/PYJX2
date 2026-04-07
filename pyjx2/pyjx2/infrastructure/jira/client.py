@@ -5,6 +5,7 @@ from typing import Any, Optional
 import requests
 
 from ..config.settings import JiraSettings
+from ..security.encryption import SymmetricEncryptionService
 
 
 class JiraClient:
@@ -12,7 +13,8 @@ class JiraClient:
 
     def __init__(self, settings: JiraSettings, timeout: float = 30.0) -> None:
         self._base_url = settings.url.rstrip("/")
-        self._auth = (settings.username, settings.password)
+        enc_service = SymmetricEncryptionService()
+        self._auth = (settings.username, enc_service.decrypt(settings.password))
         self._headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",

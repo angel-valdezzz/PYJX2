@@ -12,6 +12,7 @@ pyjx2/api/__init__.py
 pyjx2/api/client.py
 pyjx2/application/__init__.py
 pyjx2/application/services/__init__.py
+pyjx2/application/services/encryption_service.py
 pyjx2/application/services/setup_service.py
 pyjx2/application/services/sync_service.py
 pyjx2/cli/__init__.py
@@ -33,6 +34,8 @@ pyjx2/infrastructure/config/schema.json
 pyjx2/infrastructure/config/settings.py
 pyjx2/infrastructure/jira/__init__.py
 pyjx2/infrastructure/jira/client.py
+pyjx2/infrastructure/security/__init__.py
+pyjx2/infrastructure/security/encryption.py
 pyjx2/infrastructure/xray/__init__.py
 pyjx2/infrastructure/xray/client.py
 pyjx2/infrastructure/xray/repositories.py

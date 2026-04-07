@@ -193,3 +193,26 @@ class PyJX2:
     def xray(self) -> XrayClient:
         """Direct access to the low-level Xray REST client."""
         return self._xray
+
+    # ── Security utilities ───────────────────────────────────────────────────
+
+    @staticmethod
+    def encrypt_password(plain_text: str) -> str:
+        """
+        Encrypt a plaintext password using the internal symmetric encryption feature.
+        This provides a 128-bit AES encrypted token string using Fernet, prefixed with ENC:
+        """
+        from ..infrastructure.security.encryption import SymmetricEncryptionService
+        svc = SymmetricEncryptionService()
+        return svc.encrypt(plain_text)
+
+    @staticmethod
+    def decrypt_password(encrypted_text: str) -> str:
+        """
+        Decrypt a previously encrypted password string.
+        Only correctly encrypted tokens (prefixed with ENC:) will be decrypted.
+        Others are safely returned unmodified.
+        """
+        from ..infrastructure.security.encryption import SymmetricEncryptionService
+        svc = SymmetricEncryptionService()
+        return svc.decrypt(encrypted_text)

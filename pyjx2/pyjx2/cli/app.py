@@ -19,6 +19,9 @@ app = typer.Typer(
 
 console = Console()
 
+config_app = typer.Typer(help="Configuration utility commands.")
+app.add_typer(config_app, name="config")
+
 
 def _common_options(
     config: Optional[str],
@@ -225,3 +228,36 @@ def tui(
     from ..tui.app import PyJX2App
     app_instance = PyJX2App(config_file=config)
     app_instance.run()
+
+
+# ── config commands ────────────────────────────────────────────────────────────
+
+@config_app.command("encrypt-pass")
+def encrypt_pass(
+    password: str = typer.Argument(..., help="Plaintext password to encrypt.")
+) -> None:
+    """
+    [bold]Encrypt Password[/bold] — generates an encrypted string for your config file.
+    """
+    from ..infrastructure.security.encryption import SymmetricEncryptionService
+    svc = SymmetricEncryptionService()
+    encrypted = svc.encrypt(password)
+    console.print(f"\n[bold green]Success![/bold green] Encrypted password:")
+    console.print(f"\n[bold cyan]{encrypted}[/bold cyan]\n")
+    console.print("Paste this exact string (including ENC:) into your pyjx2.toml, pyjx2.json or environment variable.\n")
+
+@config_app.command("decrypt-pass")
+def decrypt_pass(
+    token: str = typer.Argument(..., help="Encrypted password token starting with ENC:.")
+) -> None:
+    """
+    [bold]Decrypt Password[/bold] — reveals the original password from an encrypted token.
+    """
+    from ..infrastructure.security.encryption import SymmetricEncryptionService
+    svc = SymmetricEncryptionService()
+    if not token.startswith("ENC:"):
+        console.print(f"\n[bold yellow]Warning:[/bold yellow] Token does not start with ENC:. Returning as raw text.\n")
+    
+    decrypted = svc.decrypt(token)
+    console.print(f"\n[bold green]Decrypted password:[/bold green]")
+    console.print(f"\n[bold cyan]{decrypted}[/bold cyan]\n")

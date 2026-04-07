@@ -13,6 +13,7 @@ Jira/Xray automation tool — clean architecture Python CLI + TUI + scripting AP
 
 ## Installation
 
+### Using Pip
 ```bash
 pip install -e .
 ```
@@ -20,8 +21,15 @@ pip install -e .
 Or install dependencies manually:
 
 ```bash
-pip install requests typer rich textual toml jsonschema
+pip install requests typer rich textual toml jsonschema cryptography
 ```
+
+### Using Poetry
+If you prefer [Poetry](https://python-poetry.org/) for dependency management:
+```bash
+poetry install
+```
+This will automatically create a virtual environment and install all necessary dependencies. To activate the environment, run `poetry shell`.
 
 ## Configuration
 
@@ -39,6 +47,23 @@ client_secret = "YOUR_XRAY_CLIENT_SECRET"
 ```
 
 JSON format is also supported (`pyjx2.json`).
+
+## Security & Encryption
+
+To avoid storing Jira passwords in plain text, you can encrypt your password locally. The encryption uses AES (Fernet) with a static local seed.
+
+1. Generate your encrypted token:
+```bash
+pyjx2 config encrypt-pass YOUR_REAL_PASSWORD
+```
+This command will output a string starting with `ENC:`, e.g., `ENC:gAAAAAB...xyz`.
+
+2. Use this `ENC:...` token in your `pyjx2.toml`, `pyjx2.json`, or environment variables instead of the plaintext password.
+
+If you ever need to retrieve your original password from an encrypted token:
+```bash
+pyjx2 config decrypt-pass "ENC:gAAAAAB...xyz"
+```
 
 ## CLI Usage
 
@@ -116,6 +141,12 @@ pjx.update_test_status("PROJ-200", "PROJ-123", "PASS")
 
 # Upload evidence
 pjx.upload_test_evidence("PROJ-200", "PROJ-123", "./screenshots/PROJ-123.png")
+
+# Security / Encryption Utilities
+encrypted = PyJX2.encrypt_password("mySecretPass")
+print(encrypted) # ENC:gAAAAAB...
+decrypted = PyJX2.decrypt_password(encrypted)
+print(decrypted) # mySecretPass
 
 # Create and manage test sets
 ts = pjx.create_test_set("PROJ", "My Test Set")
