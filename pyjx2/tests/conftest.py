@@ -23,7 +23,7 @@ def jira_settings():
     return JiraSettings(
         url="https://test.atlassian.net",
         username="user@test.com",
-        api_token="test_token",
+        password="test_token",
         project_key="PROJ",
     )
 
@@ -135,7 +135,7 @@ def valid_toml_config(tmp_path):
 [jira]
 url = "https://example.atlassian.net"
 username = "user@example.com"
-api_token = "my_token"
+password = "my_token"
 project_key = "PROJ"
 
 [xray]
@@ -164,7 +164,7 @@ def valid_json_config(tmp_path):
         "jira": {
             "url": "https://example.atlassian.net",
             "username": "user@example.com",
-            "api_token": "my_json_token",
+            "password": "my_json_token",
         },
         "xray": {
             "client_id": "json_client",

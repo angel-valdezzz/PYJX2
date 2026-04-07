@@ -63,7 +63,7 @@ BASE_SETUP_ARGS = [
     "--test-set-summary", "Sprint Set",
     "--jira-url", "https://test.atlassian.net",
     "--jira-username", "u@test.com",
-    "--jira-token", "token",
+    "--password", "token",
     "--xray-client-id", "cid",
     "--xray-client-secret", "csec",
 ]
@@ -74,7 +74,7 @@ BASE_SYNC_ARGS = [
     "--status", "PASS",
     "--jira-url", "https://test.atlassian.net",
     "--jira-username", "u@test.com",
-    "--jira-token", "token",
+    "--password", "token",
     "--xray-client-id", "cid",
     "--xray-client-secret", "csec",
 ]

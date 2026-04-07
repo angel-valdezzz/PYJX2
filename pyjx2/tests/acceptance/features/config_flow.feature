@@ -31,15 +31,15 @@ Feature: Configuration Loading
 
   Scenario: Runtime overrides take precedence over the config file
     Given a TOML config file with valid credentials
-    When I load settings from that file with api_token override "runtime_token"
-    Then the Jira API token is "runtime_token"
+    When I load settings from that file with password override "runtime_token"
+    Then the Jira password is "runtime_token"
     And the Jira URL is still "https://example.atlassian.net"
 
   Scenario: Environment variables take precedence over the config file
     Given a TOML config file with valid credentials
-    And the environment variable "PYJX2_JIRA_API_TOKEN" is set to "env_token"
+    And the environment variable "PYJX2_JIRA_PASSWORD" is set to "env_token"
     When I load settings from that file
-    Then the Jira API token is "env_token"
+    Then the Jira password is "env_token"
 
   Scenario: Missing required fields raise a descriptive error
     When I load settings with no configuration at all

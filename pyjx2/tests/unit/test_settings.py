@@ -20,7 +20,7 @@ class TestLoadSettingsFromOverrides:
             "jira": {
                 "url": "https://test.atlassian.net",
                 "username": "u@test.com",
-                "api_token": "token",
+                "password": "token",
             },
             "xray": {"client_id": "cid", "client_secret": "csec"},
         }
@@ -31,7 +31,7 @@ class TestLoadSettingsFromOverrides:
         s = load_settings(overrides=self._valid_overrides())
         assert s.jira.url == "https://test.atlassian.net"
         assert s.jira.username == "u@test.com"
-        assert s.jira.api_token == "token"
+        assert s.jira.password == "token"
         assert s.xray.client_id == "cid"
         assert s.xray.client_secret == "csec"
 
@@ -41,7 +41,7 @@ class TestLoadSettingsFromOverrides:
 
     def test_missing_jira_url_raises(self):
         overrides = {
-            "jira": {"username": "u@test.com", "api_token": "token"},
+            "jira": {"username": "u@test.com", "password": "token"},
             "xray": {"client_id": "cid", "client_secret": "csec"},
         }
         with pytest.raises(ValueError, match="jira.url"):
@@ -52,12 +52,12 @@ class TestLoadSettingsFromOverrides:
             "jira": {"url": "https://test.atlassian.net", "username": "u@test.com"},
             "xray": {"client_id": "cid", "client_secret": "csec"},
         }
-        with pytest.raises(ValueError, match="jira.api_token"):
+        with pytest.raises(ValueError, match="jira.password"):
             load_settings(overrides=overrides)
 
     def test_missing_xray_secret_raises(self):
         overrides = {
-            "jira": {"url": "https://t.atlassian.net", "username": "u", "api_token": "t"},
+            "jira": {"url": "https://t.atlassian.net", "username": "u", "password": "t"},
             "xray": {"client_id": "cid"},
         }
         with pytest.raises(ValueError, match="xray.client_secret"):
@@ -127,9 +127,9 @@ class TestLoadSettingsFromTOML:
     def test_toml_overridden_by_runtime_dict(self, valid_toml_config):
         s = load_settings(
             config_file=str(valid_toml_config),
-            overrides={"jira": {"api_token": "overridden_token"}},
+            overrides={"jira": {"password": "overridden_token"}},
         )
-        assert s.jira.api_token == "overridden_token"
+        assert s.jira.password == "overridden_token"
         assert s.jira.url == "https://example.atlassian.net"
 
 
@@ -160,7 +160,7 @@ class TestJsonSchemaValidation:
         cfg.write_text("""
 [jira]
 username = "u@example.com"
-api_token = "token"
+password = "token"
 
 [xray]
 client_id = "cid"
@@ -172,7 +172,7 @@ client_secret = "csec"
     def test_invalid_json_missing_xray_section_fails_schema(self, tmp_path):
         cfg = tmp_path / "pyjx2.json"
         cfg.write_text(json.dumps({
-            "jira": {"url": "https://x.atlassian.net", "username": "u", "api_token": "t"}
+            "jira": {"url": "https://x.atlassian.net", "username": "u", "password": "t"}
         }))
         with pytest.raises(Exception):
             load_settings(config_file=str(cfg))
@@ -185,7 +185,7 @@ class TestEnvironmentVariableOverrides:
         env = {
             "PYJX2_JIRA_URL": "https://env.atlassian.net",
             "PYJX2_JIRA_USERNAME": "env_user",
-            "PYJX2_JIRA_API_TOKEN": "env_token",
+            "PYJX2_JIRA_PASSWORD": "env_token",
             "PYJX2_XRAY_CLIENT_ID": "env_cid",
             "PYJX2_XRAY_CLIENT_SECRET": "env_csec",
         }
@@ -199,7 +199,7 @@ class TestEnvironmentVariableOverrides:
         env = {
             "PYJX2_JIRA_URL": "https://env.atlassian.net",
             "PYJX2_JIRA_USERNAME": "env_user",
-            "PYJX2_JIRA_API_TOKEN": "env_token",
+            "PYJX2_JIRA_PASSWORD": "env_token",
             "PYJX2_XRAY_CLIENT_ID": "env_cid",
             "PYJX2_XRAY_CLIENT_SECRET": "env_csec",
         }

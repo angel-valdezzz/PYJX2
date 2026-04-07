@@ -7,7 +7,7 @@
 [jira]
 url = "https://yourorg.atlassian.net"
 username = "user@example.com"
-api_token = "YOUR_JIRA_API_TOKEN"
+password = "YOUR_JIRA_PASSWORD"
 project_key = "PROJ"             # Optional default project key
 
 [xray]

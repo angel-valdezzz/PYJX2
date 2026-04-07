@@ -7,7 +7,7 @@ Jira/Xray automation tool — clean architecture Python CLI + TUI + scripting AP
 - **`setup`** command — reads a Test Plan, creates/clones/reuses test cases, builds a Test Set and Test Execution, and links everything together.
 - **`sync`** command — reads tests from a Test Execution, scans a folder recursively, matches files to test keys/names, updates statuses and uploads evidence.
 - **Config file** (`pyjx2.toml` or `pyjx2.json`) with JSON Schema validation — auto-discovered in the current directory.
-- **Environment variable overrides** — `PYJX2_JIRA_URL`, `PYJX2_JIRA_USERNAME`, `PYJX2_JIRA_API_TOKEN`, `PYJX2_XRAY_CLIENT_ID`, `PYJX2_XRAY_CLIENT_SECRET`.
+- **Environment variable overrides** — `PYJX2_JIRA_URL`, `PYJX2_JIRA_USERNAME`, `PYJX2_JIRA_PASSWORD`, `PYJX2_XRAY_CLIENT_ID`, `PYJX2_XRAY_CLIENT_SECRET`.
 - **TUI** — full-screen terminal UI built with [Textual](https://textual.textualize.io/).
 - **Python API** — composable functions for building custom automation scripts.
 
@@ -31,7 +31,7 @@ Copy `pyjx2.toml.example` to `pyjx2.toml` in your working directory and fill in 
 [jira]
 url = "https://yourorg.atlassian.net"
 username = "user@example.com"
-api_token = "YOUR_JIRA_API_TOKEN"
+password = "YOUR_JIRA_PASSWORD"
 
 [xray]
 client_id = "YOUR_XRAY_CLIENT_ID"
@@ -69,7 +69,7 @@ pyjx2 setup --project PROJ --test-plan PROJ-100 \
   --execution-summary "Sprint 1" --test-set-summary "Sprint 1 Set" \
   --jira-url https://myorg.atlassian.net \
   --jira-username me@myorg.com \
-  --jira-token MY_TOKEN \
+  --password MY_PASSWORD \
   --xray-client-id MY_ID \
   --xray-client-secret MY_SECRET
 

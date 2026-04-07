@@ -24,17 +24,17 @@ def _common_options(
     config: Optional[str],
     jira_url: Optional[str],
     jira_username: Optional[str],
-    jira_token: Optional[str],
+    jira_password: Optional[str],
     xray_client_id: Optional[str],
     xray_client_secret: Optional[str],
 ) -> PyJX2:
     """Build overrides dict and load settings, then return a PyJX2 instance."""
     overrides: dict = {}
-    if jira_url or jira_username or jira_token:
+    if jira_url or jira_username or jira_password:
         overrides["jira"] = {
             "url": jira_url,
             "username": jira_username,
-            "api_token": jira_token,
+            "password": jira_password,
         }
     if xray_client_id or xray_client_secret:
         overrides["xray"] = {
@@ -56,8 +56,8 @@ def _jira_url_option():
 def _jira_username_option():
     return typer.Option(None, "--jira-username", "-u", help="Jira username or email.")
 
-def _jira_token_option():
-    return typer.Option(None, "--jira-token", "-t", help="Jira API token.")
+def _jira_password_option():
+    return typer.Option(None, "--password", help="Jira password.")
 
 def _xray_client_id_option():
     return typer.Option(None, "--xray-client-id", help="Xray Cloud client ID.")
@@ -78,7 +78,7 @@ def setup(
     config: Optional[str] = _config_option(),
     jira_url: Optional[str] = _jira_url_option(),
     jira_username: Optional[str] = _jira_username_option(),
-    jira_token: Optional[str] = _jira_token_option(),
+    jira_password: Optional[str] = _jira_password_option(),
     xray_client_id: Optional[str] = _xray_client_id_option(),
     xray_client_secret: Optional[str] = _xray_client_secret_option(),
 ) -> None:
@@ -89,7 +89,7 @@ def setup(
     assembles them into a new test set, and links everything into a new test execution.
     """
     try:
-        pjx = _common_options(config, jira_url, jira_username, jira_token, xray_client_id, xray_client_secret)
+        pjx = _common_options(config, jira_url, jira_username, jira_password, xray_client_id, xray_client_secret)
     except ValueError as e:
         console.print(f"[bold red]Configuration error:[/bold red] {e}")
         raise typer.Exit(code=1)
@@ -140,7 +140,7 @@ def sync(
     config: Optional[str] = _config_option(),
     jira_url: Optional[str] = _jira_url_option(),
     jira_username: Optional[str] = _jira_username_option(),
-    jira_token: Optional[str] = _jira_token_option(),
+    jira_password: Optional[str] = _jira_password_option(),
     xray_client_id: Optional[str] = _xray_client_id_option(),
     xray_client_secret: Optional[str] = _xray_client_secret_option(),
 ) -> None:
@@ -157,7 +157,7 @@ def sync(
         raise typer.Exit(code=1)
 
     try:
-        pjx = _common_options(config, jira_url, jira_username, jira_token, xray_client_id, xray_client_secret)
+        pjx = _common_options(config, jira_url, jira_username, jira_password, xray_client_id, xray_client_secret)
     except ValueError as e:
         console.print(f"[bold red]Configuration error:[/bold red] {e}")
         raise typer.Exit(code=1)

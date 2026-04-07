@@ -35,7 +35,7 @@ def _(ctx, tmp_path, monkeypatch):
 [jira]
 url = "https://discovered.atlassian.net"
 username = "found@example.com"
-api_token = "found_token"
+password = "found_token"
 
 [xray]
 client_id = "found_cid"
@@ -52,7 +52,7 @@ def _(ctx, tmp_path, monkeypatch):
         "jira": {
             "url": "https://json-discovered.atlassian.net",
             "username": "json@example.com",
-            "api_token": "json_token",
+            "password": "json_token",
         },
         "xray": {"client_id": "jcid", "client_secret": "jcsec"},
     }))
@@ -72,7 +72,7 @@ def _(ctx, tmp_path, status):
 [jira]
 url = "https://example.atlassian.net"
 username = "user@example.com"
-api_token = "token"
+password = "token"
 
 [xray]
 client_id = "cid"
@@ -89,7 +89,7 @@ def _(ctx, tmp_path, field):
     jira = {
         "url": "https://example.atlassian.net",
         "username": "user@example.com",
-        "api_token": "token",
+        "password": "token",
     }
     del jira[field]
     cfg = tmp_path / "pyjx2.json"
@@ -131,7 +131,7 @@ def _(ctx):
     env_clear = {
         "PYJX2_JIRA_URL": "",
         "PYJX2_JIRA_USERNAME": "",
-        "PYJX2_JIRA_API_TOKEN": "",
+        "PYJX2_JIRA_PASSWORD": "",
         "PYJX2_XRAY_CLIENT_ID": "",
         "PYJX2_XRAY_CLIENT_SECRET": "",
     }
@@ -145,12 +145,12 @@ def _(ctx):
         ctx["error"] = e
 
 
-@when(parsers.parse('I load settings from that file with api_token override "{token}"'))
-def _(ctx, token):
+@when(parsers.parse('I load settings from that file with password override "{password}"'))
+def _(ctx, password):
     try:
         s = load_settings(
             config_file=ctx["config_file"],
-            overrides={"jira": {"api_token": token}},
+            overrides={"jira": {"password": password}},
         )
         ctx["settings"] = s
         ctx["error"] = None
@@ -179,9 +179,9 @@ def _(ctx, username):
     assert ctx["settings"].jira.username == username
 
 
-@then(parsers.parse('the Jira API token is "{token}"'))
-def _(ctx, token):
-    assert ctx["settings"].jira.api_token == token
+@then(parsers.parse('the Jira password is "{password}"'))
+def _(ctx, password):
+    assert ctx["settings"].jira.password == password
 
 
 @then(parsers.parse('the Xray client ID is "{client_id}"'))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 from typing import Any, Optional
 
 import requests
@@ -13,10 +12,8 @@ class JiraClient:
 
     def __init__(self, settings: JiraSettings, timeout: float = 30.0) -> None:
         self._base_url = settings.url.rstrip("/")
-        credentials = f"{settings.username}:{settings.api_token}"
-        token = base64.b64encode(credentials.encode()).decode()
+        self._auth = (settings.username, settings.password)
         self._headers = {
-            "Authorization": f"Basic {token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -27,21 +24,21 @@ class JiraClient:
 
     def get(self, path: str, params: Optional[dict] = None) -> Any:
         resp = requests.get(
-            self._url(path), headers=self._headers, params=params, timeout=self._timeout
+            self._url(path), headers=self._headers, auth=self._auth, params=params, timeout=self._timeout
         )
         resp.raise_for_status()
         return resp.json()
 
     def post(self, path: str, data: dict) -> Any:
         resp = requests.post(
-            self._url(path), headers=self._headers, json=data, timeout=self._timeout
+            self._url(path), headers=self._headers, auth=self._auth, json=data, timeout=self._timeout
         )
         resp.raise_for_status()
         return resp.json()
 
     def put(self, path: str, data: dict) -> Any:
         resp = requests.put(
-            self._url(path), headers=self._headers, json=data, timeout=self._timeout
+            self._url(path), headers=self._headers, auth=self._auth, json=data, timeout=self._timeout
         )
         resp.raise_for_status()
         return resp.json()
@@ -56,6 +53,7 @@ class JiraClient:
         resp = requests.put(
             self._url(f"issue/{key}"),
             headers=self._headers,
+            auth=self._auth,
             json={"fields": fields},
             timeout=self._timeout,
         )

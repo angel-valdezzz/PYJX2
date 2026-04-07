@@ -16,16 +16,16 @@
           "type": "string",
           "description": "Jira username or email"
         },
-        "api_token": {
+        "password": {
           "type": "string",
-          "description": "Jira API token"
+          "description": "Jira password"
         },
         "project_key": {
           "type": "string",
           "description": "Default Jira project key"
         }
       },
-      "required": ["url", "username", "api_token"]
+      "required": ["url", "username", "password"]
     },
     "xray": {
       "type": "object",

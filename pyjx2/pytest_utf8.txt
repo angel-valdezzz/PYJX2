@@ -1,0 +1,429 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\DELL\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\DELL\Desktop\pyjx2\PYJX2\pyjx2
+configfile: pytest.ini
+plugins: anyio-4.10.0, asyncio-1.3.0, bdd-8.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 117 items
+
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_succeeds_with_all_required_arguments FAILED [  0%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_shows_a_summary_table FAILED [  1%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_fails_when_project_is_missing PASSED [  2%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_fails_when_testplan_is_missing PASSED [  3%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_fails_when_executionsummary_is_missing PASSED [  4%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_fails_when_jira_credentials_are_missing PASSED [  5%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_uses_reusetests_flag FAILED [  5%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_defaults_to_clone_mode FAILED [  6%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_fails_gracefully_when_api_raises_an_error PASSED [  7%]
+tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_accepts_an_explicit_config_file PASSED [  8%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_succeeds_with_all_required_arguments FAILED [  9%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_output_shows_matched_tests_table FAILED [ 10%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_fails_when_execution_is_missing PASSED [ 11%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_fails_when_folder_is_missing PASSED [ 11%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_fails_when_status_is_missing PASSED [ 12%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_rejects_an_invalid_status_value PASSED [ 13%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[PASS] FAILED [ 14%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[FAIL] FAILED [ 15%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[TODO] FAILED [ 16%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[EXECUTING] FAILED [ 17%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[ABORTED] FAILED [ 17%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_fails_gracefully_when_folder_is_not_found PASSED [ 18%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_shows_unmatched_tests_in_output FAILED [ 19%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_passes_norecursive_flag_to_the_api FAILED [ 20%]
+tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_defaults_to_recursive_mode FAILED [ 21%]
+tests/acceptance/step_defs/test_config_steps.py::test_settings_are_loaded_from_a_toml_config_file PASSED [ 22%]
+tests/acceptance/step_defs/test_config_steps.py::test_settings_are_loaded_from_a_json_config_file PASSED [ 23%]
+tests/acceptance/step_defs/test_config_steps.py::test_pyjx2toml_is_autodiscovered_in_the_current_directory PASSED [ 23%]
+tests/acceptance/step_defs/test_config_steps.py::test_pyjx2json_is_autodiscovered_in_the_current_directory PASSED [ 24%]
+tests/acceptance/step_defs/test_config_steps.py::test_runtime_overrides_take_precedence_over_the_config_file PASSED [ 25%]
+tests/acceptance/step_defs/test_config_steps.py::test_environment_variables_take_precedence_over_the_config_file PASSED [ 26%]
+tests/acceptance/step_defs/test_config_steps.py::test_missing_required_fields_raise_a_descriptive_error PASSED [ 27%]
+tests/acceptance/step_defs/test_config_steps.py::test_invalid_sync_status_in_config_fails_schema_validation PASSED [ 28%]
+tests/acceptance/step_defs/test_config_steps.py::test_missing_required_jirausername_in_json_fails_schema_validation PASSED [ 29%]
+tests/acceptance/step_defs/test_setup_steps.py::test_full_setup_creates_a_test_execution_and_a_test_set PASSED [ 29%]
+tests/acceptance/step_defs/test_setup_steps.py::test_the_test_set_is_linked_to_the_test_execution_after_setup PASSED [ 30%]
+tests/acceptance/step_defs/test_setup_steps.py::test_setup_clones_tests_by_default PASSED [ 31%]
+tests/acceptance/step_defs/test_setup_steps.py::test_setup_reuses_existing_tests_when_the_flag_is_enabled PASSED [ 32%]
+tests/acceptance/step_defs/test_setup_steps.py::test_cloned_tests_are_added_to_the_test_set PASSED [ 33%]
+tests/acceptance/step_defs/test_setup_steps.py::test_setup_fails_when_the_test_plan_does_not_exist PASSED [ 34%]
+tests/acceptance/step_defs/test_setup_steps.py::test_progress_messages_are_emitted_during_setup PASSED [ 35%]
+tests/acceptance/step_defs/test_setup_steps.py::test_empty_test_plan_still_produces_an_execution_and_a_test_set PASSED [ 35%]
+tests/acceptance/step_defs/test_sync_steps.py::test_files_matching_test_keys_are_matched_to_their_tests PASSED [ 36%]
+tests/acceptance/step_defs/test_sync_steps.py::test_matched_tests_have_their_status_updated PASSED [ 37%]
+tests/acceptance/step_defs/test_sync_steps.py::test_matched_tests_have_their_evidence_uploaded PASSED [ 38%]
+tests/acceptance/step_defs/test_sync_steps.py::test_recursive_scan_picks_up_files_in_subdirectories PASSED [ 39%]
+tests/acceptance/step_defs/test_sync_steps.py::test_nonrecursive_scan_ignores_files_in_subdirectories PASSED [ 40%]
+tests/acceptance/step_defs/test_sync_steps.py::test_unmatched_tests_are_reported PASSED [ 41%]
+tests/acceptance/step_defs/test_sync_steps.py::test_unmatched_files_are_reported PASSED [ 41%]
+tests/acceptance/step_defs/test_sync_steps.py::test_empty_evidence_folder_produces_no_matches PASSED [ 42%]
+tests/acceptance/step_defs/test_sync_steps.py::test_sync_fails_when_the_evidence_folder_does_not_exist PASSED [ 43%]
+tests/acceptance/step_defs/test_sync_steps.py::test_file_matching_is_caseinsensitive_for_test_keys PASSED [ 44%]
+tests/unit/test_entities.py::TestTestEntity::test_creation_with_required_fields PASSED [ 45%]
+tests/unit/test_entities.py::TestTestEntity::test_default_test_type_is_manual PASSED [ 46%]
+tests/unit/test_entities.py::TestTestEntity::test_optional_fields_default_to_none_or_empty PASSED [ 47%]
+tests/unit/test_entities.py::TestTestEntity::test_explicit_fields PASSED [ 47%]
+tests/unit/test_entities.py::TestTestEntity::test_repr PASSED            [ 48%]
+tests/unit/test_entities.py::TestTestEntity::test_labels_are_independent_per_instance PASSED [ 49%]
+tests/unit/test_entities.py::TestTestSetEntity::test_creation PASSED     [ 50%]
+tests/unit/test_entities.py::TestTestSetEntity::test_with_test_keys PASSED [ 51%]
+tests/unit/test_entities.py::TestTestSetEntity::test_repr PASSED         [ 52%]
+tests/unit/test_entities.py::TestTestExecutionEntity::test_creation PASSED [ 52%]
+tests/unit/test_entities.py::TestTestExecutionEntity::test_repr PASSED   [ 53%]
+tests/unit/test_entities.py::TestTestPlanEntity::test_creation PASSED    [ 54%]
+tests/unit/test_entities.py::TestTestPlanEntity::test_repr PASSED        [ 55%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_loads_valid_overrides FAILED [ 56%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_xray_default_base_url FAILED [ 57%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_missing_jira_url_raises PASSED [ 58%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_missing_jira_token_raises FAILED [ 58%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_missing_xray_secret_raises PASSED [ 59%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_missing_all_credentials_raises_with_all_fields PASSED [ 60%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_setup_defaults_populated FAILED [ 61%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_sync_defaults_populated FAILED [ 62%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_setup_defaults_when_section_absent FAILED [ 63%]
+tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_sync_defaults_when_section_absent FAILED [ 64%]
+tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_loads_toml_file PASSED [ 64%]
+tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_toml_setup_section PASSED [ 65%]
+tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_toml_sync_section PASSED [ 66%]
+tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_nonexistent_file_raises PASSED [ 67%]
+tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_toml_overridden_by_runtime_dict FAILED [ 68%]
+tests/unit/test_settings.py::TestLoadSettingsFromJSON::test_loads_json_file PASSED [ 69%]
+tests/unit/test_settings.py::TestLoadSettingsFromJSON::test_json_setup_section PASSED [ 70%]
+tests/unit/test_settings.py::TestLoadSettingsFromJSON::test_json_sync_section PASSED [ 70%]
+tests/unit/test_settings.py::TestJsonSchemaValidation::test_invalid_toml_missing_jira_url_fails_schema PASSED [ 71%]
+tests/unit/test_settings.py::TestJsonSchemaValidation::test_invalid_json_missing_xray_section_fails_schema PASSED [ 72%]
+tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_env_vars_override_empty_config FAILED [ 73%]
+tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_runtime_override_wins_over_env_var FAILED [ 74%]
+tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_apply_env_overrides_returns_merged_dict PASSED [ 75%]
+tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_apply_env_overrides_does_not_set_empty_values PASSED [ 76%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_returns_setup_result_with_correct_entities PASSED [ 76%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_clones_tests_by_default PASSED [ 77%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_reuses_tests_when_flag_is_set PASSED [ 78%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_creates_test_set_with_correct_project PASSED [ 79%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_adds_tests_to_set PASSED [ 80%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_creates_execution_with_correct_summary PASSED [ 81%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_links_test_set_to_execution PASSED [ 82%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_raises_when_test_plan_not_found PASSED [ 82%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_progress_callback_called PASSED [ 83%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_empty_test_plan_still_creates_set_and_execution PASSED [ 84%]
+tests/unit/test_setup_service.py::TestSetupServiceRun::test_tests_without_key_are_skipped PASSED [ 85%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_matches_file_by_test_key_stem PASSED [ 86%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_matches_multiple_files PASSED [ 87%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_unmatched_files_reported PASSED [ 88%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_unmatched_tests_reported PASSED [ 88%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_recursive_finds_nested_files PASSED [ 89%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_non_recursive_ignores_nested_files PASSED [ 90%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_matching_is_case_insensitive_for_key PASSED [ 91%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_file_with_no_extension_matches_by_key PASSED [ 92%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_empty_folder_produces_no_matches PASSED [ 93%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_no_tests_in_execution_produces_no_matches PASSED [ 94%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_status_update_called_for_each_match PASSED [ 94%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_upload_called_for_each_match PASSED [ 95%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_match_records_status_and_upload_results PASSED [ 96%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_failed_status_update_recorded PASSED [ 97%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_failed_upload_recorded PASSED [ 98%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_nonexistent_folder_raises PASSED [ 99%]
+tests/unit/test_sync_service.py::TestSyncServiceFileMatching::test_progress_callback_is_called PASSED [100%]
+
+================================== FAILURES ===================================
+___________ test_setup_command_succeeds_with_all_required_arguments ___________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 setup [OPTIONS]
+E     Try 'pyjx2 setup --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+__________________ test_setup_command_shows_a_summary_table ___________________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 setup [OPTIONS]
+E     Try 'pyjx2 setup --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+___________________ test_setup_command_uses_reusetests_flag ___________________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:281: in _
+    call_kwargs = ctx["mock_pjx"].setup.call_args[1]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+__________________ test_setup_command_defaults_to_clone_mode __________________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:287: in _
+    call_kwargs = ctx["mock_pjx"].setup.call_args[1]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+___________ test_sync_command_succeeds_with_all_required_arguments ____________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+_____________ test_sync_command_output_shows_matched_tests_table ______________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+___________ test_sync_command_accepts_all_valid_status_values[PASS] ___________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+___________ test_sync_command_accepts_all_valid_status_values[FAIL] ___________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+___________ test_sync_command_accepts_all_valid_status_values[TODO] ___________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+________ test_sync_command_accepts_all_valid_status_values[EXECUTING] _________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+_________ test_sync_command_accepts_all_valid_status_values[ABORTED] __________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:237: in _
+    assert result.exit_code == 0, (
+E   AssertionError: Expected exit code 0, got 2.
+E     Output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+______________ test_sync_command_shows_unmatched_tests_in_output ______________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:266: in _
+    assert text in ctx["cli_result"].output, (
+E   AssertionError: Expected 'Unmatched tests' in output:
+E     Usage: pyjx2 sync [OPTIONS]
+E     Try 'pyjx2 sync --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502
+E     \u2502 --jira-username)                                                            \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 'Unmatched tests' in "Usage: pyjx2 sync [OPTIONS]\\nTry 'pyjx2 sync --help' for help.\\n\u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502\\n\u2502 --jira-username)                                                            \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n"
+E    +  where "Usage: pyjx2 sync [OPTIONS]\\nTry 'pyjx2 sync --help' for help.\\n\u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502 No such option: --jira-token (Possible options: --jira-url,                 \u2502\\n\u2502 --jira-username)                                                            \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n" = <Result SystemExit(2)>.output
+____________ test_sync_command_passes_norecursive_flag_to_the_api _____________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:293: in _
+    call_kwargs = ctx["mock_pjx"].sync.call_args[1]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+________________ test_sync_command_defaults_to_recursive_mode _________________
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\fixtures.py:915: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+tests\acceptance\step_defs\test_cli_steps.py:299: in _
+    call_kwargs = ctx["mock_pjx"].sync.call_args[1]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'NoneType' object is not subscriptable
+__________ TestLoadSettingsFromOverrides.test_loads_valid_overrides ___________
+tests\unit\test_settings.py:31: in test_loads_valid_overrides
+    s = load_settings(overrides=self._valid_overrides())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+__________ TestLoadSettingsFromOverrides.test_xray_default_base_url ___________
+tests\unit\test_settings.py:39: in test_xray_default_base_url
+    s = load_settings(overrides=self._valid_overrides())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+________ TestLoadSettingsFromOverrides.test_missing_jira_token_raises _________
+tests\unit\test_settings.py:56: in test_missing_jira_token_raises
+    load_settings(overrides=overrides)
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_settings.py:55: in test_missing_jira_token_raises
+    with pytest.raises(ValueError, match="jira.api_token"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'jira.api_token'
+E     Actual message: 'Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.'
+_________ TestLoadSettingsFromOverrides.test_setup_defaults_populated _________
+tests\unit\test_settings.py:80: in test_setup_defaults_populated
+    s = load_settings(overrides=overrides)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+_________ TestLoadSettingsFromOverrides.test_sync_defaults_populated __________
+tests\unit\test_settings.py:88: in test_sync_defaults_populated
+    s = load_settings(overrides=overrides)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+____ TestLoadSettingsFromOverrides.test_setup_defaults_when_section_absent ____
+tests\unit\test_settings.py:93: in test_setup_defaults_when_section_absent
+    s = load_settings(overrides=self._valid_overrides())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+____ TestLoadSettingsFromOverrides.test_sync_defaults_when_section_absent _____
+tests\unit\test_settings.py:98: in test_sync_defaults_when_section_absent
+    s = load_settings(overrides=self._valid_overrides())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+________ TestLoadSettingsFromTOML.test_toml_overridden_by_runtime_dict ________
+tests\unit\test_settings.py:132: in test_toml_overridden_by_runtime_dict
+    assert s.jira.api_token == "overridden_token"
+           ^^^^^^^^^^^^^^^^
+E   AttributeError: 'JiraSettings' object has no attribute 'api_token'
+____ TestEnvironmentVariableOverrides.test_env_vars_override_empty_config _____
+tests\unit\test_settings.py:193: in test_env_vars_override_empty_config
+    s = load_settings()
+        ^^^^^^^^^^^^^^^
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+__ TestEnvironmentVariableOverrides.test_runtime_override_wins_over_env_var ___
+tests\unit\test_settings.py:207: in test_runtime_override_wins_over_env_var
+    s = load_settings(overrides={
+pyjx2\infrastructure\config\settings.py:184: in load_settings
+    raise ValueError(
+E   ValueError: Missing required configuration: jira.password. Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments.
+=========================== short test summary info ===========================
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_succeeds_with_all_required_arguments
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_shows_a_summary_table
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_uses_reusetests_flag
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_setup_command_defaults_to_clone_mode
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_succeeds_with_all_required_arguments
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_output_shows_matched_tests_table
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[PASS]
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[FAIL]
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[TODO]
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[EXECUTING]
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_accepts_all_valid_status_values[ABORTED]
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_shows_unmatched_tests_in_output
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_passes_norecursive_flag_to_the_api
+FAILED tests/acceptance/step_defs/test_cli_steps.py::test_sync_command_defaults_to_recursive_mode
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_loads_valid_overrides
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_xray_default_base_url
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_missing_jira_token_raises
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_setup_defaults_populated
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_sync_defaults_populated
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_setup_defaults_when_section_absent
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromOverrides::test_sync_defaults_when_section_absent
+FAILED tests/unit/test_settings.py::TestLoadSettingsFromTOML::test_toml_overridden_by_runtime_dict
+FAILED tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_env_vars_override_empty_config
+FAILED tests/unit/test_settings.py::TestEnvironmentVariableOverrides::test_runtime_override_wins_over_env_var
+======================== 24 failed, 93 passed in 2.90s ========================

@@ -157,8 +157,8 @@ class PyJX2App(App):
                     yield Label("Username / Email", classes="field-label")
                     yield Input(placeholder="user@example.com", id="setup-jira-username", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("API Token", classes="field-label")
-                    yield Input(placeholder="Jira API token", id="setup-jira-token", password=True, classes="field-input")
+                    yield Label("Contraseña", classes="field-label")
+                    yield Input(placeholder="Jira password", id="setup-jira-password", password=True, classes="field-input")
                 with Horizontal(classes="field-row"):
                     yield Label("Xray Client ID", classes="field-label")
                     yield Input(placeholder="Xray Cloud client ID", id="setup-xray-client-id", classes="field-input")
@@ -205,8 +205,8 @@ class PyJX2App(App):
                     yield Label("Username / Email", classes="field-label")
                     yield Input(placeholder="user@example.com", id="sync-jira-username", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("API Token", classes="field-label")
-                    yield Input(placeholder="Jira API token", id="sync-jira-token", password=True, classes="field-input")
+                    yield Label("Contraseña", classes="field-label")
+                    yield Input(placeholder="Jira password", id="sync-jira-password", password=True, classes="field-input")
                 with Horizontal(classes="field-row"):
                     yield Label("Xray Client ID", classes="field-label")
                     yield Input(placeholder="Xray Cloud client ID", id="sync-xray-client-id", classes="field-input")
@@ -249,7 +249,7 @@ class PyJX2App(App):
                 yield Static(
                     "pyjx2 looks for [b]pyjx2.toml[/b] or [b]pyjx2.json[/b] in the current directory.\n"
                     "You can also set environment variables like [b]PYJX2_JIRA_URL[/b], "
-                    "[b]PYJX2_JIRA_USERNAME[/b], [b]PYJX2_JIRA_API_TOKEN[/b], "
+                    "[b]PYJX2_JIRA_USERNAME[/b], [b]PYJX2_JIRA_PASSWORD[/b], "
                     "[b]PYJX2_XRAY_CLIENT_ID[/b], [b]PYJX2_XRAY_CLIENT_SECRET[/b].\n\n"
                     "All fields in the TUI connection panels override the config file for that session.",
                     markup=True,
@@ -260,7 +260,7 @@ class PyJX2App(App):
                     "[b][jira][/b]\n"
                     'url = "https://yourorg.atlassian.net"\n'
                     'username = "user@example.com"\n'
-                    'api_token = "YOUR_JIRA_API_TOKEN"\n'
+                    'password = "YOUR_JIRA_PASSWORD"\n'
                     'project_key = "PROJ"\n\n'
                     "[b][xray][/b]\n"
                     'client_id = "YOUR_XRAY_CLIENT_ID"\n'
@@ -301,12 +301,12 @@ class PyJX2App(App):
         overrides: dict = {}
         jira_url = self._get_input(f"{prefix}-jira-url")
         jira_user = self._get_input(f"{prefix}-jira-username")
-        jira_token = self._get_input(f"{prefix}-jira-token")
+        jira_password = self._get_input(f"{prefix}-jira-password")
         xray_id = self._get_input(f"{prefix}-xray-client-id")
         xray_secret = self._get_input(f"{prefix}-xray-secret")
 
-        if jira_url or jira_user or jira_token:
-            overrides["jira"] = {"url": jira_url or None, "username": jira_user or None, "api_token": jira_token or None}
+        if jira_url or jira_user or jira_password:
+            overrides["jira"] = {"url": jira_url or None, "username": jira_user or None, "password": jira_password or None}
         if xray_id or xray_secret:
             overrides["xray"] = {"client_id": xray_id or None, "client_secret": xray_secret or None}
 

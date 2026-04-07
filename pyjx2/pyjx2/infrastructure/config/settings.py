@@ -16,7 +16,7 @@ _SCHEMA_PATH = Path(__file__).parent / "schema.json"
 class JiraSettings:
     url: str
     username: str
-    api_token: str
+    password: str
     project_key: Optional[str] = None
 
 
@@ -93,7 +93,7 @@ def _dict_to_settings(data: dict) -> Settings:
         jira=JiraSettings(
             url=jira_data["url"],
             username=jira_data["username"],
-            api_token=jira_data["api_token"],
+            password=jira_data["password"],
             project_key=jira_data.get("project_key"),
         ),
         xray=XraySettings(
@@ -122,7 +122,7 @@ def _apply_env_overrides(data: dict) -> dict:
     env_map = {
         "PYJX2_JIRA_URL": ("jira", "url"),
         "PYJX2_JIRA_USERNAME": ("jira", "username"),
-        "PYJX2_JIRA_API_TOKEN": ("jira", "api_token"),
+        "PYJX2_JIRA_PASSWORD": ("jira", "password"),
         "PYJX2_JIRA_PROJECT_KEY": ("jira", "project_key"),
         "PYJX2_XRAY_CLIENT_ID": ("xray", "client_id"),
         "PYJX2_XRAY_CLIENT_SECRET": ("xray", "client_secret"),
@@ -171,7 +171,7 @@ def load_settings(
                 data[section] = values
 
     required_fields = {
-        "jira": ["url", "username", "api_token"],
+        "jira": ["url", "username", "password"],
         "xray": ["client_id", "client_secret"],
     }
     missing = []
