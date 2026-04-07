@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pyjx2 Configuration",
+  "description": "Configuration schema for pyjx2 — Jira/Xray automation tool",
+  "type": "object",
+  "properties": {
+    "jira": {
+      "type": "object",
+      "description": "Jira connection settings",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Base URL for Jira (e.g. https://yourorg.atlassian.net)"
+        },
+        "username": {
+          "type": "string",
+          "description": "Jira username or email"
+        },
+        "api_token": {
+          "type": "string",
+          "description": "Jira API token"
+        },
+        "project_key": {
+          "type": "string",
+          "description": "Default Jira project key"
+        }
+      },
+      "required": ["url", "username", "api_token"]
+    },
+    "xray": {
+      "type": "object",
+      "description": "Xray connection settings",
+      "properties": {
+        "client_id": {
+          "type": "string",
+          "description": "Xray Cloud client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "description": "Xray Cloud client secret"
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Xray API base URL (default: https://xray.cloud.getxray.app/api/v2)"
+        }
+      },
+      "required": ["client_id", "client_secret"]
+    },
+    "setup": {
+      "type": "object",
+      "description": "Default values for the setup command",
+      "properties": {
+        "project_key": {
+          "type": "string"
+        },
+        "test_plan_key": {
+          "type": "string"
+        },
+        "execution_summary": {
+          "type": "string"
+        },
+        "test_set_summary": {
+          "type": "string"
+        },
+        "reuse_tests": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "description": "Default values for the sync command",
+      "properties": {
+        "execution_key": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "TODO", "EXECUTING", "ABORTED"]
+        },
+        "recursive": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "required": ["jira", "xray"]
+}

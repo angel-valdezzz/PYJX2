@@ -1,0 +1,2 @@
+[console_scripts]
+pyjx2 = pyjx2.cli.app:app

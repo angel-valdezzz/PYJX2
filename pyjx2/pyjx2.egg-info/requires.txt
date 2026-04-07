@@ -1,0 +1,6 @@
+httpx>=0.24
+typer>=0.9
+rich>=13
+textual>=0.40
+toml>=0.10
+jsonschema>=4

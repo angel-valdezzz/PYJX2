@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: pyjx2
+Version: 0.1.0
+Summary: Jira/Xray automation tool with CLI, TUI, and scripting API
+Author: pyjx2
+Requires-Python: >=3.10
+Requires-Dist: httpx>=0.24
+Requires-Dist: typer>=0.9
+Requires-Dist: rich>=13
+Requires-Dist: textual>=0.40
+Requires-Dist: toml>=0.10
+Requires-Dist: jsonschema>=4
+Dynamic: author
+Dynamic: requires-python

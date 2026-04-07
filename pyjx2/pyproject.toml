@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyjx2"
+version = "0.1.0"
+description = "Jira/Xray automation tool with CLI, TUI, and scripting API"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.24",
+    "typer>=0.9",
+    "rich>=13",
+    "textual>=0.40",
+    "toml>=0.10",
+    "jsonschema>=4",
+]
+
+[project.scripts]
+pyjx2 = "pyjx2.cli.app:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyjx2*"]
+
+[tool.setuptools.package-data]
+pyjx2 = ["infrastructure/config/schema.json"]

@@ -1,0 +1,25 @@
+{
+  "jira": {
+    "url": "https://yourorg.atlassian.net",
+    "username": "user@example.com",
+    "api_token": "YOUR_JIRA_API_TOKEN",
+    "project_key": "PROJ"
+  },
+  "xray": {
+    "client_id": "YOUR_XRAY_CLIENT_ID",
+    "client_secret": "YOUR_XRAY_CLIENT_SECRET"
+  },
+  "setup": {
+    "project_key": "PROJ",
+    "test_plan_key": "PROJ-100",
+    "execution_summary": "Sprint 1 Execution",
+    "test_set_summary": "Sprint 1 Test Set",
+    "reuse_tests": false
+  },
+  "sync": {
+    "execution_key": "PROJ-200",
+    "folder": "./evidence",
+    "status": "PASS",
+    "recursive": true
+  }
+}

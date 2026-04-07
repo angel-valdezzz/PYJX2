@@ -1,0 +1,195 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from ..domain.entities import Test, TestSet, TestExecution, TestPlan
+from ..infrastructure.config.settings import Settings
+from ..infrastructure.jira.client import JiraClient
+from ..infrastructure.xray.client import XrayClient
+from ..infrastructure.xray.repositories import (
+    XrayTestRepository,
+    XrayTestSetRepository,
+    XrayTestExecutionRepository,
+    XrayTestPlanRepository,
+)
+from ..application.services.setup_service import SetupService, SetupInput, SetupResult
+from ..application.services.sync_service import SyncService, SyncInput, SyncResult
+
+
+class PyJX2:
+    """
+    High-level API facade for Jira / Xray automation.
+
+    All public methods are composable and can be used independently to build
+    custom automation scripts.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._jira = JiraClient(settings.jira)
+        self._xray = XrayClient(settings.xray)
+
+        self._test_repo = XrayTestRepository(self._xray, self._jira)
+        self._test_set_repo = XrayTestSetRepository(self._xray, self._jira)
+        self._test_exec_repo = XrayTestExecutionRepository(self._xray, self._jira)
+        self._test_plan_repo = XrayTestPlanRepository(self._xray, self._jira)
+
+    # ── Tests ────────────────────────────────────────────────────────────────
+
+    def get_test(self, key: str) -> Optional[Test]:
+        """Fetch a single test by Jira issue key."""
+        return self._test_repo.get(key)
+
+    def create_test(
+        self,
+        project_key: str,
+        summary: str,
+        test_type: str = "Manual",
+        labels: Optional[list[str]] = None,
+    ) -> Test:
+        """Create a new test issue in Jira/Xray."""
+        return self._test_repo.create(
+            project_key=project_key,
+            summary=summary,
+            test_type=test_type,
+            labels=labels or [],
+        )
+
+    def clone_test(self, source_key: str, target_project_key: str) -> Test:
+        """Clone an existing test into the target project."""
+        return self._test_repo.clone(source_key, target_project_key)
+
+    def get_tests_from_execution(self, execution_key: str) -> list[Test]:
+        """Get all tests associated with a test execution."""
+        return self._test_repo.list_from_execution(execution_key)
+
+    def update_test_status(
+        self,
+        execution_key: str,
+        test_key: str,
+        status: str,
+    ) -> bool:
+        """Update the run status of a test within a test execution."""
+        return self._test_repo.update_status(execution_key, test_key, status)
+
+    def upload_test_evidence(
+        self,
+        execution_key: str,
+        test_key: str,
+        file_path: str,
+    ) -> bool:
+        """Upload a file as evidence for a test run."""
+        return self._test_repo.upload_evidence(execution_key, test_key, file_path)
+
+    # ── Test Sets ─────────────────────────────────────────────────────────────
+
+    def get_test_set(self, key: str) -> Optional[TestSet]:
+        """Fetch a test set by Jira issue key."""
+        return self._test_set_repo.get(key)
+
+    def create_test_set(self, project_key: str, summary: str) -> TestSet:
+        """Create a new test set issue."""
+        return self._test_set_repo.create(project_key, summary)
+
+    def update_test_set(self, key: str, **kwargs) -> TestSet:
+        """Update an existing test set (e.g. summary='New title')."""
+        return self._test_set_repo.update(key, **kwargs)
+
+    def add_tests_to_set(self, test_set_key: str, test_keys: list[str]) -> bool:
+        """Add one or more tests to a test set."""
+        return self._test_set_repo.add_tests(test_set_key, test_keys)
+
+    # ── Test Executions ───────────────────────────────────────────────────────
+
+    def get_test_execution(self, key: str) -> Optional[TestExecution]:
+        """Fetch a test execution by Jira issue key."""
+        return self._test_exec_repo.get(key)
+
+    def create_test_execution(self, project_key: str, summary: str, **kwargs) -> TestExecution:
+        """Create a new test execution issue."""
+        return self._test_exec_repo.create(project_key, summary, **kwargs)
+
+    def update_test_execution(self, key: str, **kwargs) -> TestExecution:
+        """Update an existing test execution (e.g. summary='New title')."""
+        return self._test_exec_repo.update(key, **kwargs)
+
+    def add_test_set_to_execution(self, execution_key: str, test_set_key: str) -> bool:
+        """Link a test set to a test execution."""
+        return self._test_exec_repo.add_test_set(execution_key, test_set_key)
+
+    # ── Test Plans ────────────────────────────────────────────────────────────
+
+    def get_test_plan(self, key: str) -> Optional[TestPlan]:
+        """Fetch a test plan by Jira issue key."""
+        return self._test_plan_repo.get(key)
+
+    def get_tests_from_plan(self, plan_key: str) -> list[dict]:
+        """Get all tests associated with a test plan."""
+        return self._test_plan_repo.get_tests(plan_key)
+
+    # ── High-level flows ──────────────────────────────────────────────────────
+
+    def setup(
+        self,
+        project_key: str,
+        test_plan_key: str,
+        execution_summary: str,
+        test_set_summary: str,
+        reuse_tests: bool = False,
+        progress_callback=None,
+    ) -> SetupResult:
+        """
+        Full setup flow: read test plan → create/clone tests → create test set
+        → create test execution → link everything together.
+        """
+        service = SetupService(
+            self._test_repo,
+            self._test_set_repo,
+            self._test_exec_repo,
+            self._test_plan_repo,
+        )
+        return service.run(
+            SetupInput(
+                project_key=project_key,
+                test_plan_key=test_plan_key,
+                execution_summary=execution_summary,
+                test_set_summary=test_set_summary,
+                reuse_tests=reuse_tests,
+            ),
+            progress_callback=progress_callback,
+        )
+
+    def sync(
+        self,
+        execution_key: str,
+        folder: str,
+        status: str,
+        recursive: bool = True,
+        progress_callback=None,
+    ) -> SyncResult:
+        """
+        Full sync flow: get tests from execution → scan folder recursively →
+        match files to tests → update statuses and upload evidence.
+        """
+        service = SyncService(self._test_repo, self._test_exec_repo)
+        return service.run(
+            SyncInput(
+                execution_key=execution_key,
+                folder=folder,
+                status=status,
+                recursive=recursive,
+            ),
+            progress_callback=progress_callback,
+        )
+
+    # ── Raw clients (escape hatch) ────────────────────────────────────────────
+
+    @property
+    def jira(self) -> JiraClient:
+        """Direct access to the low-level Jira REST client."""
+        return self._jira
+
+    @property
+    def xray(self) -> XrayClient:
+        """Direct access to the low-level Xray REST client."""
+        return self._xray

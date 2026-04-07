@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
+
+import jsonschema
+
+CONFIG_FILENAMES = ["pyjx2.toml", "pyjx2.json"]
+_SCHEMA_PATH = Path(__file__).parent / "schema.json"
+
+
+@dataclass
+class JiraSettings:
+    url: str
+    username: str
+    api_token: str
+    project_key: Optional[str] = None
+
+
+@dataclass
+class XraySettings:
+    client_id: str
+    client_secret: str
+    base_url: str = "https://xray.cloud.getxray.app/api/v2"
+
+
+@dataclass
+class SetupDefaults:
+    project_key: Optional[str] = None
+    test_plan_key: Optional[str] = None
+    execution_summary: Optional[str] = None
+    test_set_summary: Optional[str] = None
+    reuse_tests: bool = False
+
+
+@dataclass
+class SyncDefaults:
+    execution_key: Optional[str] = None
+    folder: Optional[str] = None
+    status: Optional[str] = None
+    recursive: bool = True
+
+
+@dataclass
+class Settings:
+    jira: JiraSettings
+    xray: XraySettings
+    setup: SetupDefaults = field(default_factory=SetupDefaults)
+    sync: SyncDefaults = field(default_factory=SyncDefaults)
+
+
+def _load_file(path: Path) -> dict:
+    if path.suffix == ".toml":
+        try:
+            import tomllib
+            with open(path, "rb") as f:
+                return tomllib.load(f)
+        except ModuleNotFoundError:
+            import toml
+            with open(path, "r") as f:
+                return toml.load(f)
+    elif path.suffix == ".json":
+        with open(path, "r") as f:
+            return json.load(f)
+    else:
+        raise ValueError(f"Unsupported config format: {path.suffix}")
+
+
+def _validate_schema(data: dict) -> None:
+    schema = json.loads(_SCHEMA_PATH.read_text())
+    jsonschema.validate(instance=data, schema=schema)
+
+
+def _find_config_file() -> Optional[Path]:
+    cwd = Path.cwd()
+    for name in CONFIG_FILENAMES:
+        candidate = cwd / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _dict_to_settings(data: dict) -> Settings:
+    jira_data = data.get("jira", {})
+    xray_data = data.get("xray", {})
+    setup_data = data.get("setup", {})
+    sync_data = data.get("sync", {})
+
+    return Settings(
+        jira=JiraSettings(
+            url=jira_data["url"],
+            username=jira_data["username"],
+            api_token=jira_data["api_token"],
+            project_key=jira_data.get("project_key"),
+        ),
+        xray=XraySettings(
+            client_id=xray_data["client_id"],
+            client_secret=xray_data["client_secret"],
+            base_url=xray_data.get("base_url", "https://xray.cloud.getxray.app/api/v2"),
+        ),
+        setup=SetupDefaults(
+            project_key=setup_data.get("project_key"),
+            test_plan_key=setup_data.get("test_plan_key"),
+            execution_summary=setup_data.get("execution_summary"),
+            test_set_summary=setup_data.get("test_set_summary"),
+            reuse_tests=setup_data.get("reuse_tests", False),
+        ),
+        sync=SyncDefaults(
+            execution_key=sync_data.get("execution_key"),
+            folder=sync_data.get("folder"),
+            status=sync_data.get("status"),
+            recursive=sync_data.get("recursive", True),
+        ),
+    )
+
+
+def _apply_env_overrides(data: dict) -> dict:
+    """Allow environment variables to override config values."""
+    env_map = {
+        "PYJX2_JIRA_URL": ("jira", "url"),
+        "PYJX2_JIRA_USERNAME": ("jira", "username"),
+        "PYJX2_JIRA_API_TOKEN": ("jira", "api_token"),
+        "PYJX2_JIRA_PROJECT_KEY": ("jira", "project_key"),
+        "PYJX2_XRAY_CLIENT_ID": ("xray", "client_id"),
+        "PYJX2_XRAY_CLIENT_SECRET": ("xray", "client_secret"),
+        "PYJX2_XRAY_BASE_URL": ("xray", "base_url"),
+    }
+    result = {k: dict(v) for k, v in data.items()} if data else {}
+    for env_key, (section, key) in env_map.items():
+        val = os.environ.get(env_key)
+        if val:
+            if section not in result:
+                result[section] = {}
+            result[section][key] = val
+    return result
+
+
+def load_settings(
+    config_file: Optional[str] = None,
+    overrides: Optional[dict] = None,
+) -> Settings:
+    """
+    Load settings from:
+    1. Auto-discovered pyjx2.toml / pyjx2.json in the current directory
+    2. Explicit config file path if provided
+    3. Environment variables (PYJX2_*)
+    4. Runtime overrides dict (CLI arguments)
+    """
+    data: dict = {}
+
+    path = Path(config_file) if config_file else _find_config_file()
+    if path:
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
+        raw = _load_file(path)
+        _validate_schema(raw)
+        data = raw
+
+    data = _apply_env_overrides(data)
+
+    if overrides:
+        for section, values in overrides.items():
+            if section not in data:
+                data[section] = {}
+            if isinstance(values, dict):
+                data[section].update({k: v for k, v in values.items() if v is not None})
+            else:
+                data[section] = values
+
+    required_fields = {
+        "jira": ["url", "username", "api_token"],
+        "xray": ["client_id", "client_secret"],
+    }
+    missing = []
+    for section, fields in required_fields.items():
+        sec_data = data.get(section, {})
+        for f in fields:
+            if not sec_data.get(f):
+                missing.append(f"{section}.{f}")
+    if missing:
+        raise ValueError(
+            f"Missing required configuration: {', '.join(missing)}. "
+            "Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments."
+        )
+
+    return _dict_to_settings(data)
