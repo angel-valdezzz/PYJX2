@@ -138,13 +138,13 @@ class PyJX2App(App):
         yield Header()
         with TabbedContent(id="tabs"):
             with TabPane("Setup (F1)", id="setup"):
-                yield self._compose_setup_tab()
+                yield from self._compose_setup_tab()
             with TabPane("Sync (F2)", id="sync"):
-                yield self._compose_sync_tab()
+                yield from self._compose_sync_tab()
             with TabPane("Config (F3)", id="config"):
-                yield self._compose_config_tab()
+                yield from self._compose_config_tab()
             with TabPane("Security (F4)", id="security"):
-                yield self._compose_security_tab()
+                yield from self._compose_security_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
 
