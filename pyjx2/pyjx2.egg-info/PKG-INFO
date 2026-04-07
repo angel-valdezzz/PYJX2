@@ -11,5 +11,12 @@ Requires-Dist: textual>=0.40
 Requires-Dist: toml>=0.10
 Requires-Dist: jsonschema>=4
 Requires-Dist: cryptography>=41.0.0
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-bdd; extra == "dev"
+Requires-Dist: pytest-mock; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: mkdocs-material; extra == "docs"
+Requires-Dist: pymdown-extensions; extra == "docs"
 Dynamic: author
 Dynamic: requires-python

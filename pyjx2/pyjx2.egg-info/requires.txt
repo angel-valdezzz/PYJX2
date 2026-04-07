@@ -5,3 +5,12 @@ textual>=0.40
 toml>=0.10
 jsonschema>=4
 cryptography>=41.0.0
+
+[dev]
+pytest
+pytest-bdd
+pytest-mock
+
+[docs]
+mkdocs-material
+pymdown-extensions

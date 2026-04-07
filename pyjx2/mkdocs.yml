@@ -1,0 +1,76 @@
+site_name: PYJX2
+docs_dir: docs
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Intro: index.md
+  - Primeros Pasos:
+      - Instalación: getting-started/installation.md
+      - Configuración: getting-started/configuration.md
+      - Seguridad y Cifrado: getting-started/security.md
+  - Guías de Usuario:
+      - Preparación (Setup): user-guides/setup.md
+      - Sincronización (Sync): user-guides/sync.md
+  - Interfaces:
+      - Línea de Comandos (CLI): interfaces/cli.md
+      - Interfaz Gráfica (TUI): interfaces/tui.md
+  - Avanzado:
+      - API Python: advanced/python-api.md
+
+theme:
+  name: material
+
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.tabs.link
+    - content.code.annotate
+
+  icon:
+    annotation: material/plus-circle
+
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Cambiar a modo claro
+      primary: custom
+      accent: custom
+
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Cambiar a modo oscuro
+      primary: custom
+      accent: custom
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Cambiar a preferencia del sistema
+      primary: custom
+      accent: custom
+
+markdown_extensions:
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables

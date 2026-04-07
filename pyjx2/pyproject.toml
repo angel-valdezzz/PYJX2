@@ -26,3 +26,7 @@ include = ["pyjx2*"]
 
 [tool.setuptools.package-data]
 pyjx2 = ["infrastructure/config/schema.json"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-bdd", "pytest-mock"]
+docs = ["mkdocs-material", "pymdown-extensions"]
