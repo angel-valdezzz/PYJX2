@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from typing import Any, Optional
 
-import httpx
+import requests
 
 from ..config.settings import JiraSettings
 
@@ -26,22 +26,25 @@ class JiraClient:
         return f"{self._base_url}/rest/api/3/{path.lstrip('/')}"
 
     def get(self, path: str, params: Optional[dict] = None) -> Any:
-        with httpx.Client(headers=self._headers, timeout=self._timeout) as client:
-            resp = client.get(self._url(path), params=params)
-            resp.raise_for_status()
-            return resp.json()
+        resp = requests.get(
+            self._url(path), headers=self._headers, params=params, timeout=self._timeout
+        )
+        resp.raise_for_status()
+        return resp.json()
 
     def post(self, path: str, data: dict) -> Any:
-        with httpx.Client(headers=self._headers, timeout=self._timeout) as client:
-            resp = client.post(self._url(path), json=data)
-            resp.raise_for_status()
-            return resp.json()
+        resp = requests.post(
+            self._url(path), headers=self._headers, json=data, timeout=self._timeout
+        )
+        resp.raise_for_status()
+        return resp.json()
 
     def put(self, path: str, data: dict) -> Any:
-        with httpx.Client(headers=self._headers, timeout=self._timeout) as client:
-            resp = client.put(self._url(path), json=data)
-            resp.raise_for_status()
-            return resp.json()
+        resp = requests.put(
+            self._url(path), headers=self._headers, json=data, timeout=self._timeout
+        )
+        resp.raise_for_status()
+        return resp.json()
 
     def get_issue(self, key: str) -> dict:
         return self.get(f"issue/{key}")
@@ -50,9 +53,13 @@ class JiraClient:
         return self.post("issue", {"fields": fields})
 
     def update_issue(self, key: str, fields: dict) -> None:
-        with httpx.Client(headers=self._headers, timeout=self._timeout) as client:
-            resp = client.put(self._url(f"issue/{key}"), json={"fields": fields})
-            resp.raise_for_status()
+        resp = requests.put(
+            self._url(f"issue/{key}"),
+            headers=self._headers,
+            json={"fields": fields},
+            timeout=self._timeout,
+        )
+        resp.raise_for_status()
 
     def add_link(self, issue_key: str, linked_issue_key: str, link_type: str = "Test") -> dict:
         return self.post("issueLink", {

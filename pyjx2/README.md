@@ -20,7 +20,7 @@ pip install -e .
 Or install dependencies manually:
 
 ```bash
-pip install httpx typer rich textual toml jsonschema
+pip install requests typer rich textual toml jsonschema
 ```
 
 ## Configuration

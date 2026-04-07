@@ -10,7 +10,7 @@ setup(
     package_data={"pyjx2": ["infrastructure/config/schema.json"]},
     python_requires=">=3.10",
     install_requires=[
-        "httpx>=0.24",
+        "requests>=2.28",
         "typer>=0.9",
         "rich>=13",
         "textual>=0.40",

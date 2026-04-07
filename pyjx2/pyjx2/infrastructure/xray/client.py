@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import mimetypes
 from typing import Any, Optional
 
-import httpx
+import requests
 
 from ..config.settings import XraySettings
 
@@ -21,16 +22,15 @@ class XrayClient:
 
     def _authenticate(self) -> str:
         url = f"{self._base_url}/authenticate"
-        with httpx.Client(timeout=self._timeout) as client:
-            resp = client.post(
-                url,
-                json={"client_id": self._client_id, "client_secret": self._client_secret},
-                headers={"Content-Type": "application/json"},
-            )
-            resp.raise_for_status()
-            token = resp.text.strip('"')
-            self._token = token
-            return token
+        resp = requests.post(
+            url,
+            json={"client_id": self._client_id, "client_secret": self._client_secret},
+            headers={"Content-Type": "application/json"},
+            timeout=self._timeout,
+        )
+        resp.raise_for_status()
+        self._token = resp.text.strip('"')
+        return self._token
 
     def _get_token(self) -> str:
         if not self._token:
@@ -46,18 +46,12 @@ class XrayClient:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         url = f"{self._base_url}/{path.lstrip('/')}"
-        with httpx.Client(headers=self._headers(), timeout=self._timeout) as client:
-            resp = getattr(client, method)(url, **kwargs)
-            if resp.status_code == 401:
-                self._token = None
-                resp = getattr(
-                    httpx.Client(headers=self._headers(), timeout=self._timeout),
-                    method,
-                )(url, **kwargs)
-            resp.raise_for_status()
-            if resp.content:
-                return resp.json()
-            return None
+        resp = requests.request(method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs)
+        if resp.status_code == 401:
+            self._token = None
+            resp = requests.request(method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs)
+        resp.raise_for_status()
+        return resp.json() if resp.content else None
 
     def get(self, path: str, params: Optional[dict] = None) -> Any:
         return self._request("get", path, params=params)
@@ -69,30 +63,27 @@ class XrayClient:
         return self._request("put", path, json=data)
 
     def graphql(self, query: str, variables: Optional[dict] = None) -> dict:
-        with httpx.Client(headers=self._headers(), timeout=self._timeout) as client:
-            resp = client.post(
-                self.GRAPHQL_URL,
-                json={"query": query, "variables": variables or {}},
-            )
-            resp.raise_for_status()
-            result = resp.json()
-            if "errors" in result:
-                raise RuntimeError(f"GraphQL errors: {result['errors']}")
-            return result.get("data", {})
+        resp = requests.post(
+            self.GRAPHQL_URL,
+            headers=self._headers(),
+            json={"query": query, "variables": variables or {}},
+            timeout=self._timeout,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        if "errors" in result:
+            raise RuntimeError(f"GraphQL errors: {result['errors']}")
+        return result.get("data", {})
 
     def upload_file(self, path: str, file_path: str) -> Any:
         url = f"{self._base_url}/{path.lstrip('/')}"
-        with open(file_path, "rb") as f:
-            content = f.read()
-        import mimetypes
         mime_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
-        with httpx.Client(timeout=self._timeout) as client:
-            resp = client.post(
+        with open(file_path, "rb") as f:
+            resp = requests.post(
                 url,
-                headers={
-                    "Authorization": f"Bearer {self._get_token()}",
-                },
-                files={"file": (file_path, content, mime_type)},
+                headers={"Authorization": f"Bearer {self._get_token()}"},
+                files={"file": (file_path, f, mime_type)},
+                timeout=self._timeout,
             )
-            resp.raise_for_status()
-            return resp.json() if resp.content else None
+        resp.raise_for_status()
+        return resp.json() if resp.content else None
