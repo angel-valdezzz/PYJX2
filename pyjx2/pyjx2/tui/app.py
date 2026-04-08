@@ -29,6 +29,7 @@ from textual.widgets import (
 from textual.reactive import reactive
 
 from ..infrastructure.config import load_settings
+from ..infrastructure.config.settings import Settings, JiraSettings, XraySettings
 from ..api.client import PyJX2
 
 
@@ -545,8 +546,9 @@ class PyJX2App(App):
         elif bid == "btn-sync-browse": self._open_picker("folder")
         elif bid == "btn-sync-add-subgroup": self._add_subgroup()
         elif bid and bid.startswith("btn-remove-subgroup-"): self._remove_subgroup(int(bid.split("-")[-1]))
-        elif bid == "btn-setup-run": self.run_worker(self._run_setup())
-        elif bid == "btn-sync-run": self.run_worker(self._run_sync())
+        elif bid == "btn-setup-run": self.run_worker(self._run_setup, thread=True)
+        elif bid == "btn-sync-run": self.run_worker(self._run_sync, thread=True)
+
         elif bid == "btn-setup-clear": self.query_one("#setup-log", Log).clear()
         elif bid == "btn-sync-clear": self.query_one("#sync-log", Log).clear()
         elif bid == "btn-sec-copy":
@@ -747,15 +749,25 @@ class PyJX2App(App):
         except Exception: pass
 
     def _build_pjx(self, mode, log_id):
-        from ..core.pjx_facade import PyJX2
         try:
-            return PyJX2(
-                jira_base_url="https://jira.axa.com" if self.query_one("#sync-env-qa", RadioButton).value else "https://jira-dev.axa.com",
-                jira_username=self._get_input("sync-jira-username"),
-                jira_password=self._get_input("sync-jira-password")
-            )
+            # Capture environment and credentials from UI
+            is_qa = self.query_one("#sync-env-qa", RadioButton).value
+            env = "QA" if is_qa else "DEV"
+            
+            username = self._get_input("sync-jira-username")
+            password = self._get_input("sync-jira-password")
+            
+            # Construct Jira and Xray settings (recycling credentials)
+            jira = JiraSettings(username=username, password=password, env=env)
+            xray = XraySettings(client_id=username, client_secret=password)
+            
+            # Create in-memory settings container
+            settings = Settings(jira=jira, xray=xray)
+            
+            return PyJX2(settings)
+            
         except Exception as e:
-            self._log(log_id, f"[ERROR] {e}")
+            self._log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
             return None
 
     def _kill_mkdocs(self):
