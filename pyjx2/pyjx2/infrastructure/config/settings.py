@@ -100,6 +100,15 @@ def _dict_to_settings(data: dict) -> Settings:
     setup_data = data.get("setup", {})
     sync_data = data.get("sync", {})
 
+    # Recycle Jira credentials for Xray if missing
+    xray_id = xray_data.get("client_id") or jira_data.get("username")
+    xray_secret = xray_data.get("client_secret") or jira_data.get("password")
+
+    if not jira_data.get("username") or not jira_data.get("password"):
+        raise ValueError("Missing Jira credentials (username/password)")
+    if not xray_id or not xray_secret:
+        raise ValueError("Missing Xray credentials (recycled or explicit)")
+
     return Settings(
         jira=JiraSettings(
             env=jira_data.get("env", "QA"),
@@ -107,8 +116,8 @@ def _dict_to_settings(data: dict) -> Settings:
             password=jira_data["password"],
         ),
         xray=XraySettings(
-            client_id=xray_data["client_id"],
-            client_secret=xray_data["client_secret"],
+            client_id=xray_id,
+            client_secret=xray_secret,
             base_url=xray_data.get("base_url", "https://xray.cloud.getxray.app/api/v2"),
         ),
         setup=SetupDefaults(
@@ -181,16 +190,21 @@ def load_settings(
             else:
                 data[section] = values
 
-    required_fields = {
-        "jira": ["username", "password"],
-        "xray": ["client_id", "client_secret"],
-    }
+    # Validation: Jira is always required. 
+    # Xray is required but can be recycled from Jira.
     missing = []
-    for section, fields in required_fields.items():
-        sec_data = data.get(section, {})
-        for f in fields:
-            if not sec_data.get(f):
-                missing.append(f"{section}.{f}")
+    
+    jira_data = data.get("jira", {})
+    if not jira_data.get("username"): missing.append("jira.username")
+    if not jira_data.get("password"): missing.append("jira.password")
+    
+    xray_data = data.get("xray", {})
+    # Xray client_id/secret are missing if NOT explicitly set AND Jira equivalents are also missing
+    if not (xray_data.get("client_id") or jira_data.get("username")):
+        missing.append("xray.client_id")
+    if not (xray_data.get("client_secret") or jira_data.get("password")):
+        missing.append("xray.client_secret")
+
     if missing:
         raise ValueError(
             f"Missing required configuration: {', '.join(missing)}. "

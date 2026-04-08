@@ -66,20 +66,29 @@ class TestLoadSettingsFromOverrides:
         with pytest.raises(ValueError, match="jira.password"):
             load_settings(overrides=overrides)
 
-    def test_missing_xray_secret_raises(self):
+    def test_recycles_jira_credentials_for_xray(self):
         overrides = {
-            "jira": {"env": "QA", "username": "u", "password": "t"},
-            "xray": {"client_id": "cid"},
+            "jira": {"env": "QA", "username": "u@test.com", "password": "token"},
+            # No xray section at all
         }
-        with pytest.raises(ValueError, match="xray.client_secret"):
-            load_settings(overrides=overrides)
+        s = load_settings(overrides=overrides)
+        assert s.xray.client_id == "u@test.com"
+        assert s.xray.client_secret == "token"
+
+    def test_explicit_xray_wins_over_recycled(self):
+        overrides = {
+            "jira": {"env": "QA", "username": "u", "password": "p"},
+            "xray": {"client_id": "explicit_id", "client_secret": "explicit_secret"},
+        }
+        s = load_settings(overrides=overrides)
+        assert s.xray.client_id == "explicit_id"
+        assert s.xray.client_secret == "explicit_secret"
 
     def test_missing_all_credentials_raises(self):
         with pytest.raises(ValueError) as exc_info:
             load_settings()
         msg = str(exc_info.value)
-        assert "jira.username" in msg
-        assert "xray.client_id" in msg
+        assert "jira.username" in msg or "Jira credentials" in msg
 
     def test_setup_defaults_populated(self):
         overrides = self._valid_overrides()
@@ -179,13 +188,14 @@ client_secret = "csec"
         s = load_settings(config_file=str(cfg))
         assert s.jira.username == "u@example.com"
 
-    def test_invalid_json_missing_xray_section_fails_schema(self, tmp_path):
+    def test_json_without_xray_section_recycles_and_passes(self, tmp_path):
         cfg = tmp_path / "pyjx2.json"
         cfg.write_text(json.dumps({
-            "jira": {"env": "QA", "username": "u", "password": "t"}
+            "jira": {"env": "QA", "username": "u@test.com", "password": "token"}
         }))
-        with pytest.raises(Exception):
-            load_settings(config_file=str(cfg))
+        s = load_settings(config_file=str(cfg))
+        assert s.jira.username == "u@test.com"
+        assert s.xray.client_id == "u@test.com"
 
 
 class TestEnvironmentVariableOverrides:

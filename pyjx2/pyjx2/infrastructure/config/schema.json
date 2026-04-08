@@ -40,8 +40,7 @@
           "type": "string",
           "description": "Xray API base URL (default: https://xray.cloud.getxray.app/api/v2)"
         }
-      },
-      "required": ["client_id", "client_secret"]
+      }
     },
     "setup": {
       "type": "object",
@@ -100,5 +99,5 @@
       }
     }
   },
-  "required": ["jira", "xray"]
+  "required": ["jira"]
 }

@@ -1,58 +1,66 @@
-Feature: Configuration Loading
-  As a pyjx2 user
-  I want to configure the tool via files, environment variables, or CLI arguments
-  So that I can adapt it to any workflow without repeating credentials
+# language: es
 
-  Scenario: Settings are loaded from a TOML config file
-    Given a TOML config file with valid credentials
-    When I load settings from that file
-    Then the Jira environment is "QA"
-    And the Xray client ID is "my_client"
-    And the setup test plan key is "PROJ-100"
-    And the sync status is "PASS"
+Característica: Carga de Configuración
+  Como usuario de pyjx2
+  Quiero configurar la herramienta mediante archivos, variables de entorno o argumentos de CLI
+  Para poder adaptarla a cualquier flujo de trabajo sin repetir credenciales
 
-  Scenario: Settings are loaded from a JSON config file
-    Given a JSON config file with valid credentials
-    When I load settings from that file
-    Then the Jira username is "user@example.com"
-    And the Xray client ID is "json_client"
-    And the setup reuse_tests is True
-    And the sync recursive is False
+  Escenario: Los ajustes se cargan desde un archivo de configuración TOML
+    Dado un archivo de configuración TOML con credenciales válidas
+    Cuando cargo los ajustes desde ese archivo
+    Entonces el entorno de Jira es "QA"
+    Y el ID de cliente de Xray es "my_client"
+    Y la clave del plan de pruebas de preparación es "PROJ-100"
+    Y el estado de sincronización es "PASS"
 
-  Scenario: pyjx2.toml is auto-discovered in the current directory
-    Given a "pyjx2.toml" file exists in the current directory
-    When I load settings without specifying a file
-    Then the Jira environment is "QA"
+  Escenario: Los ajustes se cargan desde un archivo de configuración JSON
+    Dado un archivo de configuración JSON con credenciales válidas
+    Cuando cargo los ajustes desde ese archivo
+    Entonces el usuario de Jira es "user@example.com"
+    Y el ID de cliente de Xray es "json_client"
+    Y el valor de reutilizar pruebas en preparación es Verdadero
+    Y el valor de recursividad en sincronización es Falso
 
-  Scenario: pyjx2.json is auto-discovered in the current directory
-    Given a "pyjx2.json" file exists in the current directory
-    When I load settings without specifying a file
-    Then the Jira environment is "DEV"
+  Escenario: pyjx2.toml es auto-descubierto en el directorio actual
+    Dado que existe un archivo "pyjx2.toml" en el directorio actual
+    Cuando cargo los ajustes sin especificar un archivo
+    Entonces el entorno de Jira es "QA"
 
-  Scenario: Runtime overrides take precedence over the config file
-    Given a TOML config file with valid credentials
-    When I load settings from that file with password override "runtime_token"
-    Then the Jira password is "runtime_token"
-    And the Jira environment is still "QA"
+  Escenario: pyjx2.json es auto-descubierto en el directorio actual
+    Dado que existe un archivo "pyjx2.json" en el directorio actual
+    Cuando cargo los ajustes sin especificar un archivo
+    Entonces el entorno de Jira es "DEV"
 
-  Scenario: Environment variables take precedence over the config file
-    Given a TOML config file with valid credentials
-    And the environment variable "PYJX2_JIRA_PASSWORD" is set to "env_token"
-    When I load settings from that file
-    Then the Jira password is "env_token"
+  Escenario: Los valores en tiempo de ejecución tienen prioridad sobre el archivo
+    Dado un archivo de configuración TOML con credenciales válidas
+    Cuando cargo los ajustes desde ese archivo con el password sobreescrito como "runtime_token"
+    Entonces el password de Jira es "runtime_token"
+    Y el entorno de Jira sigue siendo "QA"
 
-  Scenario: Missing required fields raise a descriptive error
-    When I load settings with no configuration at all
-    Then a "ValueError" is raised
-    And the error message mentions "jira.username"
-    And the error message mentions "xray.client_id"
+  Escenario: Las variables de entorno tienen prioridad sobre el archivo
+    Dado un archivo de configuración TOML con credenciales válidas
+    Y la variable de entorno "PYJX2_JIRA_PASSWORD" está establecida como "env_token"
+    Cuando cargo los ajustes desde ese archivo
+    Entonces el password de Jira es "env_token"
 
-  Scenario: Invalid sync status in config fails schema validation
-    Given a TOML config file with invalid sync status "NOT_VALID"
-    When I load settings from that file
-    Then a schema validation error is raised
+  Escenario: La falta de campos obligatorios lanza un error descriptivo
+    Cuando cargo los ajustes sin ninguna configuración
+    Entonces se lanza un error de tipo "ValueError"
+    Y el mensaje de error menciona "jira.username"
+    Y el mensaje de error menciona "xray.client_id"
 
-  Scenario: Missing required jira.username in JSON fails schema validation
-    Given a JSON config file missing "username" in the jira section
-    When I load settings from that file
-    Then a schema validation error is raised
+  Escenario: Un estado de sincronización inválido falla la validación del esquema
+    Dado un archivo de configuración TOML con un estado de sincronización inválido "NOT_VALID"
+    Cuando cargo los ajustes desde ese archivo
+    Entonces se lanza un error de validación de esquema
+
+  Escenario: La falta del campo obligatorio jira.username en JSON falla la validación
+    Dado un archivo de configuración JSON al que le falta el campo "username" en la sección jira
+    Cuando cargo los ajustes desde ese archivo
+    Entonces se lanza un error de validación de esquema
+
+  Escenario: Las credenciales de Jira se reciclan para Xray si faltan
+    Dado un archivo de configuración TOML sin sección Xray
+    Cuando cargo los ajustes desde ese archivo con el password sobreescrito como "recycled_token"
+    Entonces el ID de cliente de Xray es "user@example.com"
+    Y el password de Jira es "recycled_token"
