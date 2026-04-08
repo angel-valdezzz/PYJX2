@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import Optional
 
+import os
+import subprocess
+import threading
+import time
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -226,6 +230,85 @@ def sync(
         console.print(f"[yellow]Unmatched files ({len(result.unmatched_files)}):[/yellow]")
         for f in result.unmatched_files:
             console.print(f"  [dim]{f}[/dim]")
+
+
+# ── docs command ───────────────────────────────────────────────────────────────
+
+@app.command()
+def docs() -> None:
+    """
+    [bold]Docs[/bold] — launch the user manual in full-screen mode.
+    
+    Starts a local documentation server and opens Google Chrome in full-screen.
+    The server will stop automatically when you interrupt this command (Ctrl+C).
+    """
+    import webbrowser
+
+    # script is in pyjx2/pyjx2/cli/app.py
+    # we need to go up to pyjx2/ (where mkdocs.yml is)
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    
+    if not os.path.isdir(os.path.join(base_dir, "docs")):
+        console.print(f"[bold red]Error:[/bold red] Directorio de documentación no encontrado en {base_dir}")
+        raise typer.Exit(code=1)
+
+    console.print(f"\n[bold cyan]Iniciando Servidor de Documentación...[/bold cyan]")
+    console.print(f"[dim]Ruta: {base_dir}[/dim]\n")
+    
+    proc = None
+    try:
+        # Start mkdocs server in background
+        proc = subprocess.Popen(
+            ["mkdocs", "serve"], 
+            cwd=base_dir, 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        )
+        
+        def open_browser():
+            time.sleep(1.5) # Give it a bit more time for CLI environment
+            url = "http://127.0.0.1:8000"
+            try:
+                if os.name == "nt": # Windows
+                    chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+                    edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+                    
+                    if os.path.isfile(chrome_path):
+                        subprocess.Popen([chrome_path, "--new-window", "--start-fullscreen", url])
+                    elif os.path.isfile(edge_path):
+                        subprocess.Popen([edge_path, "--new-window", "--start-fullscreen", url])
+                    else:
+                        webbrowser.open(url)
+                else:
+                    webbrowser.open(url)
+            except Exception:
+                webbrowser.open(url)
+
+        threading.Thread(target=open_browser, daemon=True).start()
+        
+        console.print("[bold green]¡Documentación abierta![/bold green]")
+        console.print("[yellow]Presiona Ctrl+C para cerrar el manual y detener el servidor.[/yellow]\n")
+        
+        # Idle until interrupted
+        while True:
+            if proc.poll() is not None:
+                console.print("[bold red]El servidor de MkDocs se detuvo inesperadamente.[/bold red]")
+                break
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        console.print("\n[bold yellow]Deteniendo servidor...[/bold yellow]")
+    except Exception as e:
+        console.print(f"\n[bold red]Error inesperado:[/bold red] {e}")
+    finally:
+        if proc:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except Exception:
+                try: proc.kill()
+                except Exception: pass
+        console.print("[green]Servidor cerrado correctamente.[/green]\n")
 
 
 # ── tui command ────────────────────────────────────────────────────────────────
