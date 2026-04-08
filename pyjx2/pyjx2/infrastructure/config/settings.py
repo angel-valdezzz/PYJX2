@@ -93,30 +93,23 @@ def _find_config_file() -> Optional[Path]:
 
 
 def _dict_to_settings(data: dict) -> Settings:
-    jira_data = data.get("jira", {})
-    xray_data = data.get("xray", {})
+    auth_data = data.get("auth", {})
     setup_data = data.get("setup", {})
     sync_data = data.get("sync", {})
 
-    # Recycle Jira credentials for Xray if missing
-    xray_id = xray_data.get("client_id") or jira_data.get("username")
-    xray_secret = xray_data.get("client_secret") or jira_data.get("password")
-
-    if not jira_data.get("username") or not jira_data.get("password"):
-        raise ValueError("Missing Jira credentials (username/password)")
-    if not xray_id or not xray_secret:
-        raise ValueError("Missing Xray credentials (recycled or explicit)")
+    if not auth_data.get("username") or not auth_data.get("password"):
+        raise ValueError("Missing authentication credentials (username/password)")
 
     return Settings(
         jira=JiraSettings(
-            env=jira_data.get("env", "QA"),
-            username=jira_data["username"],
-            password=jira_data["password"],
+            env=auth_data.get("env", "QA"),
+            username=auth_data["username"],
+            password=auth_data["password"],
         ),
         xray=XraySettings(
-            client_id=xray_id,
-            client_secret=xray_secret,
-            base_url=xray_data.get("base_url", "https://xray.cloud.getxray.app/api/v2"),
+            client_id=auth_data["username"],
+            client_secret=auth_data["password"],
+            base_url="https://xray.cloud.getxray.app/api/v2",
         ),
         setup=SetupDefaults(
             test_plan_key=setup_data.get("test_plan_key"),
@@ -137,12 +130,9 @@ def _dict_to_settings(data: dict) -> Settings:
 def _apply_env_overrides(data: dict) -> dict:
     """Allow environment variables to override config values."""
     env_map = {
-        "PYJX2_JIRA_ENV": ("jira", "env"),
-        "PYJX2_JIRA_USERNAME": ("jira", "username"),
-        "PYJX2_JIRA_PASSWORD": ("jira", "password"),
-        "PYJX2_XRAY_CLIENT_ID": ("xray", "client_id"),
-        "PYJX2_XRAY_CLIENT_SECRET": ("xray", "client_secret"),
-        "PYJX2_XRAY_BASE_URL": ("xray", "base_url"),
+        "PYJX2_AUTH_ENV": ("auth", "env"),
+        "PYJX2_AUTH_USERNAME": ("auth", "username"),
+        "PYJX2_AUTH_PASSWORD": ("auth", "password"),
     }
     result = {k: dict(v) for k, v in data.items()} if data else {}
     for env_key, (section, key) in env_map.items():
@@ -186,25 +176,17 @@ def load_settings(
             else:
                 data[section] = values
 
-    # Validation: Jira is always required. 
-    # Xray is required but can be recycled from Jira.
+    # Validation: Auth credentials are always required.
     missing = []
     
-    jira_data = data.get("jira", {})
-    if not jira_data.get("username"): missing.append("jira.username")
-    if not jira_data.get("password"): missing.append("jira.password")
-    
-    xray_data = data.get("xray", {})
-    # Xray client_id/secret are missing if NOT explicitly set AND Jira equivalents are also missing
-    if not (xray_data.get("client_id") or jira_data.get("username")):
-        missing.append("xray.client_id")
-    if not (xray_data.get("client_secret") or jira_data.get("password")):
-        missing.append("xray.client_secret")
+    auth_data = data.get("auth", {})
+    if not auth_data.get("username"): missing.append("auth.username")
+    if not auth_data.get("password"): missing.append("auth.password")
 
     if missing:
         raise ValueError(
             f"Missing required configuration: {', '.join(missing)}. "
-            "Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_*), or CLI arguments."
+            "Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_AUTH_*), or CLI arguments."
         )
 
     return _dict_to_settings(data)

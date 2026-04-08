@@ -1,74 +1,149 @@
-Todos los comandos en CLI son una abstracción que cubre las dependencias físicas para acceder a nuestro núcleo: Nuestro objeto constructor `PyJX2` (Facade).
+# API Python (Para Desarrolladores)
 
-## Inicialización
+PyJX2 expone una interfaz programática robusta a través del patrón **Facade**, permitiendo a los desarrolladores integrar las capacidades de Jira y Xray directamente en sus propios scripts y rutinas de automatización.
 
-Empieza leyendo la configuración local tal y como la lee el cli invocando la librería de Config.
+## Inicialización y Factorías
+
+Existen múltiples formas de instanciar el cliente principal dependiendo del origen de los datos.
+
+### Mediante Configuración Automática
+Ideal cuando se cuenta con un archivo `pyjx2.toml` o variables de entorno.
 
 ```python
-from pyjx2.api.client import PyJX2
-from pyjx2.infrastructure.config.settings import load_settings
+from pyjx2 import PyJX2
 
-settings = load_settings()
-pjx = PyJX2(settings)
+# Discovery: looks for pyjx2.toml or pyjx2.json in current directory
+pjx = PyJX2.from_config()
 ```
 
-## Exploración Básica
-
-Con `pjx` al mando, tienes acceso directo, claro, y tipado a operaciones unitarias (Cosa que la CLI a menudo pre-empaqueta pero no expone crudamente).
-
-```python
-test = pjx.get_test("PROJ-123")
-```
+### Mediante Credenciales Explícitas
+Útil para integraciones dinámicas donde las credenciales se obtienen de un Vault o gestor de secretos.
 
 ```python
-new_test = pjx.create_test("PROJ", "My new test", labels=["regression"])
-```
+from pyjx2 import PyJX2
 
-```python
-pjx.update_test_status("PROJ-200", "PROJ-123", "PASS")
-```
-
-```python
-ts = pjx.create_test_set("PROJ", "My Test Set")
-pjx.add_tests_to_set(ts.key, ["PROJ-123", "PROJ-124"])
-```
-
-## Flujos Grandes
-
-Si tu propio Script sólo desea un atajo o wrapper rápido para un plan pre-establecido automatizado en el CI, puedes inyectar las funciones macro de `Run/Sync` enviando tus *callbacks* que reciban los Strings por paso a modo de rastreo.
-
-```python
-def my_custom_logger(msg: str):
-    print(f"[LOG] {msg}")
-
-result = pjx.setup(
-    project_key="PROJ",
-    test_plan_key="PROJ-100",
-    execution_summary="Execution",
-    test_set_summary="Test Set",
-    progress_callback=my_custom_logger,
+pjx = PyJX2.from_credentials(
+    username="user@company.com",
+    password="api_token_here",
+    env="QA"  # or "DEV"
 )
 ```
 
-## Funciones Auxiliares Estáticas de Seguridad
+---
 
-En el caso estricto en que sólo desees usar nuestra funcionalidad interna para procesar Strings `ENC:` sin tocar conexiones de Jira, se exponen dos métodos en la clase principal que pueden llamarse sin instanciar:
+## Gestión de Entidades (CRUD)
+
+El Facade proporciona acceso simplificado a las entidades principales de Xray.
+
+### Tests
+Operaciones unitarias sobre casos de prueba individuales.
 
 ```python
-from pyjx2.api.client import PyJX2
+# Fetch a test
+test = pjx.get_test("QAX-123")
 
-mi_candado = PyJX2.encrypt_password("12345")
-# Retorna: ENC:ZgAAAAABlkX2...
+# Create a new manual test
+new_test = pjx.create_test(
+    project_key="QAX",
+    summary="Login Validation",
+    test_type="Manual",
+    labels=["regression", "high-priority"]
+)
 
-es_igual = PyJX2.decrypt_password(mi_candado)
-print("12345" == es_igual) # True
+# Clone an existing test
+cloned = pjx.clone_test("QAX-101", "QAX")
 ```
 
-## Vías de Escape Crudas
-
-Eventualmente nosotros o Xray actualizarán las APIs, y ciertos Endpoints tardarán un poco en llegar a nivel PYJX2.
-Puedes interceptar variables a nivel `JiraClient` y `XrayClient` haciendo uso de tu objeto instanciado con métodos directos y seguros REST que se autenticarán correctamente en Header y Body con Json automático.
+### Test Sets
+Agrupaciones lógicas de casos de prueba.
 
 ```python
-un_nuevo_metodo = pjx.jira.post("testexec/12345/test", {"add": ["PROJ-123"]})
+# Create a test set
+ts = pjx.create_test_set("QAX", "Sprint 1 Regression Set")
+
+# Add tests to a set
+pjx.add_tests_to_set(ts.key, ["QAX-110", "QAX-111", "QAX-112"])
+
+# Update metadata
+pjx.update_test_set(ts.key, summary="Updated Set Title")
+```
+
+### Test Executions
+Instancias de ejecución donde se registran los resultados.
+
+```python
+# Create an execution
+exec_issue = pjx.create_test_execution(
+    project_key="QAX", 
+    summary="Daily Execution - 2024-04-08"
+)
+
+# Link a test set to an execution
+pjx.add_test_set_to_execution(exec_issue.key, ts.key)
+```
+
+---
+
+## Flujos de Negocio (Business Logic)
+
+PyJX2 encapsula procesos complejos en métodos de alto nivel que incluyen orquestación y reporte de progreso.
+
+### Método `setup`
+Orquesta la creación de planes de ejecución completos.
+
+```python
+def my_logger(msg: str):
+    print(f"PyJX2 Event: {msg}")
+
+result = pjx.setup(
+    test_plan_key="QAX-100",
+    execution_summary="Weekly Regression",
+    application="APP_NAME",
+    test_mode="clone",  # "clone" or "add"
+    progress_callback=my_logger
+)
+
+print(f"Created Execution: {result.test_executions[0].key}")
+```
+
+### Método `sync`
+Sincroniza evidencias locales con Jira en un solo paso.
+
+```python
+result = pjx.sync(
+    execution_key="QAX-501",
+    folder="./test-reports/evidence",
+    status="PASS",
+    recursive=True,
+    upload_mode="append"  # "append" or "replace"
+)
+
+print(f"Updated {result.updated_tests} tests with evidence.")
+```
+
+---
+
+## Utilidades de Seguridad
+
+Métodos auxiliares para el manejo de credenciales cifradas.
+
+```python
+# Encrypt plain text for config files
+secret_token = PyJX2.encrypt_password("my_secret_password")
+# Result: "ENC:..."
+
+# Decrypt for audit / internal use
+plain = PyJX2.decrypt_password(secret_token)
+```
+
+## Vías de Escape (Escape Hatches)
+
+Si se requiere realizar operaciones REST crudas que no están expuestas en los métodos simplificados, se puede acceder directamente a los clientes de bajo nivel.
+
+```python
+# Post directly to Jira API
+pjx.jira.post("issue/QAX-123/comment", {"body": "Automation finished."})
+
+# Call Xray specific endpoints
+pjx.xray.get("testrun/123456")
 ```

@@ -13,6 +13,7 @@ nav:
   - Guías de Usuario:
       - Preparación (Setup): user-guides/setup.md
       - Sincronización (Sync): user-guides/sync.md
+      - Casos de Uso Comunes: user-guides/common-use-cases.md
   - Interfaces:
       - Línea de Comandos (CLI): interfaces/cli.md
       - Interfaz Gráfica (TUI): interfaces/tui.md

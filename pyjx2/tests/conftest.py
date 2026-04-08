@@ -28,10 +28,11 @@ def jira_settings():
 
 
 @pytest.fixture
-def xray_settings():
+def xray_settings(jira_settings):
+    # Recycled from jira_settings as per new policy
     return XraySettings(
-        client_id="xray_client_id",
-        client_secret="xray_client_secret",
+        client_id=jira_settings.username,
+        client_secret=jira_settings.password,
     )
 
 
@@ -131,14 +132,10 @@ def evidence_folder():
 def valid_toml_config(tmp_path):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text("""
-[jira]
+[auth]
 env = "QA"
 username = "user@example.com"
 password = "my_token"
-
-[xray]
-client_id = "my_client"
-client_secret = "my_secret"
 
 [setup]
 test_plan_key = "PROJ-100"
@@ -159,14 +156,10 @@ recursive = true
 def valid_json_config(tmp_path):
     cfg = tmp_path / "pyjx2.json"
     cfg.write_text(json.dumps({
-        "jira": {
+        "auth": {
             "env": "QA",
             "username": "user@example.com",
             "password": "my_json_token",
-        },
-        "xray": {
-            "client_id": "json_client",
-            "client_secret": "json_secret",
         },
         "setup": {
             "test_plan_key": "PROJ-200",

@@ -35,7 +35,7 @@ def _common_options(
     """Construye los overrides de credenciales y retorna una instancia de PyJX2."""
     overrides: dict = {}
     if env or jira_username or jira_password:
-        overrides["jira"] = {
+        overrides["auth"] = {
             "env": env,
             "username": jira_username,
             "password": jira_password,

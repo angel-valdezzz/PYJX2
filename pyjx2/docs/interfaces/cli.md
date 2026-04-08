@@ -1,67 +1,92 @@
 # Interfaz de Línea de Comandos (CLI)
 
-PYJX2 está construido sobre Typer y ofrece una interfaz para automatizaciones y pipelines mediante el uso de comandos y opciones directas.
+PyJX2 proporciona una interfaz de línea de comandos (CLI) potente y versátil construida sobre `Typer`, permitiendo la integración nativa en pipelines de CI/CD y despliegues automatizados.
 
-## Referencia Global 
+## Opciones Globales y Autenticación
+
+Todas las invocaciones de comandos admiten un conjunto de opciones comunes que permiten sobrescribir la configuración detectada automáticamente.
+
+| Opción | Alias | Descripción |
+| :--- | :--- | :--- |
+| `--config` | `-c` | Ruta absoluta o relativa al archivo `pyjx2.toml` o `pyjx2.json`. |
+| `--env` | | Define el entorno de conexión: `QA` (default) o `DEV`. |
+| `--jira-username`| `-u` | Identificador de usuario o email para la API de Jira. |
+| `--password` | `-p` | Contraseña o API Token (soporta formato `ENC:` cifrado). |
+
+---
+
+## Módulo: `setup`
+El subcomando setup se encarga de generar un ambiente en Jira para los casos de prueba.
 
 ```bash
-pyjx2 [SUBCOMMAND] [OPTIONS]
+# Ejemplo de uso estándar
+pyjx2 setup --test-plan QAX-101 --execution-summary "Sprint 10 Validation" --application CRM_WEB
 ```
 
-Opciones globales comunes:
-- `--config` / `-c`: Especifica una ruta personalizada para el archivo de configuración.
-- `--env`: Define el entorno (`QA` o `DEV`).
-- `--jira-username` / `-u`: Sobrescribe el usuario de Jira.
-- `--password`: Sobrescribe la contraseña de Jira.
+### Argumentos Específicos
+
+- **`--test-plan`**: (Obligatorio) Llave del Test Plan origen.
+- **`--execution-summary`** (`-e`): (Obligatorio) Título para el nuevo ticket de Test Execution.
+- **`--application`** (`-a`): (Obligatorio) Nombre identificador del componente bajo prueba.
+- **`--test-mode`** (`-m`): Define el tratamiento de los Test Cases:
+    - `clone` (Default): Crea copias nuevas de los tests en el proyecto destino.
+    - `add`: Agrega los tests originales directamente sin clonarlos.
 
 ---
 
-## Modulo: `setup`
-**Propósito:** Crea la estructura de ejecución en Jira (Test Execution + Test Set).
+## Módulo: `sync`
 
-| Flag | Tipo | Descripción |
-|---|---|---|
-| `--test-plan` | Text | Llave del Test Plan Jira (ej. PROJ-X). [MANDATORIO] |
-| `--execution-summary` / `-e` | Text | Título para el nuevo Test Execution. [MANDATORIO] |
-| `--application` / `-a` | Text | Calificador de aplicación (ej. AXA_WEB). [MANDATORIO] |
-| `--test-mode` / `-m` | Text | `clone` (copiar tests) o `add` (usar tests originales). Default: `clone`. |
+El comando `sync` escanea el sistema de archivos local para cargar evidencias y transicionar estados en Xray de forma masiva.
 
----
-
-## Modulo: `sync`
-**Propósito:** Sincroniza evidencias locales con las ejecuciones.
-
-| Flag | Tipo | Descripción |
-|---|---|---|
-| `--execution` / `-e` | Text | ID de la ejecución en Jira (ej. PROJ-200). [MANDATORIO] |
-| `--folder` / `-f` | Text | Carpeta local con las evidencias. [MANDATORIO] |
-| `--status` / `-s` | Text | Estado por defecto (PASS, FAIL, TODO, etc.). [MANDATORIO] |
-| `--mode` / `-m` | Text | `append` (añadir evidencias) o `replace` (limpiar previo). Default: `append`. |
-| `--extensions` | Text | Extensiones permitidas separadas por coma (ej. `.png,.jpg`). Default: `.pdf`. |
-| `--status-map` | JSON | Mapeo de llaves de test a estados específicos (ej. `'{"PROJ-1":"FAIL"}'`). |
-| `--recursive` / `-r` | Boolean | Escaneo recursivo de subcarpetas. Default: `True`. |
-| `--no-recursive` | Boolean | Desactiva el escaneo recursivo. |
-
----
-
-## Modulo: `docs`
-Accede al manual de usuario directamente desde la terminal.
 ```bash
-pyjx2 docs
+# Sincronización recursiva con modo append
+pyjx2 sync --execution QAX-200 --folder ./reports --status PASS --recursive
 ```
-Este comando activa un servidor local y abre automáticamente **Google Chrome** en modo pantalla completa con la documentación actual. Para detener el servidor, presiona `Ctrl+C`.
+
+### Argumentos Específicos
+
+- **`--execution`** (`-e`): (Obligatorio) Llave del Test Execution destino.
+- **`--folder`** (`-f`): (Obligatorio) Ruta al directorio que contiene las evidencias físicas.
+- **`--status`** (`-s`): Estado global a aplicar (`PASS`, `FAIL`, `TODO`, `EXECUTING`, `ABORTED`).
+- **`--recursive` / `--no-recursive`**: Habilita o deshabilita el escaneo de subdirectorios.
+- **`--extensions`**: Lista de extensiones separadas por coma (ej. `.pdf,.png,.jpg`). Por defecto `.pdf`.
+- **`--mode`** (`-m`): Define el comportamiento de la subida: `append` (añadir) o `replace` (reemplazar existente).
+- **`--status-map`**: Inyecta un JSON para definir estados heterogéneos por llave de test.
+    - Ejemplo: `--status-map '{"QAX-1":"FAIL", "QAX-2":"PASS"}'`
 
 ---
 
-## Modulo: `tui`
-Inicia la interfaz gráfica envolvente.
+<!--
+## Módulo: `config`
+
+Proporciona utilidades tácticas para el mantenimiento de credenciales y entornos.
+
+### `encrypt-pass`
+Genera un token cifrado mediante el algoritmo AES-128 integrado en PyJX2.
+```bash
+pyjx2 config encrypt-pass "mi_contraseña_real"
+# Salida: ENC:yXv5xT2_FqD6s...
+```
+
+### `decrypt-pass`
+Desencripta un token previamente generado para labores de auditoría técnica.
+```bash
+pyjx2 config decrypt-pass "ENC:yXv5xT2_FqD6s..."
+```
+-->
+
+---
+
+## Misceláneos
+
+### `tui`
+Lanza la interfaz gráfica táctil-terminal de PyJX2. Ideal para configuraciones manuales asistidas.
 ```bash
 pyjx2 tui
 ```
 
----
-
-## Modulo: `config` (Utilidades)
-
-- **`encrypt-pass`**: Cifra una contraseña para su uso seguro en archivos de configuración.
-- **`decrypt-pass`**: Revela el texto original de un token `ENC:`.
+### `docs`
+Inicia el motor de documentación local (MkDocs) y abre el manual completo en una ventana de navegador. Requiere tener `mkdocs` instalado.
+```bash
+pyjx2 docs
+```

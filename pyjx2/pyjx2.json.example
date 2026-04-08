@@ -1,5 +1,5 @@
 {
-  "jira": {
+  "auth": {
     "env": "QA",
     "username": "usuario@ejemplo.com",
     "password": "TU_PASSWORD_O_TOKEN"

@@ -48,9 +48,11 @@ Ideal para subir evidencias masivas desde tu computadora a Jira de forma automat
 
 ---
 
+<!--
 ## Pestaña F3: Configuración (Config) ⚠️
 > [!NOTE]
 > Esta pestaña se encuentra **deshabilitada** temporalmente en esta versión, ya que el manejo de credenciales se trasladó al panel global superior para mayor agilidad.
+-->
 
 ---
 

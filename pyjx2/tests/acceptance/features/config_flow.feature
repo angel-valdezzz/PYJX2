@@ -9,7 +9,7 @@ Característica: Carga de Configuración
     Dado un archivo de configuración TOML con credenciales válidas
     Cuando cargo los ajustes desde ese archivo
     Entonces el entorno de Jira es "QA"
-    Y el ID de cliente de Xray es "my_client"
+    Y el ID de cliente de Xray es "user@example.com"
     Y la clave del plan de pruebas de preparación es "PROJ-100"
     Y el estado de sincronización es "PASS"
 
@@ -17,7 +17,7 @@ Característica: Carga de Configuración
     Dado un archivo de configuración JSON con credenciales válidas
     Cuando cargo los ajustes desde ese archivo
     Entonces el usuario de Jira es "user@example.com"
-    Y el ID de cliente de Xray es "json_client"
+    Y el ID de cliente de Xray es "user@example.com"
     Y el valor de recursividad en sincronización es Falso
 
   Escenario: pyjx2.toml es auto-descubierto en el directorio actual
@@ -38,15 +38,14 @@ Característica: Carga de Configuración
 
   Escenario: Las variables de entorno tienen prioridad sobre el archivo
     Dado un archivo de configuración TOML con credenciales válidas
-    Y la variable de entorno "PYJX2_JIRA_PASSWORD" está establecida como "env_token"
+    Y la variable de entorno "PYJX2_AUTH_PASSWORD" está establecida como "env_token"
     Cuando cargo los ajustes desde ese archivo
     Entonces el password de Jira es "env_token"
 
   Escenario: La falta de campos obligatorios lanza un error descriptivo
     Cuando cargo los ajustes sin ninguna configuración
     Entonces se lanza un error de tipo "ValueError"
-    Y el mensaje de error menciona "jira.username"
-    Y el mensaje de error menciona "xray.client_id"
+    Y el mensaje de error menciona "auth.username"
 
   Escenario: Un estado de sincronización inválido falla la validación del esquema
     Dado un archivo de configuración TOML con un estado de sincronización inválido "NOT_VALID"
@@ -54,11 +53,11 @@ Característica: Carga de Configuración
     Entonces se lanza un error de validación de esquema
 
   Escenario: La falta del campo obligatorio jira.username en JSON falla la validación
-    Dado un archivo de configuración JSON al que le falta el campo "username" en la sección jira
+    Dado un archivo de configuración JSON al que le falta el campo "username" en la sección auth
     Cuando cargo los ajustes desde ese archivo
     Entonces se lanza un error de validación de esquema
 
-  Escenario: Las credenciales de Jira se reciclan para Xray si faltan
+  Escenario: Las credenciales de Jira se reciclan para Xray obligatoriamente
     Dado un archivo de configuración TOML sin sección Xray
     Cuando cargo los ajustes desde ese archivo con el password sobreescrito como "recycled_token"
     Entonces el ID de cliente de Xray es "user@example.com"

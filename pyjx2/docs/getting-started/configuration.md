@@ -1,78 +1,81 @@
-# Configuración de PYJX2
+# Configuración de PyJX2
 
-PYJX2 utiliza archivos de configuración para gestionar las credenciales y parámetros de conexión. Dependiendo de la interfaz que utilices, el manejo de estos archivos varía.
+PyJX2 utiliza un sistema de configuración jerárquico que permite definir parámetros a través de archivos fijos (`TOML`/`JSON`), variables de entorno o argumentos de línea de comandos.
 
-## Flexibilidad de Configuración
+## Orden de Prioridad
 
-1. **Uso en CLI y API (Obligatorio)**: Para operar mediante la línea de comandos o integrarlo como librería, es **estrictamente necesario** contar con un archivo `pyjx2.toml` o `pyjx2.json` en el directorio de ejecución, o definir las variables de entorno correspondientes.
-2. **Uso en TUI (Autónomo)**: La interfaz gráfica permite un funcionamiento sin archivos pre-existentes, ya que los datos pueden ser ingresados y gestionados directamente en los formularios de la aplicación.
+Cuando se lee una clave de configuración, PyJX2 sigue este orden de precedencia (de mayor a menor):
 
-## Prioridad de Esquema (CLI/API)
+1. **Argumento CLI Único** (`--test-plan`, `--status`, etc.)
+2. **Argumentos de Sobrescritura de Credenciales CLI** (`--jira-username`, `--password`)
+3. **Variables de Entorno** (`PYJX2_*`)
+4. **Archivo de Configuración Explícito** (Proporcionado vía `--config`)
+5. **Archivo Autodetectado** (`pyjx2.toml` o `pyjx2.json` en el directorio actual)
 
-Si existen múltiples fuentes de configuración, el orden de prioridad es:
+---
 
-1. Argumentos directos en CLI (`--jira-username xxx`).
-2. Variables de entorno (`PYJX2_...`).
-3. Archivo `pyjx2.toml`.
-4. Archivo `pyjx2.json`.
+## Esquema Técnico (Referencia Continua)
 
-## Archivos Soportados
+A continuación se detallan todas las secciones y claves admitidas por el motor de PyJX2.
 
-### pyjx2.toml (Recomendado)
+### Sección `[auth]`
+Configuración base para el motor de conexión con Atlassian.
 
-Crea el archivo `pyjx2.toml` copiando el ejemplo de la raíz:
+| Clave | Tipo | Valor por Defecto | Descripción |
+| :--- | :--- | :--- | :--- |
+| `username` | String | (Requerido) | Usuario o email con permisos de API en Jira Cloud. |
+| `password` | String | (Requerido) | API Token de Jira. Se recomienda usar formato cifrado `ENC:`. |
+| `env` | String | `QA` | Entorno de conexión. Valores: `QA`, `DEV`. |
 
-```toml
-[jira]
-env = "QA"
-username = "tu_usuario@ejemplo.com"
-password = "ENC:gAAAAA..." # Password cifrado
 
-[setup]
-test_plan_key = "PROJ-100"
-execution_summary = "Pruebas de Regresión"
-test_mode = "clone"         # "clone" u "add"
+### Sección `[setup]`
+Valores predeterminados para el flujo de preparación.
 
-[sync]
-execution_key = "PROJ-200"
-folder = "./evidencias"
-status = "PASS"
-upload_mode = "append"      # "append" o "replace"
-allowed_extensions = [".pdf", ".png"]
-```
+| Clave | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `test_plan_key` | String | Llave del Test Plan por defecto. |
+| `execution_summary` | String | Título genérico para nuevas ejecuciones. |
+| `test_mode` | String | Modo de operación: `clone` (Default) o `add`. |
 
-### pyjx2.json
+### Sección `[sync]`
+Valores predeterminados para el flujo de sincronización de evidencias.
 
-Alternativamente, puedes usar un archivo JSON si es preferido por tus sistemas de automatización:
+| Clave | Tipo | Valor por Defecto | Descripción |
+| :--- | :--- | :--- | :--- |
+| `execution_key` | String | | Llave del Test Execution por defecto. |
+| `folder` | String | | Path local a la carpeta de evidencias. |
+| `status` | String | `PASS` | Estado base a aplicar tras la sincronización. |
+| `recursive` | Boolean | `true` | Habilita el escaneo de subcarpetas. |
+| `upload_mode` | String | `append` | Modo de subida: `append` o `replace`. |
+| `allowed_extensions`| Array | `[".pdf"]` | Lista de extensiones a considerar. |
 
-```json
-{
-  "jira": {
-    "env": "QA",
-    "username": "admin@example.com",
-    "password": "ENC:gAAAAA..."
-  },
-  "setup": {
-    "test_plan_key": "PROJ-100",
-    "execution_summary": "Pruebas",
-    "test_mode": "clone"
-  },
-  "sync": {
-    "execution_key": "PROJ-200",
-    "folder": "./evidencias",
-    "status": "PASS",
-    "upload_mode": "append",
-    "allowed_extensions": [".pdf"]
-  }
-}
-```
+---
 
 ## Variables de Entorno
 
-PYJX2 leerá automáticamente las siguientes variables si están presentes en el sistema:
+PyJX2 escanea automáticamente el entorno local buscando el prefijo `PYJX2_`. Esto es ideal para integrar con secretos de CI/CD (Github Secrets, Jenkins Credentials).
 
-- `PYJX2_JIRA_ENV`: "QA" o "DEV".
-- `PYJX2_JIRA_USERNAME`: Correo o usuario de Jira.
-- `PYJX2_JIRA_PASSWORD`: Contraseña (plana o cifrada con prefix `ENC:`).
-- `PYJX2_XRAY_CLIENT_ID`: ID de cliente (opcional, cae en fallback al usuario de Jira).
-- `PYJX2_XRAY_CLIENT_SECRET`: Secreto de cliente (opcional, cae en fallback a la contraseña de Jira).
+- `PYJX2_AUTH_USERNAME`
+- `PYJX2_AUTH_PASSWORD` (Soporta `ENC:`)
+- `PYJX2_AUTH_ENV`
+
+---
+
+## Ejemplo Completo (`pyjx2.toml`)
+
+```toml
+[auth]
+username = "admin@example.com"
+password = "ENC:gAAAAABlkX2..."
+env = "QA"
+
+[setup]
+test_mode = "add"
+execution_summary = "Nightly Test Execution"
+
+[sync]
+folder = "./evidence"
+status = "PASS"
+recursive = true
+allowed_extensions = [".pdf", ".png", ".jpg"]
+```

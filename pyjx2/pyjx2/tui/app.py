@@ -406,7 +406,7 @@ class PyJX2App(App):
 
     def _compose_auth_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Autenticación — Credenciales de Acceso Jira / Xray", classes="panel-title")
+            yield Static("Autenticación — Credenciales de Acceso [Auth]", classes="panel-title")
             with Container(classes="panel", id="auth-tab-panel"):
                 yield Static("Credenciales Requeridas", classes="section-subtitle")
                 with Horizontal(classes="field-row"):

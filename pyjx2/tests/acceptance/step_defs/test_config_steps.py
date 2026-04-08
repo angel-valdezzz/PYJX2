@@ -29,7 +29,7 @@ def _(ctx, valid_toml_config):
 def _(ctx, tmp_path):
     cfg = tmp_path / "pyjx2_no_xray.toml"
     cfg.write_text("""
-[jira]
+[auth]
 env = "QA"
 username = "user@example.com"
 password = "my_token"
@@ -48,14 +48,10 @@ def _(ctx, valid_json_config):
 def _(ctx, tmp_path, monkeypatch):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text("""
-[jira]
+[auth]
 env = "QA"
 username = "found@example.com"
 password = "found_token"
-
-[xray]
-client_id = "found_cid"
-client_secret = "found_csec"
 """)
     monkeypatch.chdir(tmp_path)
     ctx["config_file"] = None
@@ -66,12 +62,11 @@ client_secret = "found_csec"
 def _(ctx, tmp_path, monkeypatch):
     cfg = tmp_path / "pyjx2.json"
     cfg.write_text(json.dumps({
-        "jira": {
+        "auth": {
             "env": "DEV",
             "username": "json@example.com",
             "password": "json_token",
         },
-        "xray": {"client_id": "jcid", "client_secret": "jcsec"},
     }))
     monkeypatch.chdir(tmp_path)
     ctx["config_file"] = None
@@ -88,14 +83,10 @@ def _(ctx, var, value):
 def _(ctx, tmp_path, status):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text(f"""
-[jira]
+[auth]
 env = "QA"
 username = "user@example.com"
 password = "token"
-
-[xray]
-client_id = "cid"
-client_secret = "csec"
 
 [sync]
 status = "{status}"
@@ -103,19 +94,18 @@ status = "{status}"
     ctx["config_file"] = str(cfg)
 
 
-@given(parsers.parse('a JSON config file missing "{field}" in the jira section'))
-@given(parsers.parse('un archivo de configuración JSON al que le falta el campo "{field}" en la sección jira'))
+@given(parsers.parse('a JSON config file missing "{field}" in the auth section'))
+@given(parsers.parse('un archivo de configuración JSON al que le falta el campo "{field}" en la sección auth'))
 def _(ctx, tmp_path, field):
-    jira = {
+    auth = {
         "env": "QA",
         "username": "user@example.com",
         "password": "token",
     }
-    del jira[field]
+    del auth[field]
     cfg = tmp_path / "pyjx2.json"
     cfg.write_text(json.dumps({
-        "jira": jira,
-        "xray": {"client_id": "c", "client_secret": "s"},
+        "auth": auth,
     }))
     ctx["config_file"] = str(cfg)
 
@@ -152,11 +142,9 @@ def _(ctx):
 @when("cargo los ajustes sin ninguna configuración")
 def _(ctx):
     env_clear = {
-        "PYJX2_JIRA_ENV": "",
-        "PYJX2_JIRA_USERNAME": "",
-        "PYJX2_JIRA_PASSWORD": "",
-        "PYJX2_XRAY_CLIENT_ID": "",
-        "PYJX2_XRAY_CLIENT_SECRET": "",
+        "PYJX2_AUTH_ENV": "",
+        "PYJX2_AUTH_USERNAME": "",
+        "PYJX2_AUTH_PASSWORD": "",
     }
     try:
         with patch.dict(os.environ, env_clear, clear=False):
@@ -174,7 +162,7 @@ def _(ctx, password):
     try:
         s = load_settings(
             config_file=ctx["config_file"],
-            overrides={"jira": {"password": password}},
+            overrides={"auth": {"password": password}},
         )
         ctx["settings"] = s
         ctx["error"] = None

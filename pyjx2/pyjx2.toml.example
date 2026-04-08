@@ -1,10 +1,9 @@
 # pyjx2.toml — Archivo de configuración para pyjx2
 # Copia este archivo como pyjx2.toml (o pyjx2.json) en tu directorio de trabajo.
 # Todos los valores pueden definirse mediante variables de entorno:
-#   PYJX2_JIRA_ENV, PYJX2_JIRA_USERNAME, PYJX2_JIRA_PASSWORD
-#   PYJX2_XRAY_CLIENT_ID, PYJX2_XRAY_CLIENT_SECRET
+#   PYJX2_AUTH_ENV, PYJX2_AUTH_USERNAME, PYJX2_AUTH_PASSWORD
 
-[jira]
+[auth]
 env = "QA"                          # "QA" o "DEV"
 username = "usuario@ejemplo.com"
 password = "TU_PASSWORD_O_TOKEN"    # Puede ser texto plano o ENC:... (ver comando config encrypt-pass)
