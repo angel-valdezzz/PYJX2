@@ -15,10 +15,6 @@ Feature: CLI Setup Command
     And the output contains "Test Execution"
     And the output contains "Test Set"
 
-  Scenario: Setup command fails when --project is missing
-    When I invoke "pyjx2 setup" without "--project"
-    Then the exit code is not 0
-
   Scenario: Setup command fails when --test-plan is missing
     When I invoke "pyjx2 setup" without "--test-plan"
     Then the exit code is not 0
@@ -31,13 +27,13 @@ Feature: CLI Setup Command
     When I invoke "pyjx2 setup" without credentials
     Then the exit code is not 0
 
-  Scenario: Setup command uses --reuse-tests flag
-    When I invoke "pyjx2 setup" with "--reuse-tests"
-    Then the reuse_tests parameter is True in the API call
+  Scenario: Setup command usa --test-mode add para agregar sin clonar
+    When I invoke "pyjx2 setup" con modo agregar "--test-mode add"
+    Then the test_mode parameter is "add" in the API call
 
   Scenario: Setup command defaults to clone mode
     When I invoke "pyjx2 setup" with all required arguments
-    Then the reuse_tests parameter is False in the API call
+    Then the test_mode parameter is "clone" in the API call
 
   Scenario: Setup command fails gracefully when API raises an error
     Given the setup API raises a RuntimeError "Jira connection failed"

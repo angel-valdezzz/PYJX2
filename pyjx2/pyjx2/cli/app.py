@@ -25,7 +25,7 @@ app.add_typer(config_app, name="config")
 
 def _common_options(
     config: Optional[str],
-    jira_url: Optional[str],
+    env: Optional[str],
     jira_username: Optional[str],
     jira_password: Optional[str],
     xray_client_id: Optional[str],
@@ -33,9 +33,9 @@ def _common_options(
 ) -> PyJX2:
     """Build overrides dict and load settings, then return a PyJX2 instance."""
     overrides: dict = {}
-    if jira_url or jira_username or jira_password:
+    if env or jira_username or jira_password:
         overrides["jira"] = {
-            "url": jira_url,
+            "env": env,
             "username": jira_username,
             "password": jira_password,
         }
@@ -53,8 +53,8 @@ def _common_options(
 def _config_option():
     return typer.Option(None, "--config", "-c", help="Path to pyjx2.toml or pyjx2.json config file.")
 
-def _jira_url_option():
-    return typer.Option(None, "--jira-url", help="Jira base URL (e.g. https://yourorg.atlassian.net).")
+def _env_option():
+    return typer.Option("QA", "--env", help="Environment URL to use (QA or DEV).")
 
 def _jira_username_option():
     return typer.Option(None, "--jira-username", "-u", help="Jira username or email.")
@@ -73,13 +73,15 @@ def _xray_client_secret_option():
 
 @app.command()
 def setup(
-    project_key: str = typer.Option(..., "--project", "-p", help="Jira project key (e.g. PROJ)."),
-    test_plan_key: str = typer.Option(..., "--test-plan", help="Key of the Jira Test Plan issue."),
-    execution_summary: str = typer.Option(..., "--execution-summary", "-e", help="Summary for the new Test Execution issue."),
-    test_set_summary: str = typer.Option(..., "--test-set-summary", "-s", help="Summary for the new Test Set issue."),
-    reuse_tests: bool = typer.Option(False, "--reuse-tests/--clone-tests", help="Reuse existing tests instead of cloning them."),
+    test_plan_key: str = typer.Option(..., "--test-plan", help="QAX Test Plan key."),
+    execution_summary: str = typer.Option(..., "--execution-summary", "-e", help="Titulo del nuevo Test Execution."),
+    test_set_summary: str = typer.Option(None, "--test-set-summary", "-s", help="Titulo del nuevo Test Set (cae en fallback a execution-summary)."),
+    application_target: str = typer.Option(..., "--application", "-a", help="Application mandatory qualifier (e.g. AXA_WEB)."),
+    test_mode: str = typer.Option("clone", "--test-mode", "-m",
+        help="Modo de tests: 'clone' (copiar en QAX) o 'add' (agregar sin clonar).",
+        metavar="clone|add"),
     config: Optional[str] = _config_option(),
-    jira_url: Optional[str] = _jira_url_option(),
+    env: Optional[str] = _env_option(),
     jira_username: Optional[str] = _jira_username_option(),
     jira_password: Optional[str] = _jira_password_option(),
     xray_client_id: Optional[str] = _xray_client_id_option(),
@@ -88,11 +90,11 @@ def setup(
     """
     [bold]Setup[/bold] — create a Test Execution + Test Set from a Test Plan.
 
-    Reads tests from the given test plan, then creates or reuses/clones each test,
+    Reads tests from the given test plan, then clones or adds each test,
     assembles them into a new test set, and links everything into a new test execution.
     """
     try:
-        pjx = _common_options(config, jira_url, jira_username, jira_password, xray_client_id, xray_client_secret)
+        pjx = _common_options(config, env, jira_username, jira_password, xray_client_id, xray_client_secret)
     except ValueError as e:
         console.print(f"[bold red]Configuration error:[/bold red] {e}")
         raise typer.Exit(code=1)
@@ -103,15 +105,15 @@ def setup(
         console.print(f"  [dim]→[/dim] {msg}")
         messages.append(msg)
 
-    console.print(f"\n[bold cyan]Running setup for project [white]{project_key}[/white] with test plan [white]{test_plan_key}[/white][/bold cyan]\n")
+    console.print(f"\n[bold cyan]Running setup for project [white]QAX[/white] with test plan [white]{test_plan_key}[/white][/bold cyan]\n")
 
     try:
         result = pjx.setup(
-            project_key=project_key,
             test_plan_key=test_plan_key,
             execution_summary=execution_summary,
-            test_set_summary=test_set_summary,
-            reuse_tests=reuse_tests,
+            test_set_summary=test_set_summary or execution_summary,
+            application=application_target,
+            test_mode=test_mode,
             progress_callback=on_progress,
         )
     except Exception as e:
@@ -123,12 +125,13 @@ def setup(
     table = Table(title="Setup Summary", show_header=True, header_style="bold magenta")
     table.add_column("Item", style="cyan")
     table.add_column("Value", style="white")
-    table.add_row("Test Execution", result.test_execution.key)
-    table.add_row("Test Set", result.test_set.key)
-    table.add_row("Tests (total)", str(len(result.tests)))
-    table.add_row("Tests reused", str(len(result.reused)))
-    table.add_row("Tests cloned", str(len(result.cloned)))
-    table.add_row("Tests created", str(len(result.created)))
+    table.add_row("Test Executions", ", ".join(ex.key for ex in result.test_executions))
+    table.add_row("Test Sets", ", ".join(ts.key for ts in result.test_sets))
+    table.add_row("Tests (total procesados)", str(len(result.tests)))
+    label_added = "Tests agregados" if test_mode == "add" else "Tests linked/reused"
+    label_cloned = "Tests clonados" if test_mode == "clone" else "Tests cloned/created"
+    table.add_row(label_added, str(result.metrics.tests_linked))
+    table.add_row(label_cloned, str(result.metrics.tests_cloned))
     console.print(table)
 
 
@@ -138,29 +141,42 @@ def setup(
 def sync(
     execution_key: str = typer.Option(..., "--execution", "-e", help="Key of the Test Execution issue."),
     folder: str = typer.Option(..., "--folder", "-f", help="Path to the folder to scan for evidence files."),
-    status: str = typer.Option(..., "--status", "-s", help="Status to set on matched tests (PASS, FAIL, TODO, EXECUTING, ABORTED)."),
+    status: str = typer.Option("PASS", "--status", "-s", help="Default status to set on matched tests (PASS, FAIL, TODO, EXECUTING, ABORTED)."),
     recursive: bool = typer.Option(True, "--recursive/--no-recursive", "-r/-R", help="Scan folder recursively."),
+    extensions: Optional[str] = typer.Option(None, "--extensions", help="Comma-separated list of allowed extensions (e.g. .jpg,.png)."),
+    upload_mode: str = typer.Option("append", "--mode", "-m", help="Upload mode: 'append' to add or 'replace' to clear existing evidence."),
+    status_map: Optional[str] = typer.Option(None, "--status-map", help="JSON string mapping test keys to statuses (e.g. '{\"TC-1\":\"FAIL\"}')."),
     config: Optional[str] = _config_option(),
-    jira_url: Optional[str] = _jira_url_option(),
+    env: Optional[str] = _env_option(),
     jira_username: Optional[str] = _jira_username_option(),
     jira_password: Optional[str] = _jira_password_option(),
     xray_client_id: Optional[str] = _xray_client_id_option(),
     xray_client_secret: Optional[str] = _xray_client_secret_option(),
 ) -> None:
     """
-    [bold]Sync[/bold] — match evidence files to test cases and upload results.
+    [bold]Sync[/bold] — match evidence files to test cases by summary prefix.
 
-    Scans a folder (recursively by default) and matches filenames (by stem) to test
-    keys or summaries in the given test execution. For each match, updates the test
-    status and uploads the file as evidence.
+    Scans a folder and matches filenames to test summaries in the given execution.
+    If a file name starts with the test summary, it is uploaded as evidence.
     """
     valid_statuses = {"PASS", "FAIL", "TODO", "EXECUTING", "ABORTED"}
     if status.upper() not in valid_statuses:
-        console.print(f"[bold red]Invalid status:[/bold red] '{status}'. Must be one of: {', '.join(sorted(valid_statuses))}")
+        console.print(f"[bold red]Invalid default status:[/bold red] '{status}'.")
         raise typer.Exit(code=1)
 
+    overrides = {}
+    if status_map:
+        try:
+            import json
+            overrides = json.loads(status_map)
+        except Exception as e:
+            console.print(f"[bold red]Invalid JSON in --status-map:[/bold red] {e}")
+            raise typer.Exit(code=1)
+
+    allowed_ext = [e.strip() for e in extensions.split(",")] if extensions else [".pdf"]
+
     try:
-        pjx = _common_options(config, jira_url, jira_username, jira_password, xray_client_id, xray_client_secret)
+        pjx = _common_options(config, env, jira_username, jira_password, xray_client_id, xray_client_secret)
     except ValueError as e:
         console.print(f"[bold red]Configuration error:[/bold red] {e}")
         raise typer.Exit(code=1)
@@ -175,36 +191,35 @@ def sync(
             execution_key=execution_key,
             folder=folder,
             status=status.upper(),
+            status_overrides=overrides,
+            upload_mode=upload_mode,
+            allowed_extensions=allowed_ext,
             recursive=recursive,
             progress_callback=on_progress,
         )
-    except FileNotFoundError as e:
-        console.print(f"\n[bold red]Folder not found:[/bold red] {e}")
-        raise typer.Exit(code=1)
+
+        table = Table(title=f"Resultados de Sincronización ({execution_key})")
+        table.add_column("Métrica", style="cyan")
+        table.add_column("Valor", style="white")
+        table.add_row("Tests Procesados", str(result.processed_tests))
+        table.add_row("Tests Actualizados", f"[bold green]{result.updated_tests}[/bold green]")
+        table.add_row("Tests sin Evidencia", str(len(result.tests_without_evidence)))
+        table.add_row("Archivos Subidos", str(result.files_uploaded))
+        table.add_row("Archivos No Utilizados", str(len(result.files_unused)))
+        
+        console.print("\n", table)
+
+        if result.errors:
+            console.print("\n[bold red]Errores durante el proceso:[/bold red]")
+            for err in result.errors:
+                console.print(f" - {err}")
+
+        if result.files_unused:
+            console.print(f"\n[yellow]Aviso:[/yellow] {len(result.files_unused)} archivos no coinciden con ningún test.")
+
     except Exception as e:
-        console.print(f"\n[bold red]Sync failed:[/bold red] {e}")
+        console.print(f"\n[bold red]Error fatal durante sync:[/bold red] {e}")
         raise typer.Exit(code=1)
-
-    console.print("\n[bold green]Sync completed![/bold green]\n")
-
-    if result.matches:
-        table = Table(title="Matched Tests", show_header=True, header_style="bold magenta")
-        table.add_column("Test Key", style="cyan")
-        table.add_column("Summary", style="white")
-        table.add_column("File", style="dim")
-        table.add_column("Status Updated", style="green")
-        table.add_column("Evidence Uploaded", style="green")
-        for m in result.matches:
-            table.add_row(
-                m.test_key,
-                m.test_summary,
-                m.file_path,
-                "✓" if m.status_updated else "✗",
-                "✓" if m.uploaded else "✗",
-            )
-        console.print(table)
-
-    if result.unmatched_tests:
         console.print(f"\n[yellow]Unmatched tests ({len(result.unmatched_tests)}):[/yellow] {', '.join(result.unmatched_tests)}")
 
     if result.unmatched_files:

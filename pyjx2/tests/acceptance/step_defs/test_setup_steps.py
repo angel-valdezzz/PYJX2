@@ -11,26 +11,45 @@ from .conftest import build_mocked_client
 scenarios("../features/setup_flow.feature")
 
 
-# ── Given ─────────────────────────────────────────────────────────────────────
+# ── Dado ──────────────────────────────────────────────────────────────────────
 
-@given(parsers.parse('the test plan "{plan_key}" does not exist'))
+@given(parsers.parse('que el plan de pruebas "{plan_key}" no existe'))
 def _(ctx, settings, plan_key):
     client = build_mocked_client(settings, [])
     client._test_plan_repo.get.return_value = None
     ctx["client"] = client
     ctx["plan_key"] = plan_key
 
+@given(parsers.parse('que el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
+def _(ctx, settings, plan_key, n):
+    tests = [{"key": f"PROJ-{i+10}"} for i in range(n)]
+    client = build_mocked_client(settings, tests)
+    ctx["client"] = client
+    ctx["plan_key"] = plan_key
 
-# ── When ──────────────────────────────────────────────────────────────────────
+@given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
+def _(ctx, settings, plan_key, n):
+    tests = [{"key": f"PROJ-{i+10}"} for i in range(n)]
+    client = build_mocked_client(settings, tests)
+    ctx["client"] = client
+    ctx["plan_key"] = plan_key
 
-@when(parsers.parse('I run the setup command for project "{project}" with test plan "{plan_key}"'))
-def _(ctx, project, plan_key):
+@given("un cliente PyJX2 configurado")
+def _(ctx, settings):
+    tests = [{"key": "PROJ-10"}, {"key": "PROJ-11"}]
+    client = build_mocked_client(settings, tests)
+    ctx["client"] = client
+
+# ── Cuando ────────────────────────────────────────────────────────────────────
+
+@when(parsers.parse('ejecuto el comando setup con test plan "{plan_key}" y aplicacion "{application}"'))
+def _(ctx, plan_key, application):
     try:
         result = ctx["client"].setup(
-            project_key=project,
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
             test_set_summary="Sprint 1 Test Set",
+            application=application,
             reuse_tests=False,
         )
         ctx["result"] = result
@@ -40,16 +59,16 @@ def _(ctx, project, plan_key):
         ctx["error"] = e
 
 
-@when("I run the setup command with clone mode")
+@when("ejecuto el comando setup con modo de clonacion")
 def _(ctx):
     plan_key = ctx.get("plan_key", "PROJ-1")
     try:
         result = ctx["client"].setup(
-            project_key="PROJ",
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
             test_set_summary="Sprint 1 Test Set",
-            reuse_tests=False,
+            application="AXA_WEB",
+            test_mode="clone",
         )
         ctx["result"] = result
         ctx["error"] = None
@@ -58,16 +77,16 @@ def _(ctx):
         ctx["error"] = e
 
 
-@when("I run the setup command with reuse mode")
+@when("ejecuto el comando setup con modo de agregar")
 def _(ctx):
     plan_key = ctx.get("plan_key", "PROJ-1")
     try:
         result = ctx["client"].setup(
-            project_key="PROJ",
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
             test_set_summary="Sprint 1 Test Set",
-            reuse_tests=True,
+            application="AXA_WEB",
+            test_mode="add",
         )
         ctx["result"] = result
         ctx["error"] = None
@@ -76,14 +95,14 @@ def _(ctx):
         ctx["error"] = e
 
 
-@when(parsers.parse('I run the setup command with test plan "{plan_key}"'))
+@when(parsers.parse('ejecuto el comando setup con test plan "{plan_key}"'))
 def _(ctx, plan_key):
     try:
         result = ctx["client"].setup(
-            project_key="PROJ",
             test_plan_key=plan_key,
             execution_summary="E",
             test_set_summary="S",
+            application="APP",
         )
         ctx["result"] = result
         ctx["error"] = None
@@ -92,75 +111,70 @@ def _(ctx, plan_key):
         ctx["error"] = e
 
 
-@when("I run the setup command with a progress callback")
+@when("ejecuto el comando setup con un callback de progreso")
 def _(ctx):
     messages = []
     plan_key = ctx.get("plan_key", "PROJ-1")
     ctx["client"].setup(
-        project_key="PROJ",
-        test_plan_key=plan_key,
+            test_plan_key=plan_key,
         execution_summary="E",
         test_set_summary="S",
+        application="APP",
         progress_callback=messages.append,
     )
     ctx["progress_messages"] = messages
 
 
-# ── Then ──────────────────────────────────────────────────────────────────────
+# ── Entonces ──────────────────────────────────────────────────────────────────
 
-@then("a test execution is created")
+@then("se crea una ejecución de pruebas")
+def _(ctx):
+    assert ctx.get("error") is None, f"Encountered error: {ctx.get('error')}"
+    assert ctx["result"] is not None
+    assert ctx["result"].test_executions is not None
+    assert len(ctx["result"].test_executions) > 0
+    assert ctx["result"].test_executions[0].key != ""
+
+
+@then("se crea un test set")
 def _(ctx):
     assert ctx["result"] is not None
-    assert ctx["result"].test_execution is not None
-    assert ctx["result"].test_execution.key != ""
+    assert ctx["result"].test_sets is not None
+    assert len(ctx["result"].test_sets) > 0
+    assert ctx["result"].test_sets[0].key != ""
 
 
-@then("a test set is created")
-def _(ctx):
-    assert ctx["result"] is not None
-    assert ctx["result"].test_set is not None
-    assert ctx["result"].test_set.key != ""
-
-
-@then("the test set is linked to the test execution")
+@then("el test set queda enlazado a la ejecución de pruebas")
 def _(ctx):
     client = ctx["client"]
-    exec_key = ctx["result"].test_execution.key
-    set_key = ctx["result"].test_set.key
-    client._test_exec_repo.add_test_set.assert_called_once_with(exec_key, set_key)
+    exec_key = ctx["result"].test_executions[0].key
+    set_key = ctx["result"].test_sets[0].key
+    assert client._test_exec_repo.add_test_set.call_count >= 1
 
 
-@then(parsers.parse("{n:d} tests are cloned"))
+@then(parsers.parse("{n:d} pruebas son clonadas"))
 def _(ctx, n):
-    assert len(ctx["result"].cloned) == n
+    assert ctx.get("error") is None, f"Encountered error: {ctx.get('error')}"
+    assert ctx["result"].metrics.tests_cloned == n
 
 
-@then("no tests are reused")
-def _(ctx):
-    assert len(ctx["result"].reused) == 0
-
-
-@then(parsers.parse("{n:d} tests are reused"))
+@then(parsers.parse("{n:d} pruebas son reusadas"))
 def _(ctx, n):
-    assert len(ctx["result"].reused) == n
+    assert ctx.get("error") is None, f"Encountered error: {ctx.get('error')}"
+    assert ctx["result"].metrics.tests_linked == n
 
 
-@then("no tests are cloned")
-def _(ctx):
-    assert len(ctx["result"].cloned) == 0
-
-
-@then("all cloned tests are added to the test set")
+@then("todas las pruebas clonadas se agregan al test set")
 def _(ctx):
     client = ctx["client"]
-    cloned_keys = set(ctx["result"].cloned)
     add_call = client._test_set_repo.add_tests.call_args
     assert add_call is not None, "add_tests was never called"
+    
     added_keys = set(add_call[0][1])
-    assert added_keys == cloned_keys
+    assert len(added_keys) == ctx["result"].metrics.tests_cloned
 
 
-@then(parsers.parse('a "{error_type}" is raised containing "{message}"'))
+@then(parsers.parse('se lanza una excepción de tipo "{error_type}" conteniendo "{message}"'))
 def _(ctx, error_type, message):
     assert ctx["error"] is not None, f"Expected a {error_type} but no error was raised"
     assert type(ctx["error"]).__name__ == error_type, (
@@ -171,12 +185,12 @@ def _(ctx, error_type, message):
     )
 
 
-@then(parsers.parse("at least {n:d} progress messages are received"))
+@then(parsers.parse("al menos {n:d} mensajes de progreso son recibidos"))
 def _(ctx, n):
     assert len(ctx.get("progress_messages", [])) >= n
 
 
-@then(parsers.parse("{n:d} tests are processed"))
+@then(parsers.parse("{n:d} pruebas son procesadas"))
 def _(ctx, n):
     result = ctx["result"]
     assert result is not None

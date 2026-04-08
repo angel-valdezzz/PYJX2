@@ -12,12 +12,21 @@ CONFIG_FILENAMES = ["pyjx2.toml", "pyjx2.json"]
 _SCHEMA_PATH = Path(__file__).parent / "schema.json"
 
 
-@dataclass
 class JiraSettings:
-    url: str
-    username: str
-    password: str
-    project_key: Optional[str] = None
+    """Jira connection settings. URL and project key are derived from the environment."""
+
+    def __init__(self, username: str, password: str, env: str = "QA") -> None:
+        self.username = username
+        self.password = password
+        self.env = env.upper() if env else "QA"
+
+    @property
+    def url(self) -> str:
+        return "https://qa.ejemplo.com" if self.env == "QA" else "https://dev.ejemplo.com"
+
+    @property
+    def project_key(self) -> str:
+        return "QAX"
 
 
 @dataclass
@@ -29,11 +38,11 @@ class XraySettings:
 
 @dataclass
 class SetupDefaults:
-    project_key: Optional[str] = None
     test_plan_key: Optional[str] = None
     execution_summary: Optional[str] = None
     test_set_summary: Optional[str] = None
     reuse_tests: bool = False
+    test_mode: str = "clone"   # "clone" | "add"
 
 
 @dataclass
@@ -42,6 +51,8 @@ class SyncDefaults:
     folder: Optional[str] = None
     status: Optional[str] = None
     recursive: bool = True
+    upload_mode: str = "append"  # "append" | "replace"
+    allowed_extensions: list[str] = field(default_factory=lambda: [".pdf"])
 
 
 @dataclass
@@ -91,10 +102,9 @@ def _dict_to_settings(data: dict) -> Settings:
 
     return Settings(
         jira=JiraSettings(
-            url=jira_data["url"],
+            env=jira_data.get("env", "QA"),
             username=jira_data["username"],
             password=jira_data["password"],
-            project_key=jira_data.get("project_key"),
         ),
         xray=XraySettings(
             client_id=xray_data["client_id"],
@@ -102,17 +112,19 @@ def _dict_to_settings(data: dict) -> Settings:
             base_url=xray_data.get("base_url", "https://xray.cloud.getxray.app/api/v2"),
         ),
         setup=SetupDefaults(
-            project_key=setup_data.get("project_key"),
             test_plan_key=setup_data.get("test_plan_key"),
             execution_summary=setup_data.get("execution_summary"),
             test_set_summary=setup_data.get("test_set_summary"),
             reuse_tests=setup_data.get("reuse_tests", False),
+            test_mode=setup_data.get("test_mode", "clone"),
         ),
         sync=SyncDefaults(
             execution_key=sync_data.get("execution_key"),
             folder=sync_data.get("folder"),
             status=sync_data.get("status"),
             recursive=sync_data.get("recursive", True),
+            upload_mode=sync_data.get("upload_mode", "append"),
+            allowed_extensions=sync_data.get("allowed_extensions", [".pdf"]),
         ),
     )
 
@@ -120,10 +132,9 @@ def _dict_to_settings(data: dict) -> Settings:
 def _apply_env_overrides(data: dict) -> dict:
     """Allow environment variables to override config values."""
     env_map = {
-        "PYJX2_JIRA_URL": ("jira", "url"),
+        "PYJX2_JIRA_ENV": ("jira", "env"),
         "PYJX2_JIRA_USERNAME": ("jira", "username"),
         "PYJX2_JIRA_PASSWORD": ("jira", "password"),
-        "PYJX2_JIRA_PROJECT_KEY": ("jira", "project_key"),
         "PYJX2_XRAY_CLIENT_ID": ("xray", "client_id"),
         "PYJX2_XRAY_CLIENT_SECRET": ("xray", "client_secret"),
         "PYJX2_XRAY_BASE_URL": ("xray", "base_url"),
@@ -171,7 +182,7 @@ def load_settings(
                 data[section] = values
 
     required_fields = {
-        "jira": ["url", "username", "password"],
+        "jira": ["username", "password"],
         "xray": ["client_id", "client_secret"],
     }
     missing = []

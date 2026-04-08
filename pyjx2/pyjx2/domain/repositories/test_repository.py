@@ -17,6 +17,10 @@ class TestRepository(ABC):
         ...
 
     @abstractmethod
+    def update_labels(self, key: str, new_labels: list[str]) -> bool:
+        ...
+
+    @abstractmethod
     def update_status(self, execution_key: str, test_key: str, status: str) -> bool:
         ...
 
@@ -26,4 +30,8 @@ class TestRepository(ABC):
 
     @abstractmethod
     def list_from_execution(self, execution_key: str) -> list[Test]:
+        ...
+
+    @abstractmethod
+    def clear_evidence(self, execution_key: str, test_key: str) -> bool:
         ...

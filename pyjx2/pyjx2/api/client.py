@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict, List
 
 from ..domain.entities import Test, TestSet, TestExecution, TestPlan
 from ..infrastructure.config.settings import Settings
@@ -12,7 +12,6 @@ from ..infrastructure.xray.repositories import (
     XrayTestExecutionRepository,
     XrayTestPlanRepository,
 )
-from ..application.services.setup_service import SetupService, SetupInput, SetupResult
 from ..application.services.sync_service import SyncService, SyncInput, SyncResult
 
 
@@ -131,56 +130,100 @@ class PyJX2:
 
     def setup(
         self,
-        project_key: str,
         test_plan_key: str,
         execution_summary: str,
         test_set_summary: str,
-        reuse_tests: bool = False,
+        application: str,
+        test_mode: str = "clone",
+        reuse_tests: bool = False,       # DEPRECATED: usa test_mode="add" en su lugar
+        source_type: str = "test_plan",
+        source_items: Optional[list[str]] = None,
+        source_path: Optional[str] = None,
         progress_callback=None,
-    ) -> SetupResult:
+    ):
         """
-        Full setup flow: read test plan → create/clone tests → create test set
-        → create test execution → link everything together.
+        Full setup flow orchestrated by Clean Architecture Setup Interactor.
+
+        Args:
+            test_mode: "clone" (default) crea copia de cada test en QAX.
+                       "add" agrega los tests originales directamente, sin clonar.
+            reuse_tests: deprecated, equivale a test_mode="add" cuando es True.
         """
-        service = SetupService(
-            self._test_repo,
-            self._test_set_repo,
-            self._test_exec_repo,
-            self._test_plan_repo,
+        from ..application.use_cases.setup.models import (
+            SetupConfig, SetupTestPlanConfig, SetupTestExecutionConfig,
+            SetupTestSetConfig, SetupGlobalSettings, SetupSourceConfig
         )
-        return service.run(
-            SetupInput(
-                project_key=project_key,
-                test_plan_key=test_plan_key,
-                execution_summary=execution_summary,
-                test_set_summary=test_set_summary,
-                reuse_tests=reuse_tests,
-            ),
-            progress_callback=progress_callback,
+        from ..application.use_cases.setup.setup_interactor import SetupInteractor
+
+        # Retrocompatibilidad: reuse_tests=True equivale a test_mode="add"
+        effective_mode = "add" if reuse_tests else test_mode
+        if effective_mode not in ("clone", "link", "add"):
+            effective_mode = "clone"
+
+        interactor = SetupInteractor(
+            test_plan_repo=self._test_plan_repo,
+            test_exec_repo=self._test_exec_repo,
+            test_set_repo=self._test_set_repo,
+            test_repo=self._test_repo
         )
+
+        config = SetupConfig(
+            project_key="QAX",
+            test_plan=SetupTestPlanConfig(key=test_plan_key),
+            test_executions=[
+                SetupTestExecutionConfig(
+                    mode="create",
+                    name=execution_summary,
+                    test_sets=[
+                        SetupTestSetConfig(
+                            mode="create",
+                            application=application,
+                            key=test_set_summary,
+                            apply_source=True,
+                            source=SetupSourceConfig(
+                                type=source_type,
+                                items=source_items,
+                                path=source_path
+                            ),
+                            test_case_mode=effective_mode
+                        )
+                    ]
+                )
+            ],
+            settings=SetupGlobalSettings()
+        )
+
+        return interactor.execute(config, logger=progress_callback)
+
 
     def sync(
         self,
         execution_key: str,
         folder: str,
-        status: str,
+        status: str = "PASS",
+        status_overrides: Optional[Dict[str, str]] = None,
+        allowed_extensions: Optional[List[str]] = None,
         recursive: bool = True,
         progress_callback=None,
     ) -> SyncResult:
         """
         Full sync flow: get tests from execution → scan folder recursively →
-        match files to tests → update statuses and upload evidence.
+        match files to tests by prefix → update statuses and upload evidence.
         """
+        from ..application.services.sync_service import SyncService, SyncInput
+
         service = SyncService(self._test_repo, self._test_exec_repo)
-        return service.run(
-            SyncInput(
-                execution_key=execution_key,
-                folder=folder,
-                status=status,
-                recursive=recursive,
-            ),
-            progress_callback=progress_callback,
+        
+        sync_input = SyncInput(
+            execution_key=execution_key,
+            folder=folder,
+            default_status=status,
+            status_overrides=status_overrides or {},
+            allowed_extensions=allowed_extensions,
+            recursive=recursive
         )
+        
+        return service.run(sync_input, progress_callback=progress_callback)
 
     # ── Raw clients (escape hatch) ────────────────────────────────────────────
 

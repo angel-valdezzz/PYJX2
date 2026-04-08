@@ -18,7 +18,7 @@ class TestLoadSettingsFromOverrides:
     def _valid_overrides(self, **extra):
         base = {
             "jira": {
-                "url": "https://test.atlassian.net",
+                "env": "QA",
                 "username": "u@test.com",
                 "password": "token",
             },
@@ -29,7 +29,8 @@ class TestLoadSettingsFromOverrides:
 
     def test_loads_valid_overrides(self):
         s = load_settings(overrides=self._valid_overrides())
-        assert s.jira.url == "https://test.atlassian.net"
+        assert s.jira.env == "QA"
+        assert "qa" in s.jira.url.lower()
         assert s.jira.username == "u@test.com"
         assert s.jira.password == "token"
         assert s.xray.client_id == "cid"
@@ -39,17 +40,27 @@ class TestLoadSettingsFromOverrides:
         s = load_settings(overrides=self._valid_overrides())
         assert "xray.cloud.getxray.app" in s.xray.base_url
 
-    def test_missing_jira_url_raises(self):
+    def test_project_key_is_always_qax(self):
+        s = load_settings(overrides=self._valid_overrides())
+        assert s.jira.project_key == "QAX"
+
+    def test_dev_env_uses_dev_url(self):
+        overrides = self._valid_overrides()
+        overrides["jira"]["env"] = "DEV"
+        s = load_settings(overrides=overrides)
+        assert "dev" in s.jira.url.lower()
+
+    def test_missing_jira_username_raises(self):
         overrides = {
-            "jira": {"username": "u@test.com", "password": "token"},
+            "jira": {"env": "QA", "password": "token"},
             "xray": {"client_id": "cid", "client_secret": "csec"},
         }
-        with pytest.raises(ValueError, match="jira.url"):
+        with pytest.raises(ValueError, match="jira.username"):
             load_settings(overrides=overrides)
 
     def test_missing_jira_token_raises(self):
         overrides = {
-            "jira": {"url": "https://test.atlassian.net", "username": "u@test.com"},
+            "jira": {"env": "QA", "username": "u@test.com"},
             "xray": {"client_id": "cid", "client_secret": "csec"},
         }
         with pytest.raises(ValueError, match="jira.password"):
@@ -57,29 +68,27 @@ class TestLoadSettingsFromOverrides:
 
     def test_missing_xray_secret_raises(self):
         overrides = {
-            "jira": {"url": "https://t.atlassian.net", "username": "u", "password": "t"},
+            "jira": {"env": "QA", "username": "u", "password": "t"},
             "xray": {"client_id": "cid"},
         }
         with pytest.raises(ValueError, match="xray.client_secret"):
             load_settings(overrides=overrides)
 
-    def test_missing_all_credentials_raises_with_all_fields(self):
+    def test_missing_all_credentials_raises(self):
         with pytest.raises(ValueError) as exc_info:
             load_settings()
         msg = str(exc_info.value)
-        assert "jira.url" in msg
+        assert "jira.username" in msg
         assert "xray.client_id" in msg
 
     def test_setup_defaults_populated(self):
         overrides = self._valid_overrides()
         overrides["setup"] = {
-            "project_key": "PROJ",
-            "test_plan_key": "PROJ-100",
+            "test_plan_key": "QAX-100",
             "reuse_tests": True,
         }
         s = load_settings(overrides=overrides)
-        assert s.setup.project_key == "PROJ"
-        assert s.setup.test_plan_key == "PROJ-100"
+        assert s.setup.test_plan_key == "QAX-100"
         assert s.setup.reuse_tests is True
 
     def test_sync_defaults_populated(self):
@@ -105,7 +114,7 @@ class TestLoadSettingsFromTOML:
 
     def test_loads_toml_file(self, valid_toml_config):
         s = load_settings(config_file=str(valid_toml_config))
-        assert s.jira.url == "https://example.atlassian.net"
+        assert "qa" in s.jira.url.lower()
         assert s.jira.username == "user@example.com"
         assert s.xray.client_id == "my_client"
 
@@ -130,7 +139,7 @@ class TestLoadSettingsFromTOML:
             overrides={"jira": {"password": "overridden_token"}},
         )
         assert s.jira.password == "overridden_token"
-        assert s.jira.url == "https://example.atlassian.net"
+        assert "qa" in s.jira.url.lower()
 
 
 class TestLoadSettingsFromJSON:
@@ -155,10 +164,11 @@ class TestLoadSettingsFromJSON:
 class TestJsonSchemaValidation:
     """The config file is validated against schema.json before loading."""
 
-    def test_invalid_toml_missing_jira_url_fails_schema(self, tmp_path):
+    def test_valid_toml_passes_schema(self, tmp_path):
         cfg = tmp_path / "pyjx2.toml"
         cfg.write_text("""
 [jira]
+env = "QA"
 username = "u@example.com"
 password = "token"
 
@@ -166,13 +176,13 @@ password = "token"
 client_id = "cid"
 client_secret = "csec"
 """)
-        with pytest.raises(Exception):
-            load_settings(config_file=str(cfg))
+        s = load_settings(config_file=str(cfg))
+        assert s.jira.username == "u@example.com"
 
     def test_invalid_json_missing_xray_section_fails_schema(self, tmp_path):
         cfg = tmp_path / "pyjx2.json"
         cfg.write_text(json.dumps({
-            "jira": {"url": "https://x.atlassian.net", "username": "u", "password": "t"}
+            "jira": {"env": "QA", "username": "u", "password": "t"}
         }))
         with pytest.raises(Exception):
             load_settings(config_file=str(cfg))
@@ -183,7 +193,7 @@ class TestEnvironmentVariableOverrides:
 
     def test_env_vars_override_empty_config(self):
         env = {
-            "PYJX2_JIRA_URL": "https://env.atlassian.net",
+            "PYJX2_JIRA_ENV": "DEV",
             "PYJX2_JIRA_USERNAME": "env_user",
             "PYJX2_JIRA_PASSWORD": "env_token",
             "PYJX2_XRAY_CLIENT_ID": "env_cid",
@@ -191,13 +201,13 @@ class TestEnvironmentVariableOverrides:
         }
         with patch.dict(os.environ, env):
             s = load_settings()
-        assert s.jira.url == "https://env.atlassian.net"
+        assert "dev" in s.jira.url.lower()
         assert s.jira.username == "env_user"
         assert s.xray.client_id == "env_cid"
 
     def test_runtime_override_wins_over_env_var(self):
         env = {
-            "PYJX2_JIRA_URL": "https://env.atlassian.net",
+            "PYJX2_JIRA_ENV": "DEV",
             "PYJX2_JIRA_USERNAME": "env_user",
             "PYJX2_JIRA_PASSWORD": "env_token",
             "PYJX2_XRAY_CLIENT_ID": "env_cid",
@@ -205,15 +215,15 @@ class TestEnvironmentVariableOverrides:
         }
         with patch.dict(os.environ, env):
             s = load_settings(overrides={
-                "jira": {"url": "https://runtime.atlassian.net"},
+                "jira": {"env": "QA"},
             })
-        assert s.jira.url == "https://runtime.atlassian.net"
+        assert "qa" in s.jira.url.lower()
 
     def test_apply_env_overrides_returns_merged_dict(self):
-        env = {"PYJX2_JIRA_URL": "https://env.atlassian.net"}
+        env = {"PYJX2_JIRA_ENV": "DEV"}
         with patch.dict(os.environ, env, clear=False):
             result = _apply_env_overrides({})
-        assert result["jira"]["url"] == "https://env.atlassian.net"
+        assert result["jira"]["env"] == "DEV"
 
     def test_apply_env_overrides_does_not_set_empty_values(self):
         result = _apply_env_overrides({})

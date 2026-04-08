@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional
+import os
+import platform
+import subprocess
+import threading
+import re
+from typing import Optional, List, Dict
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -17,6 +22,9 @@ from textual.widgets import (
     Log,
     Static,
     Select,
+    RadioSet,
+    RadioButton,
+    TextArea,
 )
 from textual.reactive import reactive
 
@@ -68,13 +76,22 @@ class PyJX2App(App):
         color: $accent-dark;
     }
 
+    .section-subtitle {
+        color: $accent-light;
+        text-style: underline;
+        margin-top: 1;
+        margin-bottom: 1;
+    }
+    .-dark .section-subtitle {
+        color: $accent-dark;
+    }
+
     .field-row {
         layout: horizontal;
         height: auto;
         margin-bottom: 1;
     }
 
-    /* Diseño responsivo: Contraer a vista vertical (mobile default) en consolas estándar pequeñas mediante clasificador '-narrow' */
     .-narrow .field-row {
         layout: vertical;
         height: auto;
@@ -107,6 +124,64 @@ class PyJX2App(App):
     }
     .-dark .field-input:focus {
         border: solid $accent-dark;
+    }
+
+    .field-input.input-error {
+        border: solid $error;
+    }
+
+    .browse-btn {
+        min-width: 10;
+        margin-left: 1;
+        background: $primary-light;
+    }
+    .-dark .browse-btn {
+        background: $primary-dark;
+    }
+
+    .subgroup-row {
+        height: auto;
+        margin: 0 0 1 0;
+        border: solid $primary-light 10%;
+        padding: 0 1;
+    }
+
+    #sync-subgroups-container {
+        height: auto;
+        margin: 1 0;
+        border-left: solid $primary-light 10%;
+        padding-left: 1;
+    }
+    .-dark .subgroup-row {
+        border: solid $primary-dark 10%;
+    }
+
+    .subgroup-qaxs {
+        width: 1fr;
+    }
+
+    .subgroup-status {
+        width: 25;
+        margin-left: 1;
+    }
+
+    .remove-btn {
+        min-width: 6;
+        margin-left: 1;
+        background: $error;
+    }
+
+    .field-hint {
+        color: $text-muted;
+        text-style: italic;
+        padding-left: 30;
+        margin-bottom: 1;
+    }
+
+    .field-error {
+        width: 1fr;
+        padding-top: 0;
+        color: $error;
     }
 
     .btn-row {
@@ -231,6 +306,8 @@ class PyJX2App(App):
         Binding("f4", "switch_tab('security')", "Seguridad"),
     ]
 
+    sync_subgroups = reactive([])
+
     TITLE = "pyjx2 — Jira/Xray Automation"
     SUB_TITLE = "Herramienta de Preparación y Sincronización"
 
@@ -244,15 +321,18 @@ class PyJX2App(App):
     def on_mount(self) -> None:
         import atexit
         atexit.register(self._kill_mkdocs)
+        try:
+            self.query_one("#setup-source-xray-row").display = False
+            self.query_one("#setup-source-manual-row").display = False
+            self.query_one("#setup-source-manual-error-row").display = False
+            self.query_one("#setup-concat-row").display = False
+        except Exception: pass
         
     def on_resize(self, event) -> None:
-        if event.size.width <= 95:
-            self.add_class("-narrow")
-        else:
-            self.remove_class("-narrow")
+        if event.size.width <= 95: self.add_class("-narrow")
+        else: self.remove_class("-narrow")
         
     def _kill_mkdocs(self):
-        import subprocess
         if getattr(self, "mkdocs_process", None) and self.mkdocs_process.poll() is None:
             self.mkdocs_process.terminate()
             self.mkdocs_process.wait(timeout=2)
@@ -262,46 +342,34 @@ class PyJX2App(App):
         self._kill_mkdocs()
         self.exit()
 
+    def action_switch_tab(self, tab_id: str) -> None:
+        self.query_one("#tabs", TabbedContent).active = tab_id
+
     def _copy_to_clipboard(self, text: str) -> None:
-        import platform
-        import subprocess
         try:
             os_name = platform.system()
-            if os_name == "Windows":
-                subprocess.run("clip", input=text, text=True, check=True)
-            elif os_name == "Darwin":
-                subprocess.run("pbcopy", input=text, text=True, check=True)
-            else:
-                subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, check=True)
+            if os_name == "Windows": subprocess.run("clip", input=text, text=True, check=True)
+            elif os_name == "Darwin": subprocess.run("pbcopy", input=text, text=True, check=True)
+            else: subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, check=True)
         except Exception as e:
-            try:
-                from textual.widgets import Log
-                self.query_one("#sec-log", Log).write_line(f"[ERROR] No se pudo copiar al portapapeles: {e}")
-            except Exception:
-                pass
+            try: self._log("sec-log", f"[ERROR] No se pudo copiar: {e}")
+            except Exception: pass
 
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent(initial="home", id="tabs"):
-            with TabPane("Inicio", id="home"):
-                yield from self._compose_home_tab()
-            with TabPane("Preparación (F1)", id="setup"):
-                yield from self._compose_setup_tab()
-            with TabPane("Sincronización (F2)", id="sync"):
-                yield from self._compose_sync_tab()
-            with TabPane("Configuración (F3)", id="config"):
-                yield from self._compose_config_tab()
-            with TabPane("Seguridad (F4)", id="security"):
-                yield from self._compose_security_tab()
+            with TabPane("Inicio", id="home"): yield from self._compose_home_tab()
+            with TabPane("Preparación (F1)", id="setup"): yield from self._compose_setup_tab()
+            with TabPane("Sincronización (F2)", id="sync"): yield from self._compose_sync_tab()
+            with TabPane("Configuración (F3)", id="config"): yield from self._compose_config_tab()
+            with TabPane("Seguridad (F4)", id="security"): yield from self._compose_security_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
 
     def _compose_home_tab(self) -> ComposeResult:
-        import os
         from .ascii_parser import get_ascii_logo
         logo_path = os.path.join(os.path.dirname(__file__), "assets", "AXA-Logo.html")
         logo_markup = get_ascii_logo(logo_path)
-        
         with ScrollableContainer(id="home-container"):
             yield Static(logo_markup, id="logo-art")
             with Horizontal(id="home-btn-container"):
@@ -314,342 +382,305 @@ class PyJX2App(App):
             with Container(classes="panel"):
                 yield Static("Conexión a Jira / Xray", classes="panel-title")
                 with Horizontal(classes="field-row"):
-                    yield Label("Jira URL", classes="field-label")
-                    yield Input(placeholder="https://tuorg.atlassian.net", id="setup-jira-url", classes="field-input")
+                    yield Label("Entorno", classes="field-label")
+                    yield RadioSet(RadioButton("QA", id="setup-env-qa", value=True), RadioButton("DEV", id="setup-env-dev"), id="setup-env")
                 with Horizontal(classes="field-row"):
                     yield Label("Usuario / Email", classes="field-label")
                     yield Input(placeholder="usuario@ejemplo.com", id="setup-jira-username", classes="field-input")
                 with Horizontal(classes="field-row"):
                     yield Label("Contraseña", classes="field-label")
                     yield Input(placeholder="Contraseña o Token", id="setup-jira-password", password=True, classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Xray Client ID", classes="field-label")
-                    yield Input(placeholder="Xray Cloud client ID", id="setup-xray-client-id", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Xray Client Secret", classes="field-label")
-                    yield Input(placeholder="Xray Cloud client secret", id="setup-xray-secret", password=True, classes="field-input")
 
             with Container(classes="panel"):
                 yield Static("Parámetros de Preparación", classes="panel-title")
                 with Horizontal(classes="field-row"):
-                    yield Label("Llave de Proyecto", classes="field-label")
-                    yield Input(placeholder="eje. PROJ", id="setup-project-key", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Llave de Test Plan", classes="field-label")
+                    yield Label("QAX Test Plan", classes="field-label")
                     yield Input(placeholder="eje. PROJ-100", id="setup-test-plan", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("Resumen de Ejecución", classes="field-label")
+                    yield Label("Titulo Test Execution", classes="field-label")
                     yield Input(placeholder="Resumen para el nuevo Test Execution", id="setup-exec-summary", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("Resumen de Test Set", classes="field-label")
-                    yield Input(placeholder="Resumen para el nuevo Test Set", id="setup-set-summary", classes="field-input")
+                    yield Label("Titulo Test Set", classes="field-label")
+                    yield Input(placeholder="(Si vacio: usará Titulo Execution)", id="setup-set-summary", classes="field-input")
+                
+                yield Static("⚙ Configuración de Tests", classes="section-subtitle")
                 with Horizontal(classes="field-row"):
-                    yield Label("¿Reusar Tests?", classes="field-label")
-                    yield Checkbox("Reusar tests en lugar de clonarlos", id="setup-reuse-tests")
+                    yield Label("Modo de Tests", classes="field-label")
+                    yield RadioSet(RadioButton("📄 Clonar", id="test-mode-clone", value=True), RadioButton("🔗 Agregar", id="test-mode-add"), id="setup-test-mode")
+                with Horizontal(classes="field-row"):
+                    yield Label("Fuente de Tests", classes="field-label")
+                    yield RadioSet(RadioButton("Archivo", id="source-file", value=True), RadioButton("ID Xray", id="source-xray"), RadioButton("Manual", id="source-manual"), id="setup-source-mode")
+                with Horizontal(classes="field-row", id="setup-source-file-row"):
+                    yield Label("", classes="field-label")
+                    yield Button("📂", id="btn-file-picker", classes="browse-btn")
+                    yield Input(placeholder=".txt o .csv seleccionado...", id="setup-source-file-path", classes="field-input", disabled=True)
+                with Horizontal(classes="field-row", id="setup-source-xray-row"):
+                    yield Label("", classes="field-label")
+                    yield Input(placeholder="ID Numerico", id="setup-source-xray-id", classes="field-input")
+                with Horizontal(classes="field-row", id="setup-source-manual-row"):
+                    yield Label("", classes="field-label")
+                    yield Input(placeholder="QAX-1, QAX-2", id="setup-source-manual-text", classes="field-input")
+                with Horizontal(classes="field-row", id="setup-source-manual-error-row"):
+                    yield Label("", classes="field-label")
+                    yield Static("", id="setup-manual-error", classes="field-error")
+                with Horizontal(classes="field-row", id="setup-concat-row"):
+                    yield Label("", classes="field-label")
+                    yield Checkbox("Concatenar previos", id="setup-concat")
+                with Horizontal(classes="field-row", id="setup-source-log-row"):
+                    yield Label("Bitácora QAX", classes="field-label")
+                    yield TextArea("", id="setup-source-log-area")
+                with Horizontal(classes="field-row"):
+                    yield Label("Aplicación", classes="field-label")
+                    yield Input(placeholder="e.g. AXA_WEB", id="setup-application", classes="field-input")
 
             with Horizontal(classes="btn-row"):
                 yield Button("Ejecutar", id="btn-setup-run", classes="run-btn", variant="primary")
-                yield Button("Limpiar Log", id="btn-setup-clear", classes="clear-btn")
-
-            yield Static("Bitácora de Salida (Log)", id="log-title", classes="panel-title")
+                yield Button("Limpiar", id="btn-setup-clear", classes="clear-btn")
             yield Log(id="setup-log", highlight=True)
-
         return []
 
     def _compose_sync_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Sincronización — Rastrear archivos de evidencias y subir a Jira", classes="panel-title")
+            yield Static("Sincronización — Rastrear evidencias y actualizar Jira", classes="panel-title")
             with Container(classes="panel"):
-                yield Static("Conexión a Jira / Xray", classes="panel-title")
+                yield Static("Conexión Jira / Xray", classes="panel-title")
                 with Horizontal(classes="field-row"):
-                    yield Label("Jira URL", classes="field-label")
-                    yield Input(placeholder="https://tuorg.atlassian.net", id="sync-jira-url", classes="field-input")
+                    yield Label("Entorno", classes="field-label")
+                    yield RadioSet(RadioButton("QA", id="sync-env-qa", value=True), RadioButton("DEV", id="sync-env-dev"), id="sync-env")
                 with Horizontal(classes="field-row"):
-                    yield Label("Usuario / Email", classes="field-label")
-                    yield Input(placeholder="usuario@ejemplo.com", id="sync-jira-username", classes="field-input")
+                    yield Label("Usuario", classes="field-label")
+                    yield Input(placeholder="user@example.com", id="sync-jira-username", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("Contraseña", classes="field-label")
-                    yield Input(placeholder="Contraseña o Token", id="sync-jira-password", password=True, classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Xray Client ID", classes="field-label")
-                    yield Input(placeholder="Xray Cloud client ID", id="sync-xray-client-id", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Xray Client Secret", classes="field-label")
-                    yield Input(placeholder="Xray Cloud client secret", id="sync-xray-secret", password=True, classes="field-input")
+                    yield Label("Password", classes="field-label")
+                    yield Input(placeholder="Token", id="sync-jira-password", password=True, classes="field-input")
 
             with Container(classes="panel"):
                 yield Static("Parámetros de Sincronización", classes="panel-title")
                 with Horizontal(classes="field-row"):
                     yield Label("Test Execution", classes="field-label")
-                    yield Input(placeholder="eje. PROJ-200", id="sync-exec-key", classes="field-input")
+                    yield Input(placeholder="ID Ej: PROJ-200", id="sync-exec-key", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("Ubicación de Evidencias", classes="field-label")
-                    yield Input(placeholder="/ruta/hacia/carpeta_evidencias", id="sync-folder", classes="field-input")
+                    yield Label("Evidencias", classes="field-label")
+                    yield Input(placeholder="/ruta/carpeta", id="sync-folder", classes="field-input")
+                    yield Button("📁", id="btn-sync-browse", classes="browse-btn")
+                
+                yield Static("⚙ Matching y Estados", classes="section-subtitle")
                 with Horizontal(classes="field-row"):
-                    yield Label("Estatus a Reportar", classes="field-label")
-                    yield Select(
-                        options=[(s, s) for s in STATUSES],
-                        id="sync-status",
-                        value="PASS",
-                    )
+                    yield Label("Estatus Default", classes="field-label")
+                    yield Select(options=[(s, s) for s in STATUSES], id="sync-status", value="PASS")
                 with Horizontal(classes="field-row"):
-                    yield Label("¿Búsqueda Múltiple?", classes="field-label")
-                    yield Checkbox("Escanear dentro de sub-carpetas recursivamente", id="sync-recursive", value=True)
+                    yield Label("Subida", classes="field-label")
+                    yield RadioSet(RadioButton("Append", id="sync-mode-append", value=True), RadioButton("Replace", id="sync-mode-replace"), id="sync-upload-mode")
+                with Horizontal(classes="field-row"):
+                    yield Label("Extensiones", classes="field-label")
+                    yield Input(placeholder=".pdf, .png...", id="sync-extensions", classes="field-input")
+                with Horizontal(classes="field-row"):
+                    yield Label("Recursivo", classes="field-label")
+                    yield Checkbox("Habilitar", id="sync-recursive", value=True)
+
+                yield Static("Subgrupos de Estatus (Max. 5)", classes="section-subtitle")
+                with Vertical(id="sync-subgroups-container"): pass
+                with Horizontal(classes="btn-row"):
+                    yield Button("➕ Añadir", id="btn-sync-add-subgroup", variant="success")
 
             with Horizontal(classes="btn-row"):
-                yield Button("Sincronizar", id="btn-sync-run", classes="run-btn", variant="primary")
-                yield Button("Limpiar Log", id="btn-sync-clear", classes="clear-btn")
-
-            yield Static("Bitácora de Salida (Log)", classes="panel-title")
+                yield Button("Ejecutar", id="btn-sync-run", classes="run-btn", variant="primary")
+                yield Button("Limpiar", id="btn-sync-clear", classes="clear-btn")
             yield Log(id="sync-log", highlight=True)
-
         return []
 
     def _compose_config_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Archivo de Configuración Global", classes="panel-title")
+            yield Static("Archivo de Configuración", classes="panel-title")
+            with Container(classes="panel"): yield Static("PYJX2 buscará pyjx2.toml o pyjx2.json en la raíz.", markup=True)
             with Container(classes="panel"):
-                yield Static(
-                    "PYJX2 buscará [b]pyjx2.toml[/b] o [b]pyjx2.json[/b] en el directorio actual emulador.\n"
-                    "También puedes declarar variables de entorno como [b]PYJX2_JIRA_URL[/b], "
-                    "[b]PYJX2_JIRA_USERNAME[/b], [b]PYJX2_JIRA_PASSWORD[/b], "
-                    "[b]PYJX2_XRAY_CLIENT_ID[/b], [b]PYJX2_XRAY_CLIENT_SECRET[/b].\n\n"
-                    "Todos los renglones que llenes visualmente en la TUI sobrescribirán al archivo de configuración nativo.",
-                    markup=True,
-                )
-            with Container(classes="panel"):
-                yield Static("Ejemplo de plantilla con pyjx2.toml", classes="panel-title")
-                yield Static(
-                    "[b][jira][/b]\n"
-                    'url = "https://yourorg.atlassian.net"\n'
-                    'username = "user@example.com"\n'
-                    'password = "YOUR_JIRA_PASSWORD"\n'
-                    'project_key = "PROJ"\n\n'
-                    "[b][xray][/b]\n"
-                    'client_id = "YOUR_XRAY_CLIENT_ID"\n'
-                    'client_secret = "YOUR_XRAY_CLIENT_SECRET"\n\n'
-                    "[b][setup][/b]\n"
-                    'test_plan_key = "PROJ-100"\n'
-                    'execution_summary = "Sprint 1 Execution"\n'
-                    'test_set_summary = "Sprint 1 Test Set"\n'
-                    "reuse_tests = false\n\n"
-                    "[b][sync][/b]\n"
-                    'execution_key = "PROJ-200"\n'
-                    'folder = "./evidence"\n'
-                    'status = "PASS"\n'
-                    "recursive = true",
-                    markup=True,
-                )
+                yield Static("[b][sync][/b]\nexecution_key = 'PROJ-200'\nfolder = './evidencias'\nstatus = 'PASS'\nrecursive = true", markup=True)
         return []
 
     def _compose_security_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Seguridad — Encriptar / Desencriptar credenciales locales", classes="panel-title")
+            yield Static("Seguridad — Encriptación", classes="panel-title")
             with Container(classes="panel"):
-                yield Static(
-                    "Usa esta herramienta en offline para generar un token cifrado para tus archivos.\n"
-                    "Emplea la llave simétrica AES robusta integrada pre-empaquetada en tú ecosistema.",
-                    markup=True,
-                )
-            
-            with Container(classes="panel"):
-                yield Static("Caja de Herramientas de Cifrado", classes="panel-title")
                 with Horizontal(classes="field-row"):
-                    yield Label("Contraseña Plana", classes="field-label")
-                    yield Input(placeholder="Tu texto secreto real aquí", id="sec-plain", classes="field-input")
+                    yield Label("Plano", classes="field-label")
+                    yield Input(placeholder="Texto", id="sec-plain", classes="field-input")
                 with Horizontal(classes="field-row"):
-                    yield Label("Token Encriptado", classes="field-label")
+                    yield Label("Token", classes="field-label")
                     yield Input(placeholder="ENC:...", id="sec-encrypted", classes="field-input")
-                
                 with Horizontal(classes="btn-row"):
-                    yield Button("Copiar Token 📋", id="btn-sec-copy", classes="clear-btn")
-                    yield Button("Encriptar ⬇", id="btn-sec-encrypt", classes="run-btn", variant="primary")
-                    yield Button("Desencriptar ⬆", id="btn-sec-decrypt", classes="run-btn", variant="warning")
-            
-            yield Static("Mensajes de Resultados", classes="panel-title")
-            yield Log(id="sec-log", highlight=True)
-
+                    yield Button("Copiar", id="btn-sec-copy", classes="clear-btn")
+                    yield Button("Encriptar", id="btn-sec-encrypt", classes="run-btn", variant="primary")
+                    yield Button("Desencriptar", id="btn-sec-decrypt", classes="run-btn", variant="warning")
+            yield Log(id="sec-log")
         return []
 
-    # ── Event handlers ─────────────────────────────────────────────────────────
+    # ── Logic ──────────────────────────────────────────────────────────────────
+
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        if event.radio_set.id == "setup-source-mode":
+            p = event.pressed.id
+            self.query_one("#setup-source-file-row").display = (p == "source-file")
+            self.query_one("#setup-source-xray-row").display = (p == "source-xray")
+            self.query_one("#setup-source-manual-row").display = (p == "source-manual")
+            self.query_one("#setup-concat-row").display = (p != "source-file")
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        is_sub = event.input.id and event.input.id.startswith("sync-sub-qaxs-")
+        if is_sub or event.input.id == "setup-source-manual-text":
+            has_err = bool(event.value and re.search(r'[^a-zA-Z0-9\-,\s]', event.value))
+            event.input.set_class(has_err, "input-error")
+            if is_sub:
+                idx = int(event.input.id.split("-")[-1])
+                if idx < len(self.sync_subgroups): self.sync_subgroups[idx]["qaxs"] = event.value
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id and event.select.id.startswith("sync-sub-status-"):
+            idx = int(event.select.id.split("-")[-1])
+            if idx < len(self.sync_subgroups): self.sync_subgroups[idx]["status"] = str(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-docs":
-            import os, sys, subprocess, webbrowser
-            if not getattr(self, "mkdocs_process", None):
-                proj_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-                # Lanzar el proceso asíncronamente
-                self.mkdocs_process = subprocess.Popen([sys.executable, "-m", "mkdocs", "serve"], cwd=proj_dir)
-                # Darle 1.5s al servidor de MkDocs para arrancar en el OS local antes de abrir el navegador
-                self.set_timer(1.5, lambda: webbrowser.open("http://127.0.0.1:8000"))
-                event.button.label = "Cerrar Documentación"
-                event.button.remove_class("run-btn")
-                event.button.add_class("warning-btn")
+        bid = event.button.id
+        if bid == "btn-docs": self._toggle_docs(event.button)
+        elif bid == "btn-file-picker": self._open_picker("file")
+        elif bid == "btn-sync-browse": self._open_picker("folder")
+        elif bid == "btn-sync-add-subgroup": self._add_subgroup()
+        elif bid and bid.startswith("btn-remove-subgroup-"): self._remove_subgroup(int(bid.split("-")[-1]))
+        elif bid == "btn-setup-run": self.run_worker(self._run_setup())
+        elif bid == "btn-sync-run": self.run_worker(self._run_sync())
+        elif bid == "btn-setup-clear": self.query_one("#setup-log", Log).clear()
+        elif bid == "btn-sync-clear": self.query_one("#sync-log", Log).clear()
+        elif bid == "btn-sec-copy":
+            val = self.query_one("#sec-encrypted", Input).value
+            if val: self._copy_to_clipboard(val)
+        elif bid == "btn-sec-encrypt": self._run_encrypt()
+        elif bid == "btn-sec-decrypt": self._run_decrypt()
+
+    def _open_picker(self, mode: str) -> None:
+        def _pick():
+            import sys
+            import subprocess
+            
+            # Universal Python-native picker using tkinter (looks native and Image 2 style on Windows)
+            py_code = ""
+            if mode == "file":
+                py_code = "import tkinter as tk; from tkinter import filedialog; root=tk.Tk(); root.withdraw(); print(filedialog.askopenfilename(title='Seleccionar Archivo de Tests', filetypes=[('Tests', '*.txt;*.csv'), ('Todos', '*.*')]))"
             else:
-                self._kill_mkdocs()
-                event.button.label = "📖 Visualizar Documentación (MkDocs)"
-                event.button.remove_class("warning-btn")
-                event.button.add_class("run-btn")
-        elif event.button.id == "btn-setup-run":
-            self._run_setup()
-        elif event.button.id == "btn-setup-clear":
-            self.query_one("#setup-log", Log).clear()
-        elif event.button.id == "btn-sync-run":
-            self._run_sync()
-        elif event.button.id == "btn-sync-clear":
-            self.query_one("#sync-log", Log).clear()
-        elif event.button.id == "btn-sec-copy":
-            enc_input = self.query_one("#sec-encrypted", Input)
-            val = enc_input.value.strip()
-            if val:
-                self._copy_to_clipboard(val)
-                self.query_one("#sec-log", Log).write_line(f"[ÉXITO] Token copiado al portapapeles exitosamente.")
-            else:
-                self.query_one("#sec-log", Log).write_line(f"[ERROR] No hay token encriptado para copiar.")
-        elif event.button.id == "btn-sec-encrypt":
-            self._run_encrypt()
-        elif event.button.id == "btn-sec-decrypt":
-            self._run_decrypt()
+                py_code = "import tkinter as tk; from tkinter import filedialog; root=tk.Tk(); root.withdraw(); print(filedialog.askdirectory(title='Seleccionar Carpeta de Evidencias'))"
+            
+            cmd = [sys.executable, "-c", py_code]
+            try:
+                # Run the picker in its own process to avoid GUI/Thread conflicts
+                # This is 100% robust and gives the "Image 2" look the user wants
+                res = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+                if res:
+                    self.call_from_thread(self._set_path, mode, res)
+            except Exception:
+                # Simple PowerShell fallback as last resort
+                if platform.system() == "Windows":
+                    cmd_back = "powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.ShowDialog(); $d.SelectedPath\""
+                    res = subprocess.run(cmd_back, shell=True, capture_output=True, text=True).stdout.strip()
+                    if res: self.call_from_thread(self._set_path, mode, res)
 
-    def _get_input(self, widget_id: str) -> str:
-        return self.query_one(f"#{widget_id}", Input).value.strip()
+        threading.Thread(target=_pick, daemon=True).start()
 
-    def _log(self, log_id: str, msg: str) -> None:
-        self.query_one(f"#{log_id}", Log).write_line(msg)
+    def _set_path(self, mode: str, path: str):
+        if mode == "file":
+            self.query_one("#setup-source-file-path", Input).value = path
+            self._load_file(path)
+        else: self.query_one("#sync-folder", Input).value = path
 
-    def _build_pjx(self, prefix: str, log_id: str) -> Optional[PyJX2]:
-        overrides: dict = {}
-        jira_url = self._get_input(f"{prefix}-jira-url")
-        jira_user = self._get_input(f"{prefix}-jira-username")
-        jira_password = self._get_input(f"{prefix}-jira-password")
-        xray_id = self._get_input(f"{prefix}-xray-client-id")
-        xray_secret = self._get_input(f"{prefix}-xray-secret")
-
-        if jira_url or jira_user or jira_password:
-            overrides["jira"] = {"url": jira_url or None, "username": jira_user or None, "password": jira_password or None}
-        if xray_id or xray_secret:
-            overrides["xray"] = {"client_id": xray_id or None, "client_secret": xray_secret or None}
-
+    def _load_file(self, path: str):
         try:
-            settings = load_settings(config_file=self._config_file, overrides=overrides or None)
-            return PyJX2(settings)
-        except ValueError as e:
-            self._log(log_id, f"[ERROR] Archivo de Configuración Global: {e}")
-            return None
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            keys = re.findall(r'[a-zA-Z]+-\d+', content)
+            self.query_one("#setup-source-log-area", TextArea).text = "\n".join(list(dict.fromkeys(keys)))
+        except Exception: pass
 
-    def _run_setup(self) -> None:
-        log_id = "setup-log"
-        self._log(log_id, "Iniciando despliegue de Preparación…")
+    def _add_subgroup(self):
+        if len(self.sync_subgroups) >= 5: return
+        self.sync_subgroups = self.sync_subgroups + [{"qaxs": "", "status": "PASS"}]
+        self._refresh_subgroups()
 
-        pjx = self._build_pjx("setup", log_id)
-        if not pjx:
-            return
+    def _remove_subgroup(self, i: int):
+        lst = list(self.sync_subgroups)
+        lst.pop(i)
+        self.sync_subgroups = lst
+        self._refresh_subgroups()
 
-        project_key = self._get_input("setup-project-key")
-        test_plan = self._get_input("setup-test-plan")
-        exec_summary = self._get_input("setup-exec-summary")
-        set_summary = self._get_input("setup-set-summary")
-        reuse = self.query_one("#setup-reuse-tests", Checkbox).value
+    def _refresh_subgroups(self):
+        c = self.query_one("#sync-subgroups-container", Vertical)
+        c.remove_children()
+        
+        widgets = []
+        for i, g in enumerate(self.sync_subgroups):
+            widgets.append(Horizontal(
+                Input(value=g["qaxs"], placeholder="QAX-1...", classes="subgroup-qaxs", id=f"sync-sub-qaxs-{i}"),
+                Select(options=[(s, s) for s in STATUSES], value=g["status"], classes="subgroup-status", id=f"sync-sub-status-{i}"),
+                Button("🗑️", id=f"btn-remove-subgroup-{i}", classes="remove-btn"),
+                classes="subgroup-row"
+            ))
+        
+        if widgets:
+            c.mount(*widgets)
+            
+        self.query_one("#btn-sync-add-subgroup", Button).disabled = (len(self.sync_subgroups) >= 5)
 
-        missing = []
-        if not project_key:
-            missing.append("Llave de Proyecto")
-        if not test_plan:
-            missing.append("Llave de Test Plan")
-        if not exec_summary:
-            missing.append("Resumen de Ejecución")
-        if not set_summary:
-            missing.append("Resumen de Test Set")
-        if missing:
-            self._log(log_id, f"[ERROR] Faltan los siguientes requerimientos obligatorios: {', '.join(missing)}")
-            return
-
-        def on_progress(msg: str) -> None:
-            self._log(log_id, f"  → {msg}")
-
+    def _run_setup(self):
+        log = "setup-log"
+        pjx = self._build_pjx("setup", log)
+        if not pjx: return
+        self._log(log, "Iniciando Preparación...")
         try:
-            result = pjx.setup(
-                project_key=project_key,
-                test_plan_key=test_plan,
-                execution_summary=exec_summary,
-                test_set_summary=set_summary,
-                reuse_tests=reuse,
-                progress_callback=on_progress,
+            res = pjx.setup(
+                test_plan_key=self._get_input("setup-test-plan"),
+                execution_summary=self._get_input("setup-exec-summary"),
+                application=self._get_input("setup-application"),
+                test_mode="add" if self.query_one("#setup-test-mode", RadioSet).pressed_button.id == "test-mode-add" else "clone",
+                progress_callback=lambda m: self._log(log, f" → {m}")
             )
-            self._log(log_id, f"[ÉXITO] Test Execution (Ticket): {result.test_execution.key}")
-            self._log(log_id, f"[ÉXITO] Test Set Oficial: {result.test_set.key}")
-            self._log(log_id, f"[ÉXITO] Cosecha de Pruebas: {len(result.tests)} totales abordadas ({len(result.reused)} recicladas, {len(result.cloned)} construidas/clonadas)")
-        except Exception as e:
-            self._log(log_id, f"[ERROR] Operación rechazada: {e}")
+            self._log(log, "[ÉXITO] Preparación finalizada.")
+        except Exception as e: self._log(log, f"[ERROR] {e}")
 
-    def _run_sync(self) -> None:
-        log_id = "sync-log"
-        self._log(log_id, "Iniciando escaneo dinámico de Sincronización…")
-
-        pjx = self._build_pjx("sync", log_id)
-        if not pjx:
-            return
-
-        exec_key = self._get_input("sync-exec-key")
-        folder = self._get_input("sync-folder")
-        status_widget = self.query_one("#sync-status", Select)
-        status = str(status_widget.value) if status_widget.value else "PASS"
-        recursive = self.query_one("#sync-recursive", Checkbox).value
-
-        missing = []
-        if not exec_key:
-            missing.append("Test Execution (Id Original)")
-        if not folder:
-            missing.append("Ruta de Evidencias Físicas")
-        if missing:
-            self._log(log_id, f"[ERROR] Faltan los siguientes campos antes de proceder: {', '.join(missing)}")
-            return
-
-        def on_progress(msg: str) -> None:
-            self._log(log_id, f"  → {msg}")
-
+    def _run_sync(self):
+        log = "sync-log"
+        pjx = self._build_pjx("sync", log)
+        if not pjx: return
+        self._log(log, "Iniciando Sincronización...")
+        overrides = {}
+        for g in self.sync_subgroups:
+            for k in re.findall(r'[a-zA-Z]+-\d+', g["qaxs"]): overrides[k] = g["status"]
+        mode = "replace" if self.query_one("#sync-upload-mode", RadioSet).pressed_button.id == "sync-mode-replace" else "append"
         try:
-            result = pjx.sync(
-                execution_key=exec_key,
-                folder=folder,
-                status=status,
-                recursive=recursive,
-                progress_callback=on_progress,
+            res = pjx.sync(
+                execution_key=self._get_input("sync-exec-key"),
+                folder=self._get_input("sync-folder"),
+                status=str(self.query_one("#sync-status", Select).value or "PASS"),
+                status_overrides=overrides,
+                upload_mode=mode,
+                allowed_extensions=[e.strip() for e in self._get_input("sync-extensions").split(",")] if self._get_input("sync-extensions") else [".pdf"],
+                progress_callback=lambda m: self._log(log, f" → {m}")
             )
-            self._log(log_id, f"[ÉXITO] Coincidencias de tokens exitosas: {len(result.matches)}")
-            self._log(log_id, f"[INFO] Archivos de Carpeta Huerfanizados: {len(result.unmatched_files)}")
-            self._log(log_id, f"[INFO] Tests sin archivos emparejados: {len(result.unmatched_tests)}")
-            for m in result.matches:
-                self._log(log_id, f"  ✓ {m.test_key} ← {m.file_path}")
-        except FileNotFoundError as e:
-            self._log(log_id, f"[ERROR] Carpeta referida local no encontrada: {e}")
-        except Exception as e:
-            self._log(log_id, f"[ERROR] Conflicto o rechazo de servidor: {e}")
+            self._log(log, f"[ÉXITO] Sincronización finalizada (Modo: {mode.upper()}).")
+        except Exception as e: self._log(log, f"[ERROR] {e}")
 
-    def action_switch_tab(self, tab_id: str) -> None:
-        self.query_one("#tabs", TabbedContent).active = tab_id
+    def _toggle_docs(self, btn):
+        if not self.mkdocs_process:
+            self.mkdocs_process = subprocess.Popen(["mkdocs", "serve"], cwd="../../")
+            btn.label = "Cerrar Docs"; btn.add_class("warning-btn")
+        else:
+            self._kill_mkdocs(); btn.label = "Visualizar Documentation"; btn.remove_class("warning-btn")
 
-    def _run_encrypt(self) -> None:
-        plain = self._get_input("sec-plain")
-        if not plain:
-            self._log("sec-log", "[ERROR] La contraseña plana se encuentra vacía.")
-            return
+    def _run_encrypt(self):
+        p = self._get_input("sec-plain")
+        if not p: return
         from ..infrastructure.security.encryption import SymmetricEncryptionService
-        svc = SymmetricEncryptionService()
-        encrypted = svc.encrypt(plain)
-        self.query_one("#sec-encrypted", Input).value = encrypted
-        self._log("sec-log", f"[ÉXITO] El Token seguro fue encriptado exitosamente")
+        self.query_one("#sec-encrypted", Input).value = SymmetricEncryptionService().encrypt(p)
+        self._log("sec-log", "[ÉXITO] Encriptado.")
 
-    def _run_decrypt(self) -> None:
-        encrypted = self._get_input("sec-encrypted")
-        if not encrypted:
-            self._log("sec-log", "[ERROR] El recuadro para Token Encriptado se encuentra vacío.")
-            return
+    def _run_decrypt(self):
+        e = self._get_input("sec-encrypted")
+        if not e: return
         from ..infrastructure.security.encryption import SymmetricEncryptionService
-        svc = SymmetricEncryptionService()
-        try:
-            decrypted = svc.decrypt(encrypted)
-            self.query_one("#sec-plain", Input).value = decrypted
-            self._log("sec-log", f"[ÉXITO] El Token de comprobación fue desempaquetado exitosamente")
-        except Exception as e:
-            self._log("sec-log", f"[ERROR] Imposible validar la derivación de este token. Verifica su pureza: {e}")
+        try: self.query_one("#sec-plain", Input).value = SymmetricEncryptionService().decrypt(e)
+        except Exception: self._log("sec-log", "[ERROR] Inválido.")

@@ -66,6 +66,16 @@ class XrayTestRepository(TestRepository):
         )
         return cloned
 
+    def update_labels(self, key: str, new_labels: list[str]) -> bool:
+        try:
+            issue = self._jira.get_issue(key)
+            existing = issue.get("fields", {}).get("labels", [])
+            merged = list(set(existing + new_labels))
+            self._jira.update_issue(key, {"labels": merged})
+            return True
+        except Exception:
+            return False
+
     def update_status(self, execution_key: str, test_key: str, status: str) -> bool:
         issue = self._jira.get_issue(test_key)
         test_id = issue.get("id")
@@ -100,6 +110,33 @@ class XrayTestRepository(TestRepository):
                 self._xray.upload_file(f"testrun/{run_id}/attachment", file_path)
                 return True
             return False
+        except Exception:
+            return False
+
+    def clear_evidence(self, execution_key: str, test_key: str) -> bool:
+        """Elimina todos los adjuntos existentes en un Test Run."""
+        try:
+            exec_issue = self._jira.get_issue(execution_key)
+            exec_id = exec_issue.get("id")
+            tests = self._xray.get(f"testexec/{exec_id}/test")
+            run_id = None
+            if isinstance(tests, list):
+                for t in tests:
+                    if t.get("key") == test_key:
+                        run_id = t.get("id")
+                        break
+            
+            if not run_id:
+                return False
+
+            # Obtener adjuntos actuales
+            attachments = self._xray.get(f"testrun/{run_id}/attachment")
+            if isinstance(attachments, list):
+                for att in attachments:
+                    att_id = att.get("id")
+                    if att_id:
+                        self._xray.delete(f"attachment/{att_id}")
+            return True
         except Exception:
             return False
 

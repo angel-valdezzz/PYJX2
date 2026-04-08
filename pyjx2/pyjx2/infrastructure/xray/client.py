@@ -62,6 +62,9 @@ class XrayClient:
     def put(self, path: str, data: Optional[dict] = None) -> Any:
         return self._request("put", path, json=data)
 
+    def delete(self, path: str) -> Any:
+        return self._request("delete", path)
+
     def graphql(self, query: str, variables: Optional[dict] = None) -> dict:
         resp = requests.post(
             self.GRAPHQL_URL,

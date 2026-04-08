@@ -8,9 +8,10 @@
       "type": "object",
       "description": "Jira connection settings",
       "properties": {
-        "url": {
+        "env": {
           "type": "string",
-          "description": "Base URL for Jira (e.g. https://yourorg.atlassian.net)"
+          "description": "Environment to connect to: QA or DEV",
+          "enum": ["QA", "DEV"]
         },
         "username": {
           "type": "string",
@@ -18,14 +19,10 @@
         },
         "password": {
           "type": "string",
-          "description": "Jira password"
-        },
-        "project_key": {
-          "type": "string",
-          "description": "Default Jira project key"
+          "description": "Jira password or API token"
         }
       },
-      "required": ["url", "username", "password"]
+      "required": ["username", "password"]
     },
     "xray": {
       "type": "object",
@@ -50,9 +47,6 @@
       "type": "object",
       "description": "Default values for the setup command",
       "properties": {
-        "project_key": {
-          "type": "string"
-        },
         "test_plan_key": {
           "type": "string"
         },
@@ -62,8 +56,15 @@
         "test_set_summary": {
           "type": "string"
         },
+        "test_mode": {
+          "type": "string",
+          "description": "Modo de tests: 'clone' (copiar en QAX) o 'add' (agregar sin clonar)",
+          "enum": ["clone", "add"],
+          "default": "clone"
+        },
         "reuse_tests": {
           "type": "boolean",
+          "description": "DEPRECATED: usa test_mode='add' en su lugar",
           "default": false
         }
       }
@@ -85,6 +86,16 @@
         "recursive": {
           "type": "boolean",
           "default": true
+        },
+        "upload_mode": {
+          "type": "string",
+          "enum": ["append", "replace"],
+          "default": "append"
+        },
+        "allowed_extensions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [".pdf"]
         }
       }
     }

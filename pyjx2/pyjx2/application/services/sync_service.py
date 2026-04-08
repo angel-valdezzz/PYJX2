@@ -1,11 +1,8 @@
 from __future__ import annotations
-
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, List
 
-from ...domain.entities import Test
 from ...domain.repositories import TestRepository, TestExecutionRepository
 
 
@@ -13,8 +10,11 @@ from ...domain.repositories import TestRepository, TestExecutionRepository
 class SyncInput:
     execution_key: str
     folder: str
-    status: str
+    default_status: str = "PASS"
+    status_overrides: Dict[str, str] = field(default_factory=dict)
+    allowed_extensions: Optional[List[str]] = None
     recursive: bool = True
+    upload_mode: str = "append"  # "append" | "replace"
 
 
 @dataclass
@@ -28,18 +28,22 @@ class SyncMatch:
 
 @dataclass
 class SyncResult:
-    matches: list[SyncMatch]
-    unmatched_tests: list[str]
-    unmatched_files: list[str]
+    test_execution: str
+    processed_tests: int = 0
+    updated_tests: int = 0
+    tests_without_evidence: List[str] = field(default_factory=list)
+    files_uploaded: int = 0
+    files_unused: List[str] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
 
 
 class SyncService:
     """
-    Orchestrates the sync flow:
-    1. Get tests from a test execution
-    2. Recursively scan a folder for files
-    3. Match files to tests by name (stem matches test key or summary tokens)
-    4. Update status and upload evidence for matched tests
+    Sincronización de evidencias (Fase 2):
+    1. Valida el Test Execution.
+    2. Escanea la carpeta local de forma recursiva.
+    3. Asocia archivos a tests si el nombre del archivo INICIA con el summary del test (prefix_summary).
+    4. Actualiza estados (default o por test) y sube evidencias.
     """
 
     def __init__(
@@ -50,24 +54,32 @@ class SyncService:
         self._test_repo = test_repo
         self._test_exec_repo = test_exec_repo
 
-    def _collect_files(self, folder: str, recursive: bool) -> list[Path]:
+    def _collect_files(self, folder: str, recursive: bool, allowed_ext: Optional[List[str]]) -> list[Path]:
         root = Path(folder)
         if not root.exists():
-            raise FileNotFoundError(f"Folder not found: {folder}")
-        if recursive:
-            return [p for p in root.rglob("*") if p.is_file()]
-        else:
-            return [p for p in root.iterdir() if p.is_file()]
+            raise FileNotFoundError(f"Directorio de evidencias no encontrado: {folder}")
+        
+        pattern = "**/*" if recursive else "*"
+        files = [p for p in root.glob(pattern) if p.is_file()]
+        
+        if allowed_ext:
+            # Normalizar extensiones a .ext
+            exts = [e.lower() if e.startswith(".") else f".{e.lower()}" for e in allowed_ext]
+            files = [f for f in files if f.suffix.lower() in exts]
+            
+        return files
 
-    def _match_file_to_test(self, file_path: Path, tests: list[Test]) -> Optional[Test]:
-        stem = file_path.stem.upper().replace(" ", "-").replace("_", "-")
-        for test in tests:
-            if stem == test.key.upper():
-                return test
-            safe_summary = test.summary.upper().replace(" ", "-").replace("_", "-")
-            if stem == safe_summary:
-                return test
-        return None
+    def _match_files_to_test(self, test_summary: str, files: list[Path]) -> list[Path]:
+        """
+        Regla de matching: Un archivo coincide si su nombre (stem) empieza con el summary del test.
+        Case insensitive.
+        """
+        matches = []
+        summary_upper = test_summary.upper()
+        for f in files:
+            if f.stem.upper().startswith(summary_upper):
+                matches.append(f)
+        return matches
 
     def run(
         self,
@@ -78,54 +90,64 @@ class SyncService:
             if progress_callback:
                 progress_callback(msg)
 
-        notify(f"Fetching tests from execution: {input_data.execution_key}")
-        exec_tests = self._test_exec_repo.get_tests(input_data.execution_key)
+        result = SyncResult(test_execution=input_data.execution_key)
 
-        tests: list[Test] = []
-        for td in exec_tests:
-            key = td.get("key", "")
-            if key:
-                t = self._test_repo.get(key)
-                if t:
-                    tests.append(t)
+        try:
+            notify(f"Obteniendo tests de la ejecución: {input_data.execution_key}")
+            tests = self._test_exec_repo.list_from_execution(input_data.execution_key)
+            result.processed_tests = len(tests)
+            notify(f"Se encontraron {len(tests)} tests procesables.")
+        except Exception as e:
+            msg = f"Error al validar Test Execution {input_data.execution_key}: {e}"
+            notify(f"[FAIL FAST] {msg}")
+            result.errors.append(msg)
+            return result
 
-        notify(f"Found {len(tests)} tests in execution")
+        notify(f"Escaneando evidencias en: {input_data.folder} (recursivo={input_data.recursive})")
+        all_files = self._collect_files(input_data.folder, input_data.recursive, input_data.allowed_extensions)
+        notify(f"Se encontraron {len(all_files)} archivos válidos para procesar.")
 
-        notify(f"Scanning folder: {input_data.folder} (recursive={input_data.recursive})")
-        files = self._collect_files(input_data.folder, input_data.recursive)
-        notify(f"Found {len(files)} files")
+        matched_files_paths: set[str] = set()
+        tests_updated_count = 0
+        total_uploads = 0
 
-        matches: list[SyncMatch] = []
-        matched_test_keys: set[str] = set()
-        matched_files: set[str] = set()
+        for test in tests:
+            test_matches = self._match_files_to_test(test.summary, all_files)
+            
+            if not test_matches:
+                result.tests_without_evidence.append(test.key)
+                continue
 
-        for file_path in files:
-            test = self._match_file_to_test(file_path, tests)
-            if test:
-                notify(f"Matched: {file_path.name} → {test.key} — updating status to {input_data.status}")
-                status_ok = self._test_repo.update_status(
-                    input_data.execution_key, test.key, input_data.status
-                )
-                notify(f"Uploading evidence: {file_path}")
-                upload_ok = self._test_repo.upload_evidence(
-                    input_data.execution_key, test.key, str(file_path)
-                )
-                matches.append(SyncMatch(
-                    test_key=test.key,
-                    test_summary=test.summary,
-                    file_path=str(file_path),
-                    uploaded=upload_ok,
-                    status_updated=status_ok,
-                ))
-                matched_test_keys.add(test.key)
-                matched_files.add(str(file_path))
+            # Determinar estado
+            status = input_data.status_overrides.get(test.key, input_data.default_status)
+            notify(f"Actualizando {test.key} ('{test.summary}') a estado: {status}")
+            
+            status_ok = self._test_repo.update_status(input_data.execution_key, test.key, status)
+            if status_ok:
+                tests_updated_count += 1
 
-        unmatched_tests = [t.key for t in tests if t.key not in matched_test_keys]
-        unmatched_files = [str(f) for f in files if str(f) not in matched_files]
+            # Si el modo es REPLACE, limpiar evidencias previas
+            if input_data.upload_mode == "replace":
+                notify(f"  Modo REPLACE: Limpiando evidencias previas para {test.key}...")
+                self._test_repo.clear_evidence(input_data.execution_key, test.key)
 
-        notify(f"Sync complete. {len(matches)} matches, {len(unmatched_tests)} unmatched tests, {len(unmatched_files)} unmatched files")
-        return SyncResult(
-            matches=matches,
-            unmatched_tests=unmatched_tests,
-            unmatched_files=unmatched_files,
-        )
+            for f_path in test_matches:
+                notify(f"  Subiendo evidencia: {f_path.name}")
+                upload_ok = self._test_repo.upload_evidence(input_data.execution_key, test.key, str(f_path))
+                if upload_ok:
+                    total_uploads += 1
+                else:
+                    result.errors.append(f"Falla al subir {f_path.name} para {test.key}")
+                
+                matched_files_paths.add(str(f_path))
+
+        result.updated_tests = tests_updated_count
+        result.files_uploaded = total_uploads
+        result.files_unused = [str(f.name) for f in all_files if str(f) not in matched_files_paths]
+
+        notify(f"Sincronización finalizada. Tests actualizados: {result.updated_tests}. Archivos subidos: {result.files_uploaded}.")
+        if result.files_unused:
+            notify(f"Archivos sin asociación: {len(result.files_unused)}")
+
+        return result
+

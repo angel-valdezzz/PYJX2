@@ -33,7 +33,7 @@ def _(ctx, tmp_path, monkeypatch):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text("""
 [jira]
-url = "https://discovered.atlassian.net"
+env = "QA"
 username = "found@example.com"
 password = "found_token"
 
@@ -50,7 +50,7 @@ def _(ctx, tmp_path, monkeypatch):
     cfg = tmp_path / "pyjx2.json"
     cfg.write_text(json.dumps({
         "jira": {
-            "url": "https://json-discovered.atlassian.net",
+            "env": "DEV",
             "username": "json@example.com",
             "password": "json_token",
         },
@@ -70,7 +70,7 @@ def _(ctx, tmp_path, status):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text(f"""
 [jira]
-url = "https://example.atlassian.net"
+env = "QA"
 username = "user@example.com"
 password = "token"
 
@@ -87,7 +87,7 @@ status = "{status}"
 @given(parsers.parse('a JSON config file missing "{field}" in the jira section'))
 def _(ctx, tmp_path, field):
     jira = {
-        "url": "https://example.atlassian.net",
+        "env": "QA",
         "username": "user@example.com",
         "password": "token",
     }
@@ -129,7 +129,7 @@ def _(ctx):
 @when("I load settings with no configuration at all")
 def _(ctx):
     env_clear = {
-        "PYJX2_JIRA_URL": "",
+        "PYJX2_JIRA_ENV": "",
         "PYJX2_JIRA_USERNAME": "",
         "PYJX2_JIRA_PASSWORD": "",
         "PYJX2_XRAY_CLIENT_ID": "",
@@ -161,17 +161,17 @@ def _(ctx, password):
 
 # ── Then ──────────────────────────────────────────────────────────────────────
 
-@then(parsers.parse('the Jira URL is "{url}"'))
-def _(ctx, url):
+@then(parsers.parse('the Jira environment is "{env}"'))
+def _(ctx, env):
     assert ctx["settings"] is not None, f"Settings not loaded: {ctx.get('error')}"
-    assert ctx["settings"].jira.url == url, (
-        f"Expected Jira URL '{url}', got '{ctx['settings'].jira.url}'"
+    assert ctx["settings"].jira.env.upper() == env.upper(), (
+        f"Expected Jira env '{env}', got '{ctx['settings'].jira.env}'"
     )
 
 
-@then(parsers.parse('the Jira URL is still "{url}"'))
-def _(ctx, url):
-    assert ctx["settings"].jira.url == url
+@then(parsers.parse('the Jira environment is still "{env}"'))
+def _(ctx, env):
+    assert ctx["settings"].jira.env.upper() == env.upper()
 
 
 @then(parsers.parse('the Jira username is "{username}"'))

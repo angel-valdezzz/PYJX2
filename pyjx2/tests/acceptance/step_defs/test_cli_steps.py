@@ -10,7 +10,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 from typer.testing import CliRunner
 
 from pyjx2.cli.app import app
-from pyjx2.application.services.setup_service import SetupResult
+from pyjx2.application.use_cases.setup.models import SetupResult, SetupResultMetrics
 from pyjx2.application.services.sync_service import SyncResult, SyncMatch
 from pyjx2.domain.entities import Test, TestSet, TestExecution
 
@@ -24,12 +24,10 @@ runner = CliRunner()
 
 def _default_setup_result():
     return SetupResult(
-        test_execution=TestExecution(key="PROJ-30", summary="Sprint Exec"),
-        test_set=TestSet(key="PROJ-20", summary="Sprint Set"),
+        test_executions=[TestExecution(key="PROJ-30", summary="Sprint Exec")],
+        test_sets=[TestSet(key="PROJ-20", summary="Sprint Set")],
         tests=[Test(key="PROJ-10", summary="Login test")],
-        reused=[],
-        created=[],
-        cloned=["PROJ-10"],
+        metrics=SetupResultMetrics(tests_cloned=1, tests_linked=0)
     )
 
 
@@ -57,11 +55,11 @@ def _default_sync_result(unmatched_tests=0):
 # ── Base args ──────────────────────────────────────────────────────────────────
 
 BASE_SETUP_ARGS = [
-    "--project", "PROJ",
     "--test-plan", "PROJ-1",
     "--execution-summary", "Sprint Exec",
     "--test-set-summary", "Sprint Set",
-    "--jira-url", "https://test.atlassian.net",
+    "--application", "AXA_WEB",
+    "--env", "QA",
     "--jira-username", "u@test.com",
     "--password", "token",
     "--xray-client-id", "cid",
@@ -72,7 +70,7 @@ BASE_SYNC_ARGS = [
     "--execution", "PROJ-30",
     "--folder", "/tmp",
     "--status", "PASS",
-    "--jira-url", "https://test.atlassian.net",
+    "--env", "QA",
     "--jira-username", "u@test.com",
     "--password", "token",
     "--xray-client-id", "cid",
@@ -116,12 +114,6 @@ def _(ctx):
     ctx["mock_pjx"] = mock_pjx
 
 
-@when('I invoke "pyjx2 setup" without "--project"')
-def _(ctx):
-    args = [a for a in BASE_SETUP_ARGS if a not in ("--project", "PROJ")]
-    ctx["cli_result"] = runner.invoke(app, ["setup"] + args)
-
-
 @when('I invoke "pyjx2 setup" without "--test-plan"')
 def _(ctx):
     args = [a for a in BASE_SETUP_ARGS if a not in ("--test-plan", "PROJ-1")]
@@ -138,20 +130,20 @@ def _(ctx):
 def _(ctx):
     result = runner.invoke(app, [
         "setup",
-        "--project", "PROJ",
         "--test-plan", "PROJ-1",
         "--execution-summary", "E",
         "--test-set-summary", "S",
+        "--application", "APP",
     ])
     ctx["cli_result"] = result
 
 
-@when('I invoke "pyjx2 setup" with "--reuse-tests"')
+@when('I invoke "pyjx2 setup" con modo agregar \"--test-mode add\"')
 def _(ctx):
     mock_pjx = MagicMock()
     mock_pjx.setup.return_value = _default_setup_result()
     with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
-        result = runner.invoke(app, ["setup"] + BASE_SETUP_ARGS + ["--reuse-tests"])
+        result = runner.invoke(app, ["setup"] + BASE_SETUP_ARGS + ["--test-mode", "add"])
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx
 
@@ -164,10 +156,10 @@ def _(ctx):
         result = runner.invoke(app, [
             "setup",
             "--config", ctx["config_file"],
-            "--project", "PROJ",
             "--test-plan", "PROJ-1",
             "--execution-summary", "E",
             "--test-set-summary", "S",
+            "--application", "A",
         ])
     ctx["cli_result"] = result
 
@@ -276,16 +268,12 @@ def _(ctx):
     )
 
 
-@then("the reuse_tests parameter is True in the API call")
-def _(ctx):
+@then(parsers.parse('the test_mode parameter is "{mode}" in the API call'))
+def _(ctx, mode):
     call_kwargs = ctx["mock_pjx"].setup.call_args[1]
-    assert call_kwargs.get("reuse_tests") is True
-
-
-@then("the reuse_tests parameter is False in the API call")
-def _(ctx):
-    call_kwargs = ctx["mock_pjx"].setup.call_args[1]
-    assert call_kwargs.get("reuse_tests") is False
+    assert call_kwargs.get("test_mode") == mode, (
+        f"Expected test_mode='{mode}', got {call_kwargs.get('test_mode')!r}"
+    )
 
 
 @then("the recursive parameter is False in the API call")

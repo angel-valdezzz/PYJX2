@@ -1,6 +1,3 @@
-"""
-Step definitions for: features/sync_flow.feature
-"""
 from __future__ import annotations
 
 import tempfile
@@ -20,14 +17,20 @@ scenarios("../features/sync_flow.feature")
 
 # ── Given ─────────────────────────────────────────────────────────────────────
 
-@given(parsers.parse('a test execution "{exec_key}" with tests "PROJ-10", "PROJ-11", "PROJ-12"'))
+@given(parsers.parse('a test execution "{exec_key}" with tests "PROJ-10" (Login), "PROJ-11" (Logout), "PROJ-12" (Register)'))
 def _(ctx, settings, exec_key):
     ctx["exec_key"] = exec_key
-    ctx["exec_test_keys"] = ["PROJ-10", "PROJ-11", "PROJ-12"]
-    plan_tests = ctx.get("plan_tests", [])
+    # Mapeo explícito para que el mock devuelva tests con estos summaries
+    ctx["test_defs"] = [
+        Test(key="PROJ-10", summary="Login flow"),
+        Test(key="PROJ-11", summary="Logout flow"),
+        Test(key="PROJ-12", summary="Register user"),
+    ]
     ctx["client"] = build_mocked_client(
-        settings, plan_tests, exec_test_keys=ctx["exec_test_keys"]
+        settings, [], exec_test_keys=["PROJ-10", "PROJ-11", "PROJ-12"]
     )
+    # Sobrescribir el mock para que devuelva los objetos Test con summary
+    ctx["client"]._test_exec_repo.list_from_execution.return_value = ctx["test_defs"]
 
 
 @given(parsers.parse('an evidence folder with files "{file1}" and "{file2}"'))
@@ -153,16 +156,19 @@ def _(ctx, folder_path):
 def _(ctx, n):
     result = ctx["sync_result"]
     assert result is not None, f"Sync failed with: {ctx.get('sync_error')}"
-    assert len(result.matches) == n, (
-        f"Expected {n} matches, got {len(result.matches)}: {result.matches}"
+    # updated_tests representa cuántos tests únicos tuvieron matches
+    assert result.updated_tests == n, (
+        f"Expected {n} matches, got {result.updated_tests}"
     )
 
 
 @then(parsers.parse('the matched tests are "{key1}" and "{key2}"'))
 def _(ctx, key1, key2):
-    matched_keys = {m.test_key for m in ctx["sync_result"].matches}
-    assert key1 in matched_keys, f"{key1} not in matched keys: {matched_keys}"
-    assert key2 in matched_keys, f"{key2} not in matched keys: {matched_keys}"
+    # En el nuevo SyncResult no guardamos la lista de matches directos por key, 
+    # pero podemos inferir por tests_without_evidence
+    without = ctx["sync_result"].tests_without_evidence
+    assert key1 not in without, f"{key1} matches not found"
+    assert key2 not in without, f"{key2} matches not found"
 
 
 @then(parsers.parse('the status "{status}" is set for all matched tests'))
@@ -178,43 +184,41 @@ def _(ctx, status):
 @then("evidence is uploaded for all matched tests")
 def _(ctx):
     result = ctx["sync_result"]
-    assert all(m.uploaded for m in result.matches), (
-        "Some matches did not have evidence uploaded"
-    )
+    assert result.files_uploaded > 0
 
 
 @then(parsers.parse('"{key}" is matched'))
 def _(ctx, key):
-    matched_keys = {m.test_key for m in ctx["sync_result"].matches}
-    assert key in matched_keys, f"{key} was not matched. Matched: {matched_keys}"
+    without = ctx["sync_result"].tests_without_evidence
+    assert key not in without, f"{key} was not matched"
 
 
 @then(parsers.parse('"{key}" is not matched'))
 def _(ctx, key):
-    matched_keys = {m.test_key for m in ctx["sync_result"].matches}
-    assert key not in matched_keys, f"{key} was matched but should not be"
+    without = ctx["sync_result"].tests_without_evidence
+    assert key in without, f"{key} was matched but should not be"
 
 
 @then(parsers.parse('the unmatched tests include "{key1}" and "{key2}"'))
 def _(ctx, key1, key2):
-    unmatched = ctx["sync_result"].unmatched_tests
-    assert key1 in unmatched, f"{key1} not in unmatched_tests: {unmatched}"
-    assert key2 in unmatched, f"{key2} not in unmatched_tests: {unmatched}"
+    unmatched = ctx["sync_result"].tests_without_evidence
+    assert key1 in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
+    assert key2 in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
 
 
 @then(parsers.parse('the unmatched files include "{filename}"'))
 def _(ctx, filename):
-    unmatched_files = " ".join(ctx["sync_result"].unmatched_files)
-    assert filename in unmatched_files, (
-        f"'{filename}' not found in unmatched files: {ctx['sync_result'].unmatched_files}"
+    unmatched_files = ctx["sync_result"].files_unused
+    assert any(filename in f for f in unmatched_files), (
+        f"'{filename}' not found in unmatched files: {unmatched_files}"
     )
 
 
 @then(parsers.parse("all {n:d} tests are unmatched"))
 def _(ctx, n):
     result = ctx["sync_result"]
-    assert len(result.unmatched_tests) == n, (
-        f"Expected {n} unmatched tests, got {len(result.unmatched_tests)}"
+    assert len(result.tests_without_evidence) == n, (
+        f"Expected {n} unmatched tests, got {len(result.tests_without_evidence)}"
     )
 
 

@@ -21,10 +21,9 @@ from pyjx2.infrastructure.config.settings import Settings, JiraSettings, XraySet
 @pytest.fixture
 def jira_settings():
     return JiraSettings(
-        url="https://test.atlassian.net",
+        env="QA",
         username="user@test.com",
         password="test_token",
-        project_key="PROJ",
     )
 
 
@@ -133,10 +132,9 @@ def valid_toml_config(tmp_path):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text("""
 [jira]
-url = "https://example.atlassian.net"
+env = "QA"
 username = "user@example.com"
 password = "my_token"
-project_key = "PROJ"
 
 [xray]
 client_id = "my_client"
@@ -162,7 +160,7 @@ def valid_json_config(tmp_path):
     cfg = tmp_path / "pyjx2.json"
     cfg.write_text(json.dumps({
         "jira": {
-            "url": "https://example.atlassian.net",
+            "env": "QA",
             "username": "user@example.com",
             "password": "my_json_token",
         },
