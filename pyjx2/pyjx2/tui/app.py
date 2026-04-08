@@ -666,10 +666,55 @@ class PyJX2App(App):
 
     def _toggle_docs(self, btn):
         if not self.mkdocs_process:
-            self.mkdocs_process = subprocess.Popen(["mkdocs", "serve"], cwd="../../")
-            btn.label = "Cerrar Docs"; btn.add_class("warning-btn")
+            # Calculate absolute path to the directory containing mkdocs.yml
+            # script is in pyjx2/pyjx2/tui/app.py
+            # we need to go up to pyjx2/ (where mkdocs.yml is)
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            
+            try:
+                self.mkdocs_process = subprocess.Popen(["mkdocs", "serve"], cwd=base_dir)
+                btn.label = "Cerrar Docs"; btn.add_class("warning-btn")
+                
+                # Wait a bit for the server to initialize and open browser in full screen
+                def open_browser():
+                    import time
+                    import os
+                    import webbrowser
+                    import subprocess
+                    time.sleep(1.0)
+                    url = "http://127.0.0.1:8000"
+                    try:
+                        if os.name == "nt": # Windows
+                            chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+                            edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+                            
+                            if os.path.isfile(chrome_path):
+                                subprocess.Popen([chrome_path, "--new-window", "--start-fullscreen", url])
+                            elif os.path.isfile(edge_path):
+                                subprocess.Popen([edge_path, "--new-window", "--start-fullscreen", url])
+                            else:
+                                webbrowser.open(url)
+
+                        else:
+                            webbrowser.open(url)
+                    except Exception:
+                        webbrowser.open(url) # Fallback
+
+
+                
+                threading.Thread(target=open_browser, daemon=True).start()
+
+                
+            except Exception as e:
+
+                # Fallback if somehow base_dir doesn't exist
+                try: self._log("setup-log", f"[ERROR] No se pudo iniciar MkDocs: {e}")
+                except Exception: pass
         else:
-            self._kill_mkdocs(); btn.label = "Visualizar Documentation"; btn.remove_class("warning-btn")
+            self._kill_mkdocs()
+            btn.label = "📖 Visualizar Documentación (MkDocs)"
+            btn.remove_class("warning-btn")
+
 
     def _run_encrypt(self):
         p = self._get_input("sec-plain")
