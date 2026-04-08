@@ -18,7 +18,6 @@ Característica: Carga de Configuración
     Cuando cargo los ajustes desde ese archivo
     Entonces el usuario de Jira es "user@example.com"
     Y el ID de cliente de Xray es "json_client"
-    Y el valor de reutilizar pruebas en preparación es Verdadero
     Y el valor de recursividad en sincronización es Falso
 
   Escenario: pyjx2.toml es auto-descubierto en el directorio actual

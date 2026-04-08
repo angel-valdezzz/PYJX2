@@ -48,9 +48,7 @@ def _(ctx, plan_key, application):
         result = ctx["client"].setup(
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
-            test_set_summary="Sprint 1 Test Set",
             application=application,
-            reuse_tests=False,
         )
         ctx["result"] = result
         ctx["error"] = None
@@ -66,7 +64,6 @@ def _(ctx):
         result = ctx["client"].setup(
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
-            test_set_summary="Sprint 1 Test Set",
             application="AXA_WEB",
             test_mode="clone",
         )
@@ -84,7 +81,6 @@ def _(ctx):
         result = ctx["client"].setup(
             test_plan_key=plan_key,
             execution_summary="Sprint 1 Execution",
-            test_set_summary="Sprint 1 Test Set",
             application="AXA_WEB",
             test_mode="add",
         )
@@ -101,7 +97,6 @@ def _(ctx, plan_key):
         result = ctx["client"].setup(
             test_plan_key=plan_key,
             execution_summary="E",
-            test_set_summary="S",
             application="APP",
         )
         ctx["result"] = result
@@ -116,9 +111,8 @@ def _(ctx):
     messages = []
     plan_key = ctx.get("plan_key", "PROJ-1")
     ctx["client"].setup(
-            test_plan_key=plan_key,
+        test_plan_key=plan_key,
         execution_summary="E",
-        test_set_summary="S",
         application="APP",
         progress_callback=messages.append,
     )

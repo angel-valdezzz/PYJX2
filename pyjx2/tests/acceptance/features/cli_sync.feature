@@ -48,7 +48,7 @@ Feature: CLI Sync Command
   Scenario: Sync command shows unmatched tests in output
     Given the sync result has 2 unmatched tests
     When I invoke "pyjx2 sync" with all required arguments
-    Then the output contains "Unmatched tests"
+    Then the output shows unmatched tests
 
   Scenario: Sync command passes --no-recursive flag to the API
     When I invoke "pyjx2 sync" with "--no-recursive"

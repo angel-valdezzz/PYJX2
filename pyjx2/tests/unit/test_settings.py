@@ -94,11 +94,9 @@ class TestLoadSettingsFromOverrides:
         overrides = self._valid_overrides()
         overrides["setup"] = {
             "test_plan_key": "QAX-100",
-            "reuse_tests": True,
         }
         s = load_settings(overrides=overrides)
         assert s.setup.test_plan_key == "QAX-100"
-        assert s.setup.reuse_tests is True
 
     def test_sync_defaults_populated(self):
         overrides = self._valid_overrides()
@@ -109,7 +107,6 @@ class TestLoadSettingsFromOverrides:
 
     def test_setup_defaults_when_section_absent(self):
         s = load_settings(overrides=self._valid_overrides())
-        assert s.setup.reuse_tests is False
         assert s.setup.test_plan_key is None
 
     def test_sync_defaults_when_section_absent(self):
@@ -131,7 +128,6 @@ class TestLoadSettingsFromTOML:
         s = load_settings(config_file=str(valid_toml_config))
         assert s.setup.test_plan_key == "PROJ-100"
         assert s.setup.execution_summary == "Sprint Execution"
-        assert s.setup.reuse_tests is False
 
     def test_toml_sync_section(self, valid_toml_config):
         s = load_settings(config_file=str(valid_toml_config))
@@ -162,7 +158,6 @@ class TestLoadSettingsFromJSON:
     def test_json_setup_section(self, valid_json_config):
         s = load_settings(config_file=str(valid_json_config))
         assert s.setup.test_plan_key == "PROJ-200"
-        assert s.setup.reuse_tests is True
 
     def test_json_sync_section(self, valid_json_config):
         s = load_settings(config_file=str(valid_json_config))

@@ -21,10 +21,10 @@ Opciones globales comunes:
 
 | Flag | Tipo | Descripción |
 |---|---|---|
-| `--test-plan` | Text | Llave del Test Plan Jira (ej. PROJ-X). |
-| `--execution-summary` / `-e` | Text | Título para el nuevo Test Execution. |
-| `--application` / `-a` | Text | Calificador de aplicación (ej. AXA_WEB). |
-| `--test-mode` / `-m` | Text | `clone` (copiar tests) o `add` (usar tests originales). |
+| `--test-plan` | Text | Llave del Test Plan Jira (ej. PROJ-X). [MANDATORIO] |
+| `--execution-summary` / `-e` | Text | Título para el nuevo Test Execution. [MANDATORIO] |
+| `--application` / `-a` | Text | Calificador de aplicación (ej. AXA_WEB). [MANDATORIO] |
+| `--test-mode` / `-m` | Text | `clone` (copiar tests) o `add` (usar tests originales). Default: `clone`. |
 
 ---
 
@@ -33,10 +33,14 @@ Opciones globales comunes:
 
 | Flag | Tipo | Descripción |
 |---|---|---|
-| `--execution` / `-e` | Text | ID de la ejecución en Jira. |
-| `--folder` / `-f` | Text | Carpeta local con las evidencias. |
-| `--status` / `-s` | Text | Estado por defecto (PASS, FAIL, TODO, etc.). |
-| `--recursive` / `-r` | Boolean | Escaneo recursivo de subcarpetas. |
+| `--execution` / `-e` | Text | ID de la ejecución en Jira (ej. PROJ-200). [MANDATORIO] |
+| `--folder` / `-f` | Text | Carpeta local con las evidencias. [MANDATORIO] |
+| `--status` / `-s` | Text | Estado por defecto (PASS, FAIL, TODO, etc.). [MANDATORIO] |
+| `--mode` / `-m` | Text | `append` (añadir evidencias) o `replace` (limpiar previo). Default: `append`. |
+| `--extensions` | Text | Extensiones permitidas separadas por coma (ej. `.png,.jpg`). Default: `.pdf`. |
+| `--status-map` | JSON | Mapeo de llaves de test a estados específicos (ej. `'{"PROJ-1":"FAIL"}'`). |
+| `--recursive` / `-r` | Boolean | Escaneo recursivo de subcarpetas. Default: `True`. |
+| `--no-recursive` | Boolean | Desactiva el escaneo recursivo. |
 
 ---
 

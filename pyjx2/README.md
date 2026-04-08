@@ -77,6 +77,17 @@ pyjx2 sync \
   --recursive
 ```
 
+#### Opciones de `sync`:
+| Parámetro | Shorthand | Descripción |
+|---|---|---|
+| `--execution` | `-e` | ID de la ejecución (MANDATORIO). |
+| `--folder` | `-f` | Carpeta de evidencias (MANDATORIO). |
+| `--status` | `-s` | Estado por defecto (MANDATORIO: PASS, FAIL, etc.). |
+| `--recursive` | `-r` | Escaneo en subcarpetas (Default: True). |
+| `--mode` | `-m` | `append` o `replace` evidencias previas. |
+| `--extensions` | | Lista separada por coma (ej. `.png, .jpg`). |
+| `--status-map` | | JSON para estados específicos por test key. |
+
 ### Visualizar Documentación
 ```bash
 pyjx2 docs
@@ -91,17 +102,31 @@ pyjx2 tui
 
 ```python
 from pyjx2.api.client import PyJX2
-from pyjx2.infrastructure.config.settings import load_settings
 
-settings = load_settings()
-pjx = PyJX2(settings)
+# Opción 1: Cargar desde configuración (pyjx2.toml o variables de entorno)
+pjx = PyJX2.from_config()
 
-# Ejecutar flujo completo de Setup
+# Opción 2: Usar credenciales directas (sin archivos)
+pjx = PyJX2.from_credentials(
+    username="usuario@ejemplo.com",
+    password="mi_password", # Soporta ENC:...
+    env="QA"
+)
+
+# Ejecutar flujo de Preparación (Setup)
 pjx.setup(
     test_plan_key="PROJ-100",
-    execution_summary="Regresión",
-    application_target="AXA_WEB",
-    test_mode="clone"
+    execution_summary="Regresión Sprint 1",
+    application="AXA_WEB",
+    test_mode="clone" # u "add" para usar originales
+)
+
+# Ejecutar flujo de Sincronización (Sync)
+pjx.sync(
+    execution_key="PROJ-200",
+    folder="./evidencias",
+    status="PASS",
+    upload_mode="append" # u "replace"
 )
 ```
 

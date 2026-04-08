@@ -1,31 +1,25 @@
-# pyjx2.toml — Configuration file for pyjx2
-# Copy this file to pyjx2.toml (or pyjx2.json) in your working directory.
-# All values can also be set via environment variables:
-#   PYJX2_JIRA_URL, PYJX2_JIRA_USERNAME, PYJX2_JIRA_API_TOKEN
+# pyjx2.toml — Archivo de configuración para pyjx2
+# Copia este archivo como pyjx2.toml (o pyjx2.json) en tu directorio de trabajo.
+# Todos los valores pueden definirse mediante variables de entorno:
+#   PYJX2_JIRA_ENV, PYJX2_JIRA_USERNAME, PYJX2_JIRA_PASSWORD
 #   PYJX2_XRAY_CLIENT_ID, PYJX2_XRAY_CLIENT_SECRET
 
 [jira]
-url = "https://yourorg.atlassian.net"
-username = "user@example.com"
-password = "YOUR_JIRA_PASSWORD"
-project_key = "PROJ"             # Optional default project key
-
-[xray]
-client_id = "YOUR_XRAY_CLIENT_ID"
-client_secret = "YOUR_XRAY_CLIENT_SECRET"
-# base_url = "https://xray.cloud.getxray.app/api/v2"  # default, usually no need to change
+env = "QA"                          # "QA" o "DEV"
+username = "usuario@ejemplo.com"
+password = "TU_PASSWORD_O_TOKEN"    # Puede ser texto plano o ENC:... (ver comando config encrypt-pass)
 
 [setup]
-# Default values for the `pyjx2 setup` command (all overridable via CLI args)
-project_key = "PROJ"
-test_plan_key = "PROJ-100"
-execution_summary = "Sprint 1 Execution"
-test_set_summary = "Sprint 1 Test Set"
-reuse_tests = false
+# Valores por defecto para el comando `pyjx2 setup`
+test_plan_key = "QAX-100"
+execution_summary = "Ejecución Regresión Sprint"
+test_mode = "clone"                 # "clone" (clonar tests) o "add" (usar originales)
 
 [sync]
-# Default values for the `pyjx2 sync` command (all overridable via CLI args)
-execution_key = "PROJ-200"
-folder = "./evidence"
-status = "PASS"
+# Valores por defecto para el comando `pyjx2 sync`
+execution_key = "QAX-200"
+folder = "./evidencias"
+status = "PASS"                     # PASS, FAIL, TODO, EXECUTING, ABORTED
 recursive = true
+upload_mode = "append"              # "append" (añadir) o "replace" (limpiar y subir)
+allowed_extensions = [".pdf", ".png", ".jpg"]

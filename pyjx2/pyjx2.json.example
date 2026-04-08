@@ -1,25 +1,20 @@
 {
   "jira": {
-    "url": "https://yourorg.atlassian.net",
-    "username": "user@example.com",
-    "password": "YOUR_JIRA_PASSWORD",
-    "project_key": "PROJ"
-  },
-  "xray": {
-    "client_id": "YOUR_XRAY_CLIENT_ID",
-    "client_secret": "YOUR_XRAY_CLIENT_SECRET"
+    "env": "QA",
+    "username": "usuario@ejemplo.com",
+    "password": "TU_PASSWORD_O_TOKEN"
   },
   "setup": {
-    "project_key": "PROJ",
-    "test_plan_key": "PROJ-100",
-    "execution_summary": "Sprint 1 Execution",
-    "test_set_summary": "Sprint 1 Test Set",
-    "reuse_tests": false
+    "test_plan_key": "QAX-100",
+    "execution_summary": "Ejecución Regresión Sprint",
+    "test_mode": "clone"
   },
   "sync": {
-    "execution_key": "PROJ-200",
-    "folder": "./evidence",
+    "execution_key": "QAX-200",
+    "folder": "./evidencias",
     "status": "PASS",
-    "recursive": true
+    "recursive": true,
+    "upload_mode": "append",
+    "allowed_extensions": [".pdf", ".png", ".jpg"]
   }
 }

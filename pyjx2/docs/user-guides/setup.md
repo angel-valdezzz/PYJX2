@@ -11,16 +11,19 @@ Si posees un test plan, puedes crear un entorno de pruebas, en el que se incluye
 
 ## ¿Tests Clonados o Tests Agregados?
 
-Por defecto, se crearán _clones estandarizados_ (`--test-mode clone`) de cada test dentro del proyecto destino para no entorpecer pruebas pasadas por otros usuarios sobre el caso original. Si prefieres utilizar los tests originales (ideal para regresiones), puedes cambiar al modo agregado enviando `--test-mode add` al invocar a PYJX2.
+- **Modo `clone`** (Predeterminado): Crea copias físicas de cada caso de prueba en el proyecto destino. Es el modo más seguro para no alterar la historia de los casos originales.
+- **Modo `add`**: Vincula directamente los casos de prueba originales al Test Set y a la Ejecución. Ideal para regresiones rápidas donde los casos no cambian.
+
+---
 
 ## Ejemplo de uso base usando CLI
 
 ```bash
 pyjx2 setup \
-  --test-plan PROJ-100 \
-  --execution-summary "Ejecución Regresión Sep" \
+  --test-plan QAX-100 \
+  --execution-summary "Ejecución Regresión Sprint 8" \
   --application AXA_WEB \
   --test-mode clone
 ```
 
-El script imprimirá en pantalla las nuevas llaves del Set y del Execution que se han generado para guiarte. Todo lo nuevo quedará atado lógicamente con el Plan Original.
+El script imprimirá una tabla resumen con las llaves del **Test Set** y del **Test Execution** generados. Todo este ecosistema quedará vinculado automáticamente al Test Plan Original para mantener la trazabilidad.

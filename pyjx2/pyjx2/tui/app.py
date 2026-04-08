@@ -276,6 +276,7 @@ class PyJX2App(App):
         background: $surface-darken-1;
     }
 
+
     Select {
         width: 1fr;
         border: solid $primary-light 50%;
@@ -335,10 +336,11 @@ class PyJX2App(App):
     BINDINGS = [
         Binding("ctrl+q", "quit", "Salir", show=True),
         Binding("ctrl+c", "quit", "Salir"),
-        Binding("f1", "switch_tab('setup')", "Preparación"),
-        Binding("f2", "switch_tab('sync')", "Sincronización"),
-        Binding("f3", "switch_tab('config')", "Configuración", show=False),
+        Binding("f1", "switch_tab('auth')", "Autenticación"),
+        Binding("f2", "switch_tab('setup')", "Preparación"),
+        Binding("f3", "switch_tab('sync')", "Sincronización"),
         Binding("f4", "switch_tab('security')", "Seguridad"),
+        Binding("f5", "switch_tab('config')", "Configuración", show=False),
     ]
 
     sync_subgroups = reactive([])
@@ -394,12 +396,36 @@ class PyJX2App(App):
         yield Header()
         with TabbedContent(initial="home", id="tabs"):
             with TabPane("Inicio", id="home"): yield from self._compose_home_tab()
-            with TabPane("Preparación (F1)", id="setup"): yield from self._compose_setup_tab()
-            with TabPane("Sincronización (F2)", id="sync"): yield from self._compose_sync_tab()
-            with TabPane("Configuración (F3)", id="config", disabled=True): yield from self._compose_config_tab()
+            with TabPane("Autenticación (F1)", id="auth"): yield from self._compose_auth_tab()
+            with TabPane("Preparación (F2)", id="setup"): yield from self._compose_setup_tab()
+            with TabPane("Sincronización (F3)", id="sync"): yield from self._compose_sync_tab()
             with TabPane("Seguridad (F4)", id="security"): yield from self._compose_security_tab()
+            with TabPane("Configuración (F5)", id="config", disabled=True): yield from self._compose_config_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
+
+    def _compose_auth_tab(self) -> ComposeResult:
+        with ScrollableContainer():
+            yield Static("Autenticación — Credenciales de Acceso Jira / Xray", classes="panel-title")
+            with Container(classes="panel", id="auth-tab-panel"):
+                yield Static("Credenciales Requeridas", classes="section-subtitle")
+                with Horizontal(classes="field-row"):
+                    yield Label("Entorno", classes="field-label")
+                    yield RadioSet(
+                        RadioButton("QA", id="auth-env-qa", value=True),
+                        RadioButton("DEV", id="auth-env-dev"),
+                        id="auth-env",
+                        classes="field-input", # Usamos field-input para consistencia visual
+                    )
+                with Horizontal(classes="field-row"):
+                    yield Label("Usuario Jira", classes="field-label")
+                    yield Input(placeholder="usuario@ejemplo.com", id="auth-jira-username", classes="field-input")
+                with Horizontal(classes="field-row"):
+                    yield Label("Contraseña/Token", classes="field-label")
+                    yield Input(placeholder="Contraseña o Token API", id="auth-jira-password", password=True, classes="field-input")
+                
+                yield Static("⚠️ Nota: Las credenciales se utilizan para todas las operaciones de Preparación y Sincronización.", classes="field-hint")
+        return []
 
     def _compose_home_tab(self) -> ComposeResult:
         from .ascii_parser import get_ascii_logo
@@ -415,18 +441,6 @@ class PyJX2App(App):
         with ScrollableContainer():
             yield Static("Preparación — Crear Test Execution y Test Set desde un Test Plan", classes="panel-title")
             with Container(classes="panel"):
-                yield Static("Conexión a Jira / Xray", classes="panel-title")
-                with Horizontal(classes="field-row"):
-                    yield Label("Entorno", classes="field-label")
-                    yield RadioSet(RadioButton("QA", id="setup-env-qa", value=True), RadioButton("DEV", id="setup-env-dev"), id="setup-env")
-                with Horizontal(classes="field-row"):
-                    yield Label("Usuario / Email", classes="field-label")
-                    yield Input(placeholder="usuario@ejemplo.com", id="setup-jira-username", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Contraseña", classes="field-label")
-                    yield Input(placeholder="Contraseña o Token", id="setup-jira-password", password=True, classes="field-input")
-
-            with Container(classes="panel"):
                 yield Static("Parámetros de Preparación", classes="panel-title")
                 with Horizontal(classes="field-row"):
                     yield Label("QAX Test Plan", classes="field-label")
@@ -434,10 +448,7 @@ class PyJX2App(App):
                 with Horizontal(classes="field-row"):
                     yield Label("Titulo Test Execution", classes="field-label")
                     yield Input(placeholder="Resumen para el nuevo Test Execution", id="setup-exec-summary", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Titulo Test Set", classes="field-label")
-                    yield Input(placeholder="(Si vacio: usará Titulo Execution)", id="setup-set-summary", classes="field-input")
-                
+
                 yield Static("⚙ Configuración de Tests", classes="section-subtitle")
                 with Horizontal(classes="field-row"):
                     yield Label("Modo de Tests", classes="field-label")
@@ -480,18 +491,6 @@ class PyJX2App(App):
     def _compose_sync_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static("Sincronización — Rastrear evidencias y actualizar Jira", classes="panel-title")
-            with Container(classes="panel"):
-                yield Static("Conexión Jira / Xray", classes="panel-title")
-                with Horizontal(classes="field-row"):
-                    yield Label("Entorno", classes="field-label")
-                    yield RadioSet(RadioButton("QA", id="sync-env-qa", value=True), RadioButton("DEV", id="sync-env-dev"), id="sync-env")
-                with Horizontal(classes="field-row"):
-                    yield Label("Usuario", classes="field-label")
-                    yield Input(placeholder="user@example.com", id="sync-jira-username", classes="field-input")
-                with Horizontal(classes="field-row"):
-                    yield Label("Password", classes="field-label")
-                    yield Input(placeholder="Token", id="sync-jira-password", password=True, classes="field-input")
-
             with Container(classes="panel"):
                 yield Static("Parámetros de Sincronización", classes="panel-title")
                 with Horizontal(classes="field-row"):
@@ -866,22 +865,20 @@ class PyJX2App(App):
 
     def _build_pjx(self, mode, log_id):
         try:
-            # Capture environment and credentials from UI
-            is_qa = self.query_one("#sync-env-qa", RadioButton).value
+            # Lee credenciales del panel global de autenticación
+            is_qa = self.query_one("#auth-env-qa", RadioButton).value
             env = "QA" if is_qa else "DEV"
-            
-            username = self._get_input("sync-jira-username")
-            password = self._get_input("sync-jira-password")
-            
-            # Construct Jira and Xray settings (recycling credentials)
+            username = self._get_input("auth-jira-username")
+            password = self._get_input("auth-jira-password")
+
+            if not username or not password:
+                self._log(log_id, "[ERROR] Credenciales incompletas en el panel de Autenticación.")
+                return None
+
             jira = JiraSettings(username=username, password=password, env=env)
             xray = XraySettings(client_id=username, client_secret=password)
-            
-            # Create in-memory settings container
             settings = Settings(jira=jira, xray=xray)
-            
             return PyJX2(settings)
-            
         except Exception as e:
             self._log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
             return None

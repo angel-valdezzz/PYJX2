@@ -44,27 +44,21 @@
     },
     "setup": {
       "type": "object",
-      "description": "Default values for the setup command",
+      "description": "Valores por defecto para el comando setup",
       "properties": {
         "test_plan_key": {
-          "type": "string"
+          "type": "string",
+          "description": "Llave del Test Plan origen (ej. QAX-100)"
         },
         "execution_summary": {
-          "type": "string"
-        },
-        "test_set_summary": {
-          "type": "string"
+          "type": "string",
+          "description": "Título del nuevo Test Execution"
         },
         "test_mode": {
           "type": "string",
           "description": "Modo de tests: 'clone' (copiar en QAX) o 'add' (agregar sin clonar)",
           "enum": ["clone", "add"],
           "default": "clone"
-        },
-        "reuse_tests": {
-          "type": "boolean",
-          "description": "DEPRECATED: usa test_mode='add' en su lugar",
-          "default": false
         }
       }
     },

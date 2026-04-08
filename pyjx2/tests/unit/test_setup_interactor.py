@@ -88,7 +88,7 @@ class TestSetupInteractorExecute:
         
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
-        config.test_executions[0].test_sets[0].test_case_mode = "reuse"
+        config.test_executions[0].test_sets[0].test_case_mode = "add"
         
         result = interactor.execute(config)
         

@@ -31,11 +31,14 @@ password = "ENC:gAAAAA..." # Password cifrado
 [setup]
 test_plan_key = "PROJ-100"
 execution_summary = "Pruebas de Regresión"
+test_mode = "clone"         # "clone" u "add"
 
 [sync]
 execution_key = "PROJ-200"
 folder = "./evidencias"
 status = "PASS"
+upload_mode = "append"      # "append" o "replace"
+allowed_extensions = [".pdf", ".png"]
 ```
 
 ### pyjx2.json
@@ -48,6 +51,18 @@ Alternativamente, puedes usar un archivo JSON si es preferido por tus sistemas d
     "env": "QA",
     "username": "admin@example.com",
     "password": "ENC:gAAAAA..."
+  },
+  "setup": {
+    "test_plan_key": "PROJ-100",
+    "execution_summary": "Pruebas",
+    "test_mode": "clone"
+  },
+  "sync": {
+    "execution_key": "PROJ-200",
+    "folder": "./evidencias",
+    "status": "PASS",
+    "upload_mode": "append",
+    "allowed_extensions": [".pdf"]
   }
 }
 ```
@@ -59,3 +74,5 @@ PYJX2 leerá automáticamente las siguientes variables si están presentes en el
 - `PYJX2_JIRA_ENV`: "QA" o "DEV".
 - `PYJX2_JIRA_USERNAME`: Correo o usuario de Jira.
 - `PYJX2_JIRA_PASSWORD`: Contraseña (plana o cifrada con prefix `ENC:`).
+- `PYJX2_XRAY_CLIENT_ID`: ID de cliente (opcional, cae en fallback al usuario de Jira).
+- `PYJX2_XRAY_CLIENT_SECRET`: Secreto de cliente (opcional, cae en fallback a la contraseña de Jira).

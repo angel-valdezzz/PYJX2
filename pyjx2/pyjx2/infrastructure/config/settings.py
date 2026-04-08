@@ -40,8 +40,6 @@ class XraySettings:
 class SetupDefaults:
     test_plan_key: Optional[str] = None
     execution_summary: Optional[str] = None
-    test_set_summary: Optional[str] = None
-    reuse_tests: bool = False
     test_mode: str = "clone"   # "clone" | "add"
 
 
@@ -123,8 +121,6 @@ def _dict_to_settings(data: dict) -> Settings:
         setup=SetupDefaults(
             test_plan_key=setup_data.get("test_plan_key"),
             execution_summary=setup_data.get("execution_summary"),
-            test_set_summary=setup_data.get("test_set_summary"),
-            reuse_tests=setup_data.get("reuse_tests", False),
             test_mode=setup_data.get("test_mode", "clone"),
         ),
         sync=SyncDefaults(

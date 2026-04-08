@@ -230,12 +230,6 @@ def _(ctx, status):
     assert ctx["settings"].sync.status == status
 
 
-@then(parsers.parse("the setup reuse_tests is {value}"))
-@then(parsers.parse("el valor de reutilizar pruebas en preparación es {value}"))
-def _(ctx, value):
-    # Support both English and Spanish boolean literals
-    expected = value.strip() in ("True", "Verdadero")
-    assert ctx["settings"].setup.reuse_tests is expected
 
 
 @then(parsers.parse("the sync recursive is {value}"))

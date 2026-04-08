@@ -132,22 +132,25 @@ class PyJX2:
         self,
         test_plan_key: str,
         execution_summary: str,
-        test_set_summary: str,
         application: str,
         test_mode: str = "clone",
-        reuse_tests: bool = False,       # DEPRECATED: usa test_mode="add" en su lugar
-        source_type: str = "test_plan",
-        source_items: Optional[list[str]] = None,
-        source_path: Optional[str] = None,
         progress_callback=None,
     ):
         """
-        Full setup flow orchestrated by Clean Architecture Setup Interactor.
+        Flujo completo de Preparación orquestado por el Interactor de Clean Architecture.
+
+        Crea un Test Execution y un Test Set en Jira/Xray a partir de un Test Plan.
 
         Args:
-            test_mode: "clone" (default) crea copia de cada test en QAX.
-                       "add" agrega los tests originales directamente, sin clonar.
-            reuse_tests: deprecated, equivale a test_mode="add" cuando es True.
+            test_plan_key: Llave del Test Plan origen (ej. ``QAX-100``).
+            execution_summary: Título para el nuevo Test Execution.
+            application: Calificador de aplicación (ej. ``AXA_WEB``).
+            test_mode: ``"clone"`` (default) crea una copia de cada test en QAX.
+                       ``"add"`` agrega los tests originales directamente, sin clonar.
+            progress_callback: Callable opcional ``(msg: str) -> None`` para reportar progreso.
+
+        Returns:
+            :class:`SetupResult` con las llaves de Executions, Sets y Tests creados.
         """
         from ..application.use_cases.setup.models import (
             SetupConfig, SetupTestPlanConfig, SetupTestExecutionConfig,
@@ -155,10 +158,7 @@ class PyJX2:
         )
         from ..application.use_cases.setup.setup_interactor import SetupInteractor
 
-        # Retrocompatibilidad: reuse_tests=True equivale a test_mode="add"
-        effective_mode = "add" if reuse_tests else test_mode
-        if effective_mode not in ("clone", "link", "add"):
-            effective_mode = "clone"
+        effective_mode = test_mode if test_mode in ("clone", "link", "add") else "clone"
 
         interactor = SetupInteractor(
             test_plan_repo=self._test_plan_repo,
@@ -178,13 +178,9 @@ class PyJX2:
                         SetupTestSetConfig(
                             mode="create",
                             application=application,
-                            key=test_set_summary,
+                            key=execution_summary,
                             apply_source=True,
-                            source=SetupSourceConfig(
-                                type=source_type,
-                                items=source_items,
-                                path=source_path
-                            ),
+                            source=SetupSourceConfig(type="test_plan"),
                             test_case_mode=effective_mode
                         )
                     ]
@@ -203,27 +199,118 @@ class PyJX2:
         status: str = "PASS",
         status_overrides: Optional[Dict[str, str]] = None,
         allowed_extensions: Optional[List[str]] = None,
+        upload_mode: str = "append",
         recursive: bool = True,
         progress_callback=None,
     ) -> SyncResult:
         """
-        Full sync flow: get tests from execution → scan folder recursively →
-        match files to tests by prefix → update statuses and upload evidence.
+        Flujo completo de Sincronización: obtiene tests del Execution → escanea carpeta →
+        empareja archivos por prefijo → actualiza estados y sube evidencias.
+
+        Args:
+            execution_key: Llave del Test Execution en Jira (ej. ``QAX-200``).
+            folder: Ruta local con los archivos de evidencia.
+            status: Estado por defecto para todos los tests encontrados.
+                    Valores: ``PASS``, ``FAIL``, ``TODO``, ``EXECUTING``, ``ABORTED``.
+            status_overrides: Dict que mapea llaves de test a estados específicos.
+                              Ej: ``{"QAX-1": "FAIL", "QAX-2": "PASS"}``.
+            allowed_extensions: Lista de extensiones a incluir (ej. ``[".pdf", ".png"]``).
+                                 Por defecto: ``[".pdf"]``.
+            upload_mode: ``"append"`` (añade evidencia a la existente) o
+                         ``"replace"`` (limpia y reemplaza la evidencia anterior).
+            recursive: Si ``True``, escanea subcarpetas recursivamente.
+            progress_callback: Callable opcional ``(msg: str) -> None``.
+
+        Returns:
+            :class:`SyncResult` con métricas detalladas del proceso.
         """
         from ..application.services.sync_service import SyncService, SyncInput
 
         service = SyncService(self._test_repo, self._test_exec_repo)
-        
+
         sync_input = SyncInput(
             execution_key=execution_key,
             folder=folder,
             default_status=status,
             status_overrides=status_overrides or {},
             allowed_extensions=allowed_extensions,
+            upload_mode=upload_mode,
             recursive=recursive
         )
-        
+
         return service.run(sync_input, progress_callback=progress_callback)
+
+    # ── Factory classmethods ─────────────────────────────────────────────────
+
+    @classmethod
+    def from_credentials(
+        cls,
+        username: str,
+        password: str,
+        env: str = "QA",
+    ) -> "PyJX2":
+        """
+        Crea una instancia de PyJX2 directamente con credenciales de Jira.
+
+        No requiere archivo de configuración. Las credenciales de Xray se reciclan
+        automáticamente desde las de Jira.
+
+        Args:
+            username: Usuario o email de Jira (ej. ``usuario@empresa.com``).
+            password: Contraseña de Jira o token de API. Soporta formato ``ENC:...``.
+            env: Entorno a utilizar: ``"QA"`` (default) o ``"DEV"``.
+
+        Returns:
+            Instancia de :class:`PyJX2` lista para operar.
+
+        Example::
+
+            from pyjx2.api.client import PyJX2
+
+            pjx = PyJX2.from_credentials(
+                username="user@empresa.com",
+                password="mi_token",
+                env="QA",
+            )
+            result = pjx.setup(test_plan_key="QAX-100", execution_summary="Regresión", application="AXA_WEB")
+        """
+        from ..infrastructure.config.settings import JiraSettings, XraySettings, Settings
+        settings = Settings(
+            jira=JiraSettings(username=username, password=password, env=env),
+            xray=XraySettings(client_id=username, client_secret=password),
+        )
+        return cls(settings)
+
+    @classmethod
+    def from_config(
+        cls,
+        config_file: Optional[str] = None,
+    ) -> "PyJX2":
+        """
+        Crea una instancia de PyJX2 a partir de un archivo de configuración o
+        variables de entorno ``PYJX2_*``.
+
+        Busca automáticamente ``pyjx2.toml`` o ``pyjx2.json`` en el directorio actual
+        si no se especifica ``config_file``.
+
+        Args:
+            config_file: Ruta opcional al archivo de configuración (``.toml`` o ``.json``).
+
+        Returns:
+            Instancia de :class:`PyJX2` lista para operar.
+
+        Example::
+
+            from pyjx2.api.client import PyJX2
+
+            # Usa pyjx2.toml del directorio actual
+            pjx = PyJX2.from_config()
+
+            # Usa un archivo específico
+            pjx = PyJX2.from_config("./config/pyjx2.toml")
+        """
+        from ..infrastructure.config import load_settings
+        return cls(load_settings(config_file=config_file))
 
     # ── Raw clients (escape hatch) ────────────────────────────────────────────
 

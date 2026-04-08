@@ -9,7 +9,7 @@ def test_cli_config_encrypt_command():
     result_encrypt = runner.invoke(app, ["config", "encrypt-pass", raw_password])
     
     assert result_encrypt.exit_code == 0
-    assert "Success!" in result_encrypt.output
+    assert "Contrasena cifrada:" in result_encrypt.output
     assert "ENC:" in result_encrypt.output
 
 def test_cli_config_decrypt_command():
@@ -21,7 +21,7 @@ def test_cli_config_decrypt_command():
     result_decrypt = runner.invoke(app, ["config", "decrypt-pass", encrypted_token])
     
     assert result_decrypt.exit_code == 0
-    assert "Decrypted password:" in result_decrypt.output
+    assert "Contrasena descifrada:" in result_decrypt.output
     assert raw_password in result_decrypt.output
 
 def test_cli_config_decrypt_unencrypted_token():
@@ -29,6 +29,6 @@ def test_cli_config_decrypt_unencrypted_token():
     result_decrypt = runner.invoke(app, ["config", "decrypt-pass", raw_password])
     
     assert result_decrypt.exit_code == 0
-    assert "Warning" in result_decrypt.output
+    assert "Aviso:" in result_decrypt.output
     # Should echo the raw text back
     assert raw_password in result_decrypt.output
