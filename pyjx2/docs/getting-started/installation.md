@@ -4,45 +4,41 @@ A fin de ejecutar una regresión, necesitas adecuar tu entorno primero. PyJX2 se
 
 ## Requisitos Previos
 
-- Python 3.10 o superior (Recomendado >= 3.11).
-- Credenciales vigentes de Atlassian Jira y Xray API App credentials.
+!!! info "Requisitos Técnicos"
+    - **Python**: Versión 3.10 o superior (Recomendado >= 3.11).
+    - **Credenciales**: Acceso a Jira Cloud y Xray API App credentials.
 
-## Método 1: Pip Módulo Nativo
+## Métodos de Instalación
 
-La herramienta incluye un archivo `pyproject.toml` optimizado. Clonando el proyecto puedes inyectarlo directamente en tu carpeta de entorno global o en tu entorno virtual:
+=== "Pip (Nativo)"
+    La herramienta incluye un archivo `pyproject.toml` optimizado.
 
-```bash
-pip install -e .
-```
+    ??? tip "Aislamiento de Entorno (Recomendado)"
+        Se recomienda instalar PyJX2 dentro de un entorno virtual (`venv` o `conda`) para evitar conflictos.
 
-Si prefieres omitir el archivo `.toml` e instalar manual y estrictamente las dependencias críticas por alguna limitante en tu control de red, emplea:
+    ```bash
+    pip install -e .
+    ```
 
-```bash
-pip install requests typer rich textual toml jsonschema cryptography
-```
+    O instale manualmente las dependencias críticas:
+    ```bash
+    pip install requests typer rich textual toml jsonschema cryptography
+    ```
 
-## Método 2: Empleando Poetry
+=== "Poetry"
+    Mantenemos soporte total para el gestor moderno *Python Poetry*:
 
-Mantenemos soporte total para el gestor moderno *Python Poetry*. La estructura lo interpretará nativamente para generar tu nuevo environment sin que debas ocuparte de nada más:
+    ```bash
+    # Instalación automática de dependencias y CLI
+    poetry install
 
-```bash
-poetry install
-```
+    # Acceso al entorno virtual
+    poetry shell
+    ```
 
-Para ingresar dentro del shell configurado y correr localmente `pyjx2`:
+=== "Entorno de Desarrollo"
+    Si planeas extender la funcionalidad o la documentación:
 
-```bash
-poetry shell
-```
-
-## Dependencias Extra de Documentación e Infraestructura
-
-En caso de que planees aportar código o extender esta valiosa documentación, instala las herramientas del perfil Dev habilitadas:
-
-```bash
-# Como entorno global
-pip install ".[dev,docs]"
-
-# Para Poetry:
-poetry install --with dev,docs
-```
+    !!! note "Perfiles Adicionales"
+        - **Pip**: `pip install ".[dev,docs]"`
+        - **Poetry**: `poetry install --with dev,docs`

@@ -4,29 +4,28 @@ PyJX2 utiliza un sistema de configuración jerárquico que permite definir pará
 
 ## Orden de Prioridad
 
-Cuando se lee una clave de configuración, PyJX2 sigue este orden de precedencia (de mayor a menor):
-
-1. **Argumento CLI Único** (`--test-plan`, `--status`, etc.)
-2. **Argumentos de Sobrescritura de Credenciales CLI** (`--jira-username`, `--password`)
-3. **Variables de Entorno** (`PYJX2_*`)
-4. **Archivo de Configuración Explícito** (Proporcionado vía `--config`)
-5. **Archivo Autodetectado** (`pyjx2.toml` o `pyjx2.json` en el directorio actual)
+!!! note "Jerarquía de Precedencia"
+    PyJX2 busca configuraciones en el siguiente orden. El primero que encuentre "gana":
+    1.  **Parámetros CLI específicos** (`--test-plan`, etc.)
+    2.  **Credenciales CLI** (`--jira-username`, etc.)
+    3.  **Variables de Entorno** (`PYJX2_AUTH_*`)
+    4.  **Archivo de Configuración** (`pyjx2.toml` o `.json`)
 
 ---
 
-## Esquema Técnico (Referencia Continua)
-
-A continuación se detallan todas las secciones y claves admitidas por el motor de PyJX2.
+## Esquema Técnico
 
 ### Sección `[auth]`
 Configuración base para el motor de conexión con Atlassian.
 
-| Clave | Tipo | Valor por Defecto | Descripción |
-| :--- | :--- | :--- | :--- |
-| `username` | String | (Requerido) | Usuario o email con permisos de API en Jira Cloud. |
-| `password` | String | (Requerido) | API Token de Jira. Se recomienda usar formato cifrado `ENC:`. |
-| `env` | String | `QA` | Entorno de conexión. Valores: `QA`, `DEV`. |
+| Clave | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `username` | String | **(Requerido)** Usuario o email de la API de Jira. |
+| `password` | String | **(Requerido)** API Token. Soporta formato cifrado `ENC:`. |
+| `env` | String | Entorno: `QA` (Default) o `DEV`. |
 
+!!! warning "Seguridad de Credenciales"
+    Nunca compartas o subas a control de versiones archivos que contengan contraseñas en texto plano. Utiliza el comando `pyjx2 config encrypt-pass` para cifrarlas antes de agregarlas al archivo `.toml`.
 
 ### Sección `[setup]`
 Valores predeterminados para el flujo de preparación.
@@ -35,25 +34,13 @@ Valores predeterminados para el flujo de preparación.
 | :--- | :--- | :--- |
 | `test_plan_key` | String | Llave del Test Plan por defecto. |
 | `execution_summary` | String | Título genérico para nuevas ejecuciones. |
-| `test_mode` | String | Modo de operación: `clone` (Default) o `add`. |
-
-### Sección `[sync]`
-Valores predeterminados para el flujo de sincronización de evidencias.
-
-| Clave | Tipo | Valor por Defecto | Descripción |
-| :--- | :--- | :--- | :--- |
-| `execution_key` | String | | Llave del Test Execution por defecto. |
-| `folder` | String | | Path local a la carpeta de evidencias. |
-| `status` | String | `PASS` | Estado base a aplicar tras la sincronización. |
-| `recursive` | Boolean | `true` | Habilita el escaneo de subcarpetas. |
-| `upload_mode` | String | `append` | Modo de subida: `append` o `replace`. |
-| `allowed_extensions`| Array | `[".pdf"]` | Lista de extensiones a considerar. |
+| `test_mode` | String | Modo: `clone` (Default) o `add`. |
 
 ---
 
 ## Variables de Entorno
 
-PyJX2 escanea automáticamente el entorno local buscando el prefijo `PYJX2_`. Esto es ideal para integrar con secretos de CI/CD (Github Secrets, Jenkins Credentials).
+PyJX2 escanea automáticamente el entorno local buscando el prefijo `PYJX2_AUTH_`. Ideal para **Pipelines CI/CD**.
 
 - `PYJX2_AUTH_USERNAME`
 - `PYJX2_AUTH_PASSWORD` (Soporta `ENC:`)
@@ -65,17 +52,24 @@ PyJX2 escanea automáticamente el entorno local buscando el prefijo `PYJX2_`. Es
 
 ```toml
 [auth]
-username = "admin@example.com"
-password = "ENC:gAAAAABlkX2..."
-env = "QA"
+username = "admin@example.com"  # (1)
+password = "ENC:gAAAAABlkX2..."  # (2)
+env = "QA"                      # (3)
 
 [setup]
-test_mode = "add"
+test_mode = "add"               # (4)
 execution_summary = "Nightly Test Execution"
 
 [sync]
-folder = "./evidence"
-status = "PASS"
+folder = "./evidence"           # (5)
+status = "PASS"                 # (6)
 recursive = true
 allowed_extensions = [".pdf", ".png", ".jpg"]
 ```
+
+1.  Tu correo electrónico o identificador de usuario en Atlassian.
+2.  Token de API (altamente recomendado usar el formato cifrado `ENC:`).
+3.  Entorno de destino: `QA` o `DEV`.
+4.  Controla si los casos de prueba se clonan o se agregan directamente.
+5.  Ruta local donde se encuentran los archivos de evidencia.
+6.  Estado que se aplicará a los tests sincronizados con éxito.
