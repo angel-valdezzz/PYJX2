@@ -1,0 +1,242 @@
+# Documentación Arquitectónica: Diagramas UML (PlantUML)
+
+Este documento contiene la representación visual de la arquitectura y los flujos lógicos de **PYJX2** utilizando la sintaxis de PlantUML.
+
+---
+
+## 1. Diagrama de Componentes (Clean Architecture)
+
+Este diagrama muestra la separación de responsabilidades y la dirección de las dependencias (hacia el interior).
+
+```plantuml
+@startuml
+[CLI / TUI / Scripting API] as Entrance <<Component>>
+[SetupInteractor / SyncService] as Application <<Component>>
+[TestPlan / TestExecution / TestSet / Test] as DomainEntities <<Component>>
+[Repositories Interfaces] as DomainRepos <<Component>>
+[JiraClient / XrayClient / Repositories Implementation] as Infrastructure <<Component>>
+
+Entrance ..> Application : usa
+Application ..> DomainEntities : manipula
+Application ..> DomainRepos : requiere
+Infrastructure -up-|> DomainRepos : implementa
+Infrastructure ..> [Atlassian APIs] : consume (REST/GraphQL)
+
+note right of DomainEntities
+  Capa de Dominio
+  (Reglas de Negocio Puras)
+end note
+@enduml
+```
+
+---
+
+## 2. Diagrama de Secuencia: Flujo de Setup
+
+Detalla la orquestación para crear un nuevo ambiente de pruebas.
+
+```plantuml
+@startuml
+actor Usuario
+participant "CLI / TUI" as UI
+participant SetupInteractor as Interactor
+participant TestPlanRepository as PlanRepo
+participant TestExecutionRepository as ExecRepo
+participant TestSetRepository as SetRepo
+participant TestRepository as TestRepo
+
+Usuario -> UI : pyjx2 setup --test-plan PROJ-100
+UI -> Interactor : execute(config)
+activate Interactor
+
+Interactor -> PlanRepo : get_tests(plan_key)
+PlanRepo --> Interactor : lista de tests maestros
+
+Interactor -> ExecRepo : resolve(exec_config)
+ExecRepo --> Interactor : test_execution_ticket
+
+Interactor -> SetRepo : resolve(set_config)
+SetRepo --> Interactor : test_set_ticket
+
+loop por cada test key
+    alt mode == clone
+        Interactor -> TestRepo : clone(test_key)
+        TestRepo --> Interactor : cloned_test_ticket
+    else mode == add
+        Interactor --> Interactor : usar test_key original
+    end
+end
+
+Interactor -> SetRepo : add_tests(set_key, list_keys)
+Interactor -> ExecRepo : add_test_set(exec_key, set_key)
+
+Interactor --> UI : SetupResult (Keys generadas)
+deactivate Interactor
+UI --> Usuario : Mostrar Reporte Rich/Logs
+@enduml
+```
+
+---
+
+## 3. Diagrama de Secuencia: Flujo de Sync
+
+Muestra cómo se cargan las evidencias físicas y se actualizan los estados.
+
+```plantuml
+@startuml
+actor Usuario
+participant "CLI / TUI" as UI
+participant SyncService
+participant TestExecutionRepository as ExecRepo
+participant TestRepository as TestRepo
+database "Sistema de Archivos" as FS
+
+Usuario -> UI : pyjx2 sync --execution PROJ-200 --folder ./evidencias
+UI -> SyncService : run(sync_input)
+activate SyncService
+
+SyncService -> ExecRepo : list_from_execution(exec_key)
+ExecRepo --> SyncService : lista de casillas (TestRuns)
+
+SyncService -> FS : _collect_files(folder)
+FS --> SyncService : lista de Path objetos
+
+loop por cada test en la ejecución
+    SyncService -> SyncService : _match_files_to_test(summary, files)
+    
+    alt hay coincidencias
+        SyncService -> TestRepo : update_status(exec_key, test_key, status)
+        loop por cada archivo coincidente
+            SyncService -> TestRepo : upload_evidence(exec_key, test_key, file)
+        end
+    end
+end
+
+SyncService --> UI : SyncResult (Métricas y Errores)
+deactivate SyncService
+UI --> Usuario : Mostrar Árbol de Sincronización
+@enduml
+```
+
+---
+
+## 4. Diagrama de Paquetes (Estructura del Proyecto)
+
+```plantuml
+@startuml
+package "pyjx2" {
+    package "api" {
+        [client.py (Facade)]
+    }
+    
+    package "cli" {
+        [app.py (Typer)]
+    }
+    
+    package "tui" {
+        [app.py (Textual)]
+    }
+
+    package "application" {
+        package "use_cases" {
+            [setup_interactor]
+        }
+        package "services" {
+            [sync_service]
+            [encryption_service]
+        }
+    }
+
+    package "domain" {
+        package "entities" {
+            [Test / TestSet / TestExecution]
+        }
+        package "repositories" {
+            [Interfaces]
+        }
+    }
+
+    package "infrastructure" {
+        package "jira / xray" {
+            [REST Clients]
+            [Imp. Repositorios]
+        }
+        [config (Settings)]
+    }
+}
+
+api ..> application
+cli ..> api
+tui ..> api
+application ..> domain
+infrastructure ..> domain
+@enduml
+```
+
+---
+
+## 5. Diagrama de Clases del Dominio
+
+Representación de la jerarquía y relaciones de datos.
+
+```plantuml
+@startuml
+class TestPlan {
+    + key: string
+    + get_tests(): List<Test>
+}
+
+class TestExecution {
+    + key: string
+    + summary: string
+    + status: string
+}
+
+class TestSet {
+    + key: string
+    + summary: string
+    + application: string
+}
+
+class Test {
+    + key: string
+    + summary: string
+    + status: string
+}
+
+TestPlan "1" *-- "many" Test : abarca
+TestExecution "1" o-- "many" TestSet : contiene
+TestSet "1" o-- "many" Test : agrupa
+TestExecution "1" o-- "many" Test : ejecuta (TestRuns)
+
+note bottom of Test
+  Un Test puede ser original
+  o un clon (específico de QAX)
+end note
+@enduml
+```
+
+---
+
+## 6. Diagrama de Casos de Uso
+
+```plantuml
+@startuml
+left to right direction
+actor "Tester / Automatizador" as User
+
+package "PYJX2 System" {
+    usecase "Configurar Entorno (Setup)" as UC_Setup
+    usecase "Sincronizar Evidencias (Sync)" as UC_Sync
+    usecase "Cifrar Credenciales" as UC_Config
+    usecase "Visualizar Manual (Docs)" as UC_Docs
+}
+
+User --> UC_Setup
+User --> UC_Sync
+User --> UC_Config
+User --> UC_Docs
+
+UC_Setup ..> UC_Config : <<include>> (opcional si usa ENC:)
+@enduml
+```
