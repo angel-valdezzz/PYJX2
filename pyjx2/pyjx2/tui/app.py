@@ -25,6 +25,7 @@ from textual.widgets import (
     RadioSet,
     RadioButton,
     TextArea,
+    ProgressBar,
 )
 from textual.reactive import reactive
 
@@ -235,6 +236,39 @@ class PyJX2App(App):
         border: solid $accent-dark;
     }
 
+    .progress-container {
+        height: auto;
+        margin: 0 2 0 2;
+        display: none;
+    }
+
+    .progress-container.progress-visible {
+        display: block;
+    }
+
+    .progress-label {
+        color: $text-muted;
+        text-style: italic;
+        margin-bottom: 0;
+        height: 1;
+    }
+
+    ProgressBar {
+        margin-top: 0;
+        margin-bottom: 1;
+    }
+
+    ProgressBar > .bar--bar {
+        color: $primary-light;
+    }
+    .-dark ProgressBar > .bar--bar {
+        color: $primary-dark;
+    }
+
+    ProgressBar > .bar--complete {
+        color: $success;
+    }
+
     .status-bar {
         height: 1;
         padding: 0 2;
@@ -303,7 +337,7 @@ class PyJX2App(App):
         Binding("ctrl+c", "quit", "Salir"),
         Binding("f1", "switch_tab('setup')", "Preparación"),
         Binding("f2", "switch_tab('sync')", "Sincronización"),
-        Binding("f3", "switch_tab('config')", "Configuración"),
+        Binding("f3", "switch_tab('config')", "Configuración", show=False),
         Binding("f4", "switch_tab('security')", "Seguridad"),
     ]
 
@@ -362,7 +396,7 @@ class PyJX2App(App):
             with TabPane("Inicio", id="home"): yield from self._compose_home_tab()
             with TabPane("Preparación (F1)", id="setup"): yield from self._compose_setup_tab()
             with TabPane("Sincronización (F2)", id="sync"): yield from self._compose_sync_tab()
-            with TabPane("Configuración (F3)", id="config"): yield from self._compose_config_tab()
+            with TabPane("Configuración (F3)", id="config", disabled=True): yield from self._compose_config_tab()
             with TabPane("Seguridad (F4)", id="security"): yield from self._compose_security_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
@@ -437,6 +471,9 @@ class PyJX2App(App):
             with Horizontal(classes="btn-row"):
                 yield Button("Ejecutar", id="btn-setup-run", classes="run-btn", variant="primary")
                 yield Button("Limpiar", id="btn-setup-clear", classes="clear-btn")
+            with Vertical(id="setup-progress-container", classes="progress-container"):
+                yield Static("", id="setup-progress-label", classes="progress-label")
+                yield ProgressBar(id="setup-progress-bar", total=100, show_eta=False)
             yield Log(id="setup-log", highlight=True)
         return []
 
@@ -487,6 +524,9 @@ class PyJX2App(App):
             with Horizontal(classes="btn-row"):
                 yield Button("Ejecutar", id="btn-sync-run", classes="run-btn", variant="primary")
                 yield Button("Limpiar", id="btn-sync-clear", classes="clear-btn")
+            with Vertical(id="sync-progress-container", classes="progress-container"):
+                yield Static("", id="sync-progress-label", classes="progress-label")
+                yield ProgressBar(id="sync-progress-bar", total=100, show_eta=False)
             yield Log(id="sync-log", highlight=True)
         return []
 
@@ -549,8 +589,12 @@ class PyJX2App(App):
         elif bid == "btn-setup-run": self.run_worker(self._run_setup, thread=True)
         elif bid == "btn-sync-run": self.run_worker(self._run_sync, thread=True)
 
-        elif bid == "btn-setup-clear": self.query_one("#setup-log", Log).clear()
-        elif bid == "btn-sync-clear": self.query_one("#sync-log", Log).clear()
+        elif bid == "btn-setup-clear":
+            self.query_one("#setup-log", Log).clear()
+            self._reset_progress("setup")
+        elif bid == "btn-sync-clear":
+            self.query_one("#sync-log", Log).clear()
+            self._reset_progress("sync")
         elif bid == "btn-sec-copy":
             val = self.query_one("#sec-encrypted", Input).value
             if val: self._copy_to_clipboard(val)
@@ -630,29 +674,74 @@ class PyJX2App(App):
 
     def _run_setup(self):
         log = "setup-log"
+        prefix = "setup"
         pjx = self._build_pjx("setup", log)
         if not pjx: return
         self._log(log, "Iniciando Preparación...")
+        self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         try:
+            # Steps: validate(10%) → fetch plan(25%) → create exec(50%) → create set(70%) → add tests(90%) → done(100%)
+            _setup_steps = [
+                (10,  "Validando parámetros..."),
+                (25,  "Obteniendo Test Plan..."),
+                (50,  "Creando Test Execution..."),
+                (70,  "Creando Test Set..."),
+                (90,  "Asociando tests..."),
+                (100, "Finalizando..."),
+            ]
+            _step_iter = iter(_setup_steps)
+
+            def _setup_cb(m: str):
+                self._log(log, f" → {m}")
+                try:
+                    pct, label = next(_step_iter)
+                    self.call_from_thread(self._show_progress, prefix, pct, label)
+                except StopIteration:
+                    pass
+
             res = pjx.setup(
                 test_plan_key=self._get_input("setup-test-plan"),
                 execution_summary=self._get_input("setup-exec-summary"),
                 application=self._get_input("setup-application"),
                 test_mode="add" if self.query_one("#setup-test-mode", RadioSet).pressed_button.id == "test-mode-add" else "clone",
-                progress_callback=lambda m: self._log(log, f" → {m}")
+                progress_callback=_setup_cb,
             )
+            self.call_from_thread(self._show_progress, prefix, 100, "✔ Preparación completada")
             self._log(log, "[ÉXITO] Preparación finalizada.")
-        except Exception as e: self._log(log, f"[ERROR] {e}")
+        except Exception as e:
+            self.call_from_thread(self._show_progress, prefix, 0, "✖ Error")
+            self._log(log, f"[ERROR] {e}")
 
     def _run_sync(self):
         log = "sync-log"
+        prefix = "sync"
         pjx = self._build_pjx("sync", log)
         if not pjx: return
         self._log(log, "Iniciando Sincronización...")
+        self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         overrides = {}
         for g in self.sync_subgroups:
             for k in re.findall(r'[a-zA-Z]+-\d+', g["qaxs"]): overrides[k] = g["status"]
         mode = "replace" if self.query_one("#sync-upload-mode", RadioSet).pressed_button.id == "sync-mode-replace" else "append"
+        # Steps: validate(10%) → scan files(30%) → match tests(55%) → upload evidence(80%) → update statuses(95%) → done(100%)
+        _sync_steps = [
+            (10,  "Validando parámetros..."),
+            (30,  "Escaneando archivos..."),
+            (55,  "Emparejando tests..."),
+            (80,  "Subiendo evidencias..."),
+            (95,  "Actualizando estados..."),
+            (100, "Finalizando..."),
+        ]
+        _step_iter = iter(_sync_steps)
+
+        def _sync_cb(m: str):
+            self._log(log, f" → {m}")
+            try:
+                pct, label = next(_step_iter)
+                self.call_from_thread(self._show_progress, prefix, pct, label)
+            except StopIteration:
+                pass
+
         try:
             res = pjx.sync(
                 execution_key=self._get_input("sync-exec-key"),
@@ -661,10 +750,13 @@ class PyJX2App(App):
                 status_overrides=overrides,
                 upload_mode=mode,
                 allowed_extensions=[e.strip() for e in self._get_input("sync-extensions").split(",")] if self._get_input("sync-extensions") else [".pdf"],
-                progress_callback=lambda m: self._log(log, f" → {m}")
+                progress_callback=_sync_cb,
             )
+            self.call_from_thread(self._show_progress, prefix, 100, "✔ Sincronización completada")
             self._log(log, f"[ÉXITO] Sincronización finalizada (Modo: {mode.upper()}).")
-        except Exception as e: self._log(log, f"[ERROR] {e}")
+        except Exception as e:
+            self.call_from_thread(self._show_progress, prefix, 0, "✖ Error")
+            self._log(log, f"[ERROR] {e}")
 
     def _toggle_docs(self, btn):
         if not self.mkdocs_process:
@@ -743,6 +835,30 @@ class PyJX2App(App):
     def _get_input(self, id: str) -> str:
         try: return str(self.query_one(f"#{id}", Input).value or "").strip()
         except Exception: return ""
+
+    def _show_progress(self, prefix: str, percent: int, label: str) -> None:
+        """Show/update the progress bar and label for a given section (setup/sync)."""
+        try:
+            container = self.query_one(f"#{prefix}-progress-container")
+            bar = self.query_one(f"#{prefix}-progress-bar", ProgressBar)
+            lbl = self.query_one(f"#{prefix}-progress-label", Static)
+            container.add_class("progress-visible")
+            bar.progress = percent
+            lbl.update(f"Progreso: {percent}%  —  {label}")
+        except Exception:
+            pass
+
+    def _reset_progress(self, prefix: str) -> None:
+        """Hide and reset the progress bar for a given section."""
+        try:
+            container = self.query_one(f"#{prefix}-progress-container")
+            bar = self.query_one(f"#{prefix}-progress-bar", ProgressBar)
+            lbl = self.query_one(f"#{prefix}-progress-label", Static)
+            container.remove_class("progress-visible")
+            bar.progress = 0
+            lbl.update("")
+        except Exception:
+            pass
 
     def _log(self, id: str, msg: str):
         try: self.query_one(f"#{id}", Log).write(msg + "\n")
