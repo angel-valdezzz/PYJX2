@@ -1,47 +1,48 @@
-Feature: CLI Setup Command
-  As a QA engineer
-  I want to run the setup command from the terminal
-  So that I can create test infrastructure without writing Python scripts
+# language: es
+Característica: CLI Setup
+  Como ingeniero de QA
+  Quiero ejecutar el comando setup desde la terminal
+  Para poder crear la infraestructura de pruebas sin escribir scripts de Python
 
-  Scenario: Setup command succeeds with all required arguments
-    When I invoke "pyjx2 setup" with all required arguments
-    Then the exit code is 0
-    And the output contains the test execution key "PROJ-30"
-    And the output contains the test set key "PROJ-20"
+  Escenario: El comando setup tiene éxito con todos los argumentos requeridos
+    Cuando invoco "pyjx2 setup" con todos los argumentos requeridos
+    Entonces el código de salida es 0
+    Y la salida contiene la clave de test execution "PROJ-30"
+    Y la salida contiene la clave de test set "PROJ-20"
 
-  Scenario: Setup command shows a summary table
-    When I invoke "pyjx2 setup" with all required arguments
-    Then the exit code is 0
-    And the output contains "Test Execution"
-    And the output contains "Test Set"
+  Escenario: El comando setup muestra una tabla de resumen
+    Cuando invoco "pyjx2 setup" con todos los argumentos requeridos
+    Entonces el código de salida es 0
+    Y la salida contiene "Test Execution"
+    Y la salida contiene "Test Set"
 
-  Scenario: Setup command fails when --test-plan is missing
-    When I invoke "pyjx2 setup" without "--test-plan"
-    Then the exit code is not 0
+  Escenario: El comando setup falla cuando falta --test-plan
+    Cuando invoco "pyjx2 setup" sin "--test-plan"
+    Entonces el código de salida no es 0
 
-  Scenario: Setup command fails when --execution-summary is missing
-    When I invoke "pyjx2 setup" without "--execution-summary"
-    Then the exit code is not 0
+  Escenario: El comando setup falla cuando falta --execution-summary
+    Cuando invoco "pyjx2 setup" sin "--execution-summary"
+    Entonces el código de salida no es 0
 
-  Scenario: Setup command fails when Jira credentials are missing
-    When I invoke "pyjx2 setup" without credentials
-    Then the exit code is not 0
+  Escenario: El comando setup falla cuando faltan las credentials de Jira
+    Cuando invoco "pyjx2 setup" sin credentials
+    Entonces el código de salida no es 0
 
-  Scenario: Setup command usa --test-mode add para agregar sin clonar
-    When I invoke "pyjx2 setup" con modo agregar "--test-mode add"
-    Then the test_mode parameter is "add" in the API call
+  Escenario: El comando setup usa --test-mode add para agregar sin clonar
+    Cuando invoco "pyjx2 setup" con modo agregar "--test-mode add"
+    Entonces el parámetro test_mode es "add" en la llamada a la API
 
-  Scenario: Setup command defaults to clone mode
-    When I invoke "pyjx2 setup" with all required arguments
-    Then the test_mode parameter is "clone" in the API call
+  Escenario: El comando setup usa modo clone por defecto
+    Cuando invoco "pyjx2 setup" con todos los argumentos requeridos
+    Entonces el parámetro test_mode es "clone" en la llamada a la API
 
-  Scenario: Setup command fails gracefully when API raises an error
-    Given the setup API raises a RuntimeError "Jira connection failed"
-    When I invoke "pyjx2 setup" with all required arguments
-    Then the exit code is not 0
-    And the output contains an error message
+  Escenario: El comando setup falla elegantemente cuando la API lanza un error
+    Dado que la API de setup lanza un error RuntimeError "Jira connection failed"
+    Cuando invoco "pyjx2 setup" con todos los argumentos requeridos
+    Entonces el código de salida no es 0
+    Y la salida contiene un mensaje de error
 
-  Scenario: Setup command accepts an explicit config file
-    Given a valid TOML config file
-    When I invoke "pyjx2 setup" with "--config" pointing to that file
-    Then the exit code is 0
+  Escenario: El comando setup acepta un archivo config explícito
+    Dado un archivo de configuración config TOML válido
+    Cuando invoco "pyjx2 setup" con "--config" apuntando a ese archivo
+    Entonces el código de salida es 0

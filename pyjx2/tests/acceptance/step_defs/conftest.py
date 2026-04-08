@@ -108,7 +108,7 @@ def build_mocked_client(
 
 # ── Shared Background step ────────────────────────────────────────────────────
 
-@given("a configured PyJX2 client")
+@given("un cliente PyJX2 configurado")
 def _(ctx, settings):
     """Build a default client with 2-test plan; overridden by more specific steps."""
     ctx.setdefault("plan_tests", [
@@ -119,7 +119,7 @@ def _(ctx, settings):
     ctx["settings"] = settings
 
 
-@given(parsers.parse('the test plan "{plan_key}" has {n:d} tests'))
+@given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} tests'))
 def _(ctx, settings, plan_key, n):
     tests = [
         {"key": f"PROJ-{10 + i}", "summary": f"Test {i}"}

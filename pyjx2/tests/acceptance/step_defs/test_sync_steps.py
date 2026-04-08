@@ -17,7 +17,7 @@ scenarios("../features/sync_flow.feature")
 
 # ── Given ─────────────────────────────────────────────────────────────────────
 
-@given(parsers.parse('a test execution "{exec_key}" with tests "PROJ-10" (Login), "PROJ-11" (Logout), "PROJ-12" (Register)'))
+@given(parsers.parse('una test execution "{exec_key}" con los tests "PROJ-10" (Login), "PROJ-11" (Logout), "PROJ-12" (Register)'))
 def _(ctx, settings, exec_key):
     ctx["exec_key"] = exec_key
     # Mapeo explícito para que el mock devuelva tests con estos summaries
@@ -33,7 +33,7 @@ def _(ctx, settings, exec_key):
     ctx["client"]._test_exec_repo.list_from_execution.return_value = ctx["test_defs"]
 
 
-@given(parsers.parse('an evidence folder with files "{file1}" and "{file2}"'))
+@given(parsers.parse('una carpeta de evidence con los archivos "{file1}" y "{file2}"'))
 def _(ctx, file1, file2):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
@@ -43,7 +43,7 @@ def _(ctx, file1, file2):
     ctx["folder"] = str(folder)
 
 
-@given(parsers.parse('an evidence folder with files "{file1}" only'))
+@given(parsers.parse('una carpeta de evidence solo con el archivo "{file1}"'))
 def _(ctx, file1):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
@@ -52,7 +52,7 @@ def _(ctx, file1):
     ctx["folder"] = str(folder)
 
 
-@given(parsers.parse('an evidence folder with files "{file1}"'))
+@given(parsers.parse('una carpeta de evidence con el archivo "{file1}"'))
 def _(ctx, file1):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
@@ -61,7 +61,7 @@ def _(ctx, file1):
     ctx["folder"] = str(folder)
 
 
-@given(parsers.parse('an evidence folder with a nested file "{nested_path}"'))
+@given(parsers.parse('una carpeta de evidence con un archivo anidado "{nested_path}"'))
 def _(ctx, nested_path):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
@@ -72,7 +72,7 @@ def _(ctx, nested_path):
     ctx["folder"] = str(folder)
 
 
-@given("an empty evidence folder")
+@given("una carpeta de evidence vacía")
 def _(ctx):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
@@ -81,7 +81,7 @@ def _(ctx):
 
 # ── When ──────────────────────────────────────────────────────────────────────
 
-@when(parsers.parse('I run the sync command for execution "{exec_key}" with status "{status}"'))
+@when(parsers.parse('ejecuto el comando sync para la execution "{exec_key}" con el status "{status}"'))
 def _(ctx, exec_key, status):
     folder = ctx.get("folder", tempfile.mkdtemp())
     try:
@@ -98,7 +98,7 @@ def _(ctx, exec_key, status):
         ctx["sync_error"] = e
 
 
-@when("I run the sync command with recursive mode enabled")
+@when("ejecuto el comando sync con el modo recursive habilitado")
 def _(ctx):
     folder = ctx.get("folder", tempfile.mkdtemp())
     exec_key = ctx.get("exec_key", "PROJ-30")
@@ -116,7 +116,7 @@ def _(ctx):
         ctx["sync_error"] = e
 
 
-@when("I run the sync command with recursive mode disabled")
+@when("ejecuto el comando sync con el modo recursive deshabilitado")
 def _(ctx):
     folder = ctx.get("folder", tempfile.mkdtemp())
     exec_key = ctx.get("exec_key", "PROJ-30")
@@ -134,7 +134,7 @@ def _(ctx):
         ctx["sync_error"] = e
 
 
-@when(parsers.parse('I run the sync command with folder "{folder_path}"'))
+@when(parsers.parse('ejecuto el comando sync con la carpeta "{folder_path}"'))
 def _(ctx, folder_path):
     exec_key = ctx.get("exec_key", "PROJ-30")
     try:
@@ -152,7 +152,7 @@ def _(ctx, folder_path):
 
 # ── Then ──────────────────────────────────────────────────────────────────────
 
-@then(parsers.parse("{n:d} tests are matched"))
+@then(parsers.parse("{n:d} tests son emparejados"))
 def _(ctx, n):
     result = ctx["sync_result"]
     assert result is not None, f"Sync failed with: {ctx.get('sync_error')}"
@@ -162,7 +162,7 @@ def _(ctx, n):
     )
 
 
-@then(parsers.parse('the matched tests are "{key1}" and "{key2}"'))
+@then(parsers.parse('los tests emparejados son "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
     # En el nuevo SyncResult no guardamos la lista de matches directos por key, 
     # pero podemos inferir por tests_without_evidence
@@ -171,7 +171,7 @@ def _(ctx, key1, key2):
     assert key2 not in without, f"{key2} matches not found"
 
 
-@then(parsers.parse('the status "{status}" is set for all matched tests'))
+@then(parsers.parse('el status "{status}" se establece para todos los tests emparejados'))
 def _(ctx, status):
     client = ctx["client"]
     calls = client._test_repo.update_status.call_args_list
@@ -181,32 +181,32 @@ def _(ctx, status):
         assert actual_status == status, f"Expected status {status}, got {actual_status}"
 
 
-@then("evidence is uploaded for all matched tests")
+@then("se sube la evidence para todos los tests emparejados")
 def _(ctx):
     result = ctx["sync_result"]
     assert result.files_uploaded > 0
 
 
-@then(parsers.parse('"{key}" is matched'))
+@then(parsers.parse('"{key}" es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
     assert key not in without, f"{key} was not matched"
 
 
-@then(parsers.parse('"{key}" is not matched'))
+@then(parsers.parse('"{key}" no es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
     assert key in without, f"{key} was matched but should not be"
 
 
-@then(parsers.parse('the unmatched tests include "{key1}" and "{key2}"'))
+@then(parsers.parse('los tests sin emparejar incluyen "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
     unmatched = ctx["sync_result"].tests_without_evidence
     assert key1 in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
     assert key2 in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
 
 
-@then(parsers.parse('the unmatched files include "{filename}"'))
+@then(parsers.parse('los archivos no utilizados incluyen "{filename}"'))
 def _(ctx, filename):
     unmatched_files = ctx["sync_result"].files_unused
     assert any(filename in f for f in unmatched_files), (
@@ -214,7 +214,7 @@ def _(ctx, filename):
     )
 
 
-@then(parsers.parse("all {n:d} tests are unmatched"))
+@then(parsers.parse("los {n:d} tests resultan sin emparejar"))
 def _(ctx, n):
     result = ctx["sync_result"]
     assert len(result.tests_without_evidence) == n, (
@@ -222,7 +222,7 @@ def _(ctx, n):
     )
 
 
-@then(parsers.parse('a "{error_type}" is raised'))
+@then(parsers.parse('se lanza un error "{error_type}"'))
 def _(ctx, error_type):
     error = ctx.get("sync_error")
     assert error is not None, f"Expected {error_type} but no error was raised"

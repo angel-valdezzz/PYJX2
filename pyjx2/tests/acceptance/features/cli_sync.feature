@@ -1,38 +1,39 @@
-Feature: CLI Sync Command
-  As a QA engineer
-  I want to run the sync command from the terminal
-  So that I can automatically match evidence files to test results
+# language: es
+Característica: CLI Sync
+  Como ingeniero de QA
+  Quiero ejecutar el comando sync desde la terminal
+  Para poder emparejar automáticamente archivos de evidencia con resultados de tests
 
-  Scenario: Sync command succeeds with all required arguments
-    When I invoke "pyjx2 sync" with all required arguments
-    Then the exit code is 0
+  Escenario: El comando sync tiene éxito con todos los argumentos requeridos
+    Cuando invoco "pyjx2 sync" con todos los argumentos requeridos
+    Entonces el código de salida es 0
 
-  Scenario: Sync command output shows matched tests table
-    When I invoke "pyjx2 sync" with all required arguments
-    Then the exit code is 0
-    And the output contains "PROJ-10"
+  Escenario: La salida del comando sync muestra la tabla de tests emparejados
+    Cuando invoco "pyjx2 sync" con todos los argumentos requeridos
+    Entonces el código de salida es 0
+    Y la salida contiene "PROJ-10"
 
-  Scenario: Sync command fails when --execution is missing
-    When I invoke "pyjx2 sync" without "--execution"
-    Then the exit code is not 0
+  Escenario: El comando sync falla cuando falta --execution
+    Cuando invoco "pyjx2 sync" sin "--execution"
+    Entonces el código de salida no es 0
 
-  Scenario: Sync command fails when --folder is missing
-    When I invoke "pyjx2 sync" without "--folder"
-    Then the exit code is not 0
+  Escenario: El comando sync falla cuando falta --folder
+    Cuando invoco "pyjx2 sync" sin "--folder"
+    Entonces el código de salida no es 0
 
-  Scenario: Sync command fails when --status is missing
-    When I invoke "pyjx2 sync" without "--status"
-    Then the exit code is not 0
+  Escenario: El comando sync falla cuando falta --status
+    Cuando invoco "pyjx2 sync" sin "--status"
+    Entonces el código de salida no es 0
 
-  Scenario: Sync command rejects an invalid status value
-    When I invoke "pyjx2 sync" with status "INVALID_STATUS"
-    Then the exit code is not 0
+  Escenario: El comando sync rechaza un valor de status inválido
+    Cuando invoco "pyjx2 sync" con el status "INVALID_STATUS"
+    Entonces el código de salida no es 0
 
-  Scenario Outline: Sync command accepts all valid status values
-    When I invoke "pyjx2 sync" with status "<status>"
-    Then the exit code is 0
+  Esquema del escenario: El comando sync acepta todos los valores de status válidos
+    Cuando invoco "pyjx2 sync" con el status "<status>"
+    Entonces el código de salida es 0
 
-    Examples:
+    Ejemplos:
       | status     |
       | PASS       |
       | FAIL       |
@@ -40,20 +41,20 @@ Feature: CLI Sync Command
       | EXECUTING  |
       | ABORTED    |
 
-  Scenario: Sync command fails gracefully when folder is not found
-    Given the sync API raises a FileNotFoundError
-    When I invoke "pyjx2 sync" with all required arguments
-    Then the exit code is not 0
+  Escenario: El comando sync falla elegantemente cuando no se encuentra la folder
+    Dado que la API de sync lanza un error FileNotFoundError
+    Cuando invoco "pyjx2 sync" con todos los argumentos requeridos
+    Entonces el código de salida no es 0
 
-  Scenario: Sync command shows unmatched tests in output
-    Given the sync result has 2 unmatched tests
-    When I invoke "pyjx2 sync" with all required arguments
-    Then the output shows unmatched tests
+  Escenario: El comando sync muestra tests no emparejados en la salida
+    Dado que el resultado de sync tiene 2 tests sin emparejar
+    Cuando invoco "pyjx2 sync" con todos los argumentos requeridos
+    Entonces la salida muestra los tests sin evidencia
 
-  Scenario: Sync command passes --no-recursive flag to the API
-    When I invoke "pyjx2 sync" with "--no-recursive"
-    Then the recursive parameter is False in the API call
+  Escenario: El comando sync pasa el flag --no-recursive a la API
+    Cuando invoco "pyjx2 sync" con "--no-recursive"
+    Entonces el parámetro recursive es False en la llamada a la API
 
-  Scenario: Sync command defaults to recursive mode
-    When I invoke "pyjx2 sync" with all required arguments
-    Then the recursive parameter is True in the API call
+  Escenario: El comando sync usa modo recursive por defecto
+    Cuando invoco "pyjx2 sync" con todos los argumentos requeridos
+    Entonces el parámetro recursive es True en la llamada a la API
