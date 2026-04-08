@@ -1,11 +1,11 @@
 # Instalación
 
-A fin de correr PYJX2 y ejecutar tus despliegues contra Jira, necesitas adecuar tu entorno primero. PyJX2 se encuentra empaquetado asimilando una aplicación ejecutable nativa construida a base de librerías modernas como Textual, Typer y Requests, garantizando una instalación rápida.
+A fin de ejecutar una regresión, necesitas adecuar tu entorno primero. PyJX2 se encuentra empaquetado asimilando una aplicación ejecutable nativa construida a base de librerías modernas como Textual, Typer y Requests, garantizando una instalación rápida.
 
 ## Requisitos Previos
 
 - Python 3.10 o superior (Recomendado >= 3.11).
-- Credenciales vigentes de Atlassian Jira Cloud y Xray API App credentials.
+- Credenciales vigentes de Atlassian Jira y Xray API App credentials.
 
 ## Método 1: Pip Módulo Nativo
 

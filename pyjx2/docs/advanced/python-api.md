@@ -1,6 +1,4 @@
-# API Python (Para Desarrolladores)
-
-Todos los comandos en CLI son una abstracción que cubre las dependencias físicas para acceder a nuestro núcleo: Nuestro inmenso objeto constructor `PyJX2` (Facade). Puedes importarlo a placer en tus propios repositorios Python y explotar Jira y Xray orgánicamente dentro de tus scripts sin perder compatibilidad y limpieza con la manipulación REST original.
+Todos los comandos en CLI son una abstracción que cubre las dependencias físicas para acceder a nuestro núcleo: Nuestro objeto constructor `PyJX2` (Facade).
 
 ## Inicialización
 
@@ -35,20 +33,20 @@ ts = pjx.create_test_set("PROJ", "My Test Set")
 pjx.add_tests_to_set(ts.key, ["PROJ-123", "PROJ-124"])
 ```
 
-## Flujos Grandes Explotables
+## Flujos Grandes
 
-Si tu propio Script sólo desea un atajo o wrapper rápido para un plan pre-establecido automatizado en el CI, puedes inyectar las funciones macro de `Run/Sync` enviando tus *callbacks* que reciban los Strings por paso a modo de rastreo (Ideal para reenviarlos nativamente a un Logger o Telemetría de App Dynamics o Slack).
+Si tu propio Script sólo desea un atajo o wrapper rápido para un plan pre-establecido automatizado en el CI, puedes inyectar las funciones macro de `Run/Sync` enviando tus *callbacks* que reciban los Strings por paso a modo de rastreo.
 
 ```python
-def my_custom_slack_logger(msg: str):
-    requests.post("https://slack/webhook", data=msg)
+def my_custom_logger(msg: str):
+    print(f"[LOG] {msg}")
 
 result = pjx.setup(
     project_key="PROJ",
     test_plan_key="PROJ-100",
     execution_summary="Execution",
     test_set_summary="Test Set",
-    progress_callback=my_custom_slack_logger,
+    progress_callback=my_custom_logger,
 )
 ```
 

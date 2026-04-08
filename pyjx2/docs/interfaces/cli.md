@@ -1,53 +1,63 @@
 # Interfaz de Línea de Comandos (CLI)
 
-PYJX2 está construido fuertemente en Typer y presenta banderas para los mandatos más estrictos directamente por invocación Shell. 
+PYJX2 está construido sobre Typer y ofrece una interfaz para automatizaciones y pipelines mediante el uso de comandos y opciones directas.
 
 ## Referencia Global 
+
 ```bash
 pyjx2 [SUBCOMMAND] [OPTIONS]
 ```
-Puedes sobrescribir las claves de la configuración permanentemente empleando `--jira-url`, `--jira-username`, `--password`, `--xray-client-id`, `--xray-client-secret`.
-O indicar otro archivo maestro para jalar credenciales empleando `--config /path/to.json`.
+
+Opciones globales comunes:
+- `--config` / `-c`: Especifica una ruta personalizada para el archivo de configuración.
+- `--env`: Define el entorno (`QA` o `DEV`).
+- `--jira-username` / `-u`: Sobrescribe el usuario de Jira.
+- `--password`: Sobrescribe la contraseña de Jira.
 
 ---
 
 ## Modulo: `setup`
-**Propósito:** Transfiere jerarquías creando el Test Execution.
+**Propósito:** Crea la estructura de ejecución en Jira (Test Execution + Test Set).
 
 | Flag | Tipo | Descripción |
 |---|---|---|
-| `--project` / `-p` | Text | Llave general de Proyecto Jira |
-| `--test-plan` | Text | Llave del Test Plan Jira (v.g. PROJ-X) |
-| `--execution-summary` / `-e` | Text | Summary Name para inyectar |
-| `--test-set-summary` / `-s` | Text | Summary Name sobre el Set |
-| `--reuse-tests` / `--clone-tests` | Boolean | Cambia método por defecto (clonar) por rehusar |
+| `--test-plan` | Text | Llave del Test Plan Jira (ej. PROJ-X). |
+| `--execution-summary` / `-e` | Text | Título para el nuevo Test Execution. |
+| `--application` / `-a` | Text | Calificador de aplicación (ej. AXA_WEB). |
+| `--test-mode` / `-m` | Text | `clone` (copiar tests) o `add` (usar tests originales). |
 
 ---
 
 ## Modulo: `sync`
-**Propósito:** Transefiere datos de reportes físicos (local) hacia Cloud y cambia de estado las transiciones.
+**Propósito:** Sincroniza evidencias locales con las ejecuciones.
 
 | Flag | Tipo | Descripción |
 |---|---|---|
-| `--execution` / `-e` | Text | El id en Jira referente al caso macro de ejecución |
-| `--folder` / `-f` | Text | Path físico contenedor de evidencias |
-| `--status` / `-s` | Text | (PASS, FAIL, TODO, EXECUTING, ABORTED) |
-| `--recursive` / `--no-recursive` / `-R` | Boolean | Comportamiento del escaner (Activado por Defecto) |
+| `--execution` / `-e` | Text | ID de la ejecución en Jira. |
+| `--folder` / `-f` | Text | Carpeta local con las evidencias. |
+| `--status` / `-s` | Text | Estado por defecto (PASS, FAIL, TODO, etc.). |
+| `--recursive` / `-r` | Boolean | Escaneo recursivo de subcarpetas. |
+
+---
+
+## Modulo: `docs`
+Accede al manual de usuario directamente desde la terminal.
+```bash
+pyjx2 docs
+```
+Este comando activa un servidor local y abre automáticamente **Google Chrome** en modo pantalla completa con la documentación actual. Para detener el servidor, presiona `Ctrl+C`.
 
 ---
 
 ## Modulo: `tui`
-Levantará en full-screen una Interfaz para el usuario final. No admite flag de I/O a excepción de la carga del custom path de configuración global.
+Inicia la interfaz gráfica envolvente.
 ```bash
-pyjx2 --config /otro/config.toml tui
+pyjx2 tui
 ```
-
 
 ---
 
-## Modulo: `config` (Subcomandos Tácticos)
+## Modulo: `config` (Utilidades)
 
-Ideal para labores de mantenimiento y utilitarios de tokens locales.
-
-- **`encrypt-pass`**: Permite parsear en vivo una contraseña e imprimir el `ENC:..` del cifrado. (Admite `--help`).
-- **`decrypt-pass`**: El caso contrario. Devuelve la frase temporal destilada para revisiones.
+- **`encrypt-pass`**: Cifra una contraseña para su uso seguro en archivos de configuración.
+- **`decrypt-pass`**: Revela el texto original de un token `ENC:`.
