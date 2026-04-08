@@ -681,6 +681,47 @@ class PyJX2App(App):
     def _run_decrypt(self):
         e = self._get_input("sec-encrypted")
         if not e: return
+        if not e.startswith("ENC:"):
+            self._log("sec-log", "[ERROR] Formato inválido: debe iniciar con 'ENC:'.")
+            return
+
         from ..infrastructure.security.encryption import SymmetricEncryptionService
-        try: self.query_one("#sec-plain", Input).value = SymmetricEncryptionService().decrypt(e)
-        except Exception: self._log("sec-log", "[ERROR] Inválido.")
+        try:
+            self.query_one("#sec-plain", Input).value = SymmetricEncryptionService().decrypt(e)
+            self._log("sec-log", "[ÉXITO] Desencriptado.")
+        except Exception:
+            self.query_one("#sec-plain", Input).value = ""
+            self._log("sec-log", "[ERROR] Token corrupto o llave incorrecta.")
+
+    def _get_input(self, id: str) -> str:
+        try: return str(self.query_one(f"#{id}", Input).value or "").strip()
+        except Exception: return ""
+
+    def _log(self, id: str, msg: str):
+        try: self.query_one(f"#{id}", Log).write(msg + "\n")
+        except Exception: pass
+
+    def _build_pjx(self, mode, log_id):
+        from ..core.pjx_facade import PyJX2
+        try:
+            return PyJX2(
+                jira_base_url="https://jira.axa.com" if self.query_one("#sync-env-qa", RadioButton).value else "https://jira-dev.axa.com",
+                jira_username=self._get_input("sync-jira-username"),
+                jira_password=self._get_input("sync-jira-password")
+            )
+        except Exception as e:
+            self._log(log_id, f"[ERROR] {e}")
+            return None
+
+    def _kill_mkdocs(self):
+        if self.mkdocs_process:
+            try: self.mkdocs_process.terminate()
+            except Exception: pass
+            self.mkdocs_process = None
+
+    def _copy_to_clipboard(self, text: str):
+        import subprocess
+        try:
+            # Use PowerShell to set clipboard to avoid potential issues with CMD/Shell
+            subprocess.run(["powershell", "-Command", f"Set-Clipboard -Value '{text}'"], shell=True)
+        except Exception: pass

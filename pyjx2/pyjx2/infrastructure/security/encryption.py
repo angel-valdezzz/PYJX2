@@ -39,6 +39,19 @@ class SymmetricEncryptionService(EncryptionService):
         if not encrypted_text.startswith(self.prefix):
             return encrypted_text  # Not encrypted
 
-        token = encrypted_text[len(self.prefix):].encode("utf-8")
-        decrypted_bytes = self.fernet.decrypt(token)
+        token_str = encrypted_text[len(self.prefix):]
+        token_bytes = token_str.encode("utf-8")
+
+        # Strict Base64 validation to prevent "excess data after padding" issues
+        try:
+            # Fernet uses urlsafe base64, so we replace characters correctly before validation
+            standard_b64 = token_str.replace('-', '+').replace('_', '/')
+            base64.b64decode(standard_b64, validate=True)
+        except Exception:
+            # If base64 is invalid or has trailing garbage, raise error
+            # This is caught by the TUI/CLI and reported as a corrupted token
+            raise ValueError("Invalid token: encoding or padding error")
+
+        decrypted_bytes = self.fernet.decrypt(token_bytes)
         return decrypted_bytes.decode("utf-8")
+

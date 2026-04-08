@@ -49,3 +49,26 @@ def test_api_client_decryption_ignores_raw_text():
     from pyjx2.api.client import PyJX2
     raw = "unencrypted_string"
     assert PyJX2.decrypt_password(raw) == raw
+
+def test_encryption_fails_on_tampered_token():
+    import pytest
+    service = SymmetricEncryptionService(key_seed="axa", prefix="ENC:")
+    plain_text = "test_password"
+    encrypted = service.encrypt(plain_text)
+    
+    # Case 1: Tamper with character at the end (extra data after padding)
+    tampered_end = encrypted + "A"
+    with pytest.raises(ValueError, match="Invalid token: encoding or padding error"):
+        service.decrypt(tampered_end)
+        
+    # Case 2: Tamper with character in the middle (HMAC mismatch or decoding error)
+    # We change a character in the base64 part (not the prefix)
+    middle_index = len("ENC:") + 10
+    tampered_list = list(encrypted)
+    # Swap a character
+    tampered_list[middle_index] = 'A' if tampered_list[middle_index] != 'A' else 'B'
+    tampered_middle = "".join(tampered_list)
+    
+    with pytest.raises(Exception): # Fernet raises InvalidToken or ValueError
+        service.decrypt(tampered_middle)
+
