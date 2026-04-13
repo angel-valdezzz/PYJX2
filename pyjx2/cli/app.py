@@ -10,8 +10,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ..infrastructure.config import load_settings
 from ..api.client import PyJX2
+from ..bootstrap import build_runtime_from_config
 
 app = typer.Typer(
     name="pyjx2",
@@ -40,8 +40,8 @@ def _common_options(
             "username": jira_username,
             "password": jira_password,
         }
-    settings = load_settings(config_file=config, overrides=overrides or None)
-    return PyJX2(settings)
+    runtime = build_runtime_from_config(config_file=config, overrides=overrides or None)
+    return PyJX2(runtime)
 
 
 # -- Shared options -------------------------------------------------------------
