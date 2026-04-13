@@ -6,6 +6,8 @@ from __future__ import annotations
 import pytest
 from pytest_bdd import scenarios, given, when, then, parsers
 
+from pyjx2.domain.entities import Test
+
 from .conftest import build_mocked_client
 
 scenarios("../features/setup_flow.feature")
@@ -22,21 +24,21 @@ def _(ctx, settings, plan_key):
 
 @given(parsers.parse('que el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
 def _(ctx, settings, plan_key, n):
-    tests = [{"key": f"PROJ-{i+10}"} for i in range(n)]
+    tests = [Test(key=f"PROJ-{i+10}", summary=f"Test {i}") for i in range(n)]
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
     ctx["plan_key"] = plan_key
 
 @given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
 def _(ctx, settings, plan_key, n):
-    tests = [{"key": f"PROJ-{i+10}"} for i in range(n)]
+    tests = [Test(key=f"PROJ-{i+10}", summary=f"Test {i}") for i in range(n)]
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
     ctx["plan_key"] = plan_key
 
 @given("un cliente PyJX2 configurado")
 def _(ctx, settings):
-    tests = [{"key": "PROJ-10"}, {"key": "PROJ-11"}]
+    tests = [Test(key="PROJ-10", summary="Login flow"), Test(key="PROJ-11", summary="Logout flow")]
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
 

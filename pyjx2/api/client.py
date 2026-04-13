@@ -154,7 +154,7 @@ class PyJX2:
     def get_test_plan(self, key: str | TestPlanKey) -> Optional[TestPlan]:
         return self._test_plan_repo.get(TestPlanKey.from_value(key))
 
-    def get_tests_from_plan(self, plan_key: str | TestPlanKey) -> list[dict]:
+    def get_tests_from_plan(self, plan_key: str | TestPlanKey) -> list[Test]:
         return self._test_plan_repo.get_tests(TestPlanKey.from_value(plan_key))
 
     def resolve_project_key(self, test_plan_key: Optional[str] = None) -> Optional[str]:

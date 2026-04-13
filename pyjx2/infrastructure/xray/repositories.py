@@ -268,13 +268,27 @@ class XrayTestExecutionRepository(TestExecutionRepository):
         self._xray.post(f"testexec/{exec_id}/testset", {"add": [ts_id]})
         return True
 
-    def get_tests(self, key: ExecutionKey) -> list[dict]:
+    def get_tests(self, key: ExecutionKey) -> list[Test]:
         issue = self._jira.get_issue(str(key))
         exec_id = issue.get("id")
         result = self._xray.get(f"testexec/{exec_id}/test")
         if isinstance(result, list):
-            return result
-        return result.get("tests", []) if isinstance(result, dict) else []
+            tests_data = result
+        elif isinstance(result, dict):
+            tests_data = result.get("tests", [])
+        else:
+            tests_data = []
+
+        return [
+            Test(
+                key=test_data.get("key", ""),
+                summary=test_data.get("summary", ""),
+                status=test_data.get("status"),
+                issue_id=test_data.get("id"),
+            )
+            for test_data in tests_data
+            if test_data.get("key")
+        ]
 
 
 class XrayTestPlanRepository(TestPlanRepository):
@@ -294,10 +308,24 @@ class XrayTestPlanRepository(TestPlanRepository):
         except Exception:
             return None
 
-    def get_tests(self, key: TestPlanKey) -> list[dict]:
+    def get_tests(self, key: TestPlanKey) -> list[Test]:
         issue = self._jira.get_issue(str(key))
         plan_id = issue.get("id")
         result = self._xray.get(f"testplan/{plan_id}/test")
         if isinstance(result, list):
-            return result
-        return result.get("tests", []) if isinstance(result, dict) else []
+            tests_data = result
+        elif isinstance(result, dict):
+            tests_data = result.get("tests", [])
+        else:
+            tests_data = []
+
+        return [
+            Test(
+                key=test_data.get("key", ""),
+                summary=test_data.get("summary", ""),
+                status=test_data.get("status"),
+                issue_id=test_data.get("id"),
+            )
+            for test_data in tests_data
+            if test_data.get("key")
+        ]

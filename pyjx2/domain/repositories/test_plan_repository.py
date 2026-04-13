@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from ..entities import TestPlan
+from ..entities import Test, TestPlan
 from ..value_objects import TestPlanKey
 
 
@@ -11,5 +11,5 @@ class TestPlanRepository(ABC):
         ...
 
     @abstractmethod
-    def get_tests(self, key: TestPlanKey) -> list[dict]:
+    def get_tests(self, key: TestPlanKey) -> list[Test]:
         ...
