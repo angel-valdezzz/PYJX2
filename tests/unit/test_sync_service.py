@@ -9,6 +9,7 @@ import pytest
 
 from pyjx2.application.services.sync_service import SyncService, SyncInput
 from pyjx2.domain.entities import Test
+from pyjx2.domain.value_objects import ExecutionKey, Status, TestKey
 
 
 class TestSyncServiceFileMatching:
@@ -16,7 +17,6 @@ class TestSyncServiceFileMatching:
 
     def _make_service(self, tests=None):
         test_repo = MagicMock()
-        exec_repo = MagicMock()
 
         # Default tests if none provided
         if tests is None:
@@ -27,12 +27,13 @@ class TestSyncServiceFileMatching:
 
         test_repo.update_status.return_value = True
         test_repo.upload_evidence.return_value = True
-        exec_repo.list_from_execution.return_value = tests
+        test_repo.list_from_execution.return_value = tests
+        test_repo.clear_evidence.return_value = True
 
-        return SyncService(test_repo, exec_repo), test_repo, exec_repo
+        return SyncService(test_repo), test_repo
 
     def _run_with_files(self, filenames, tests=None, recursive=True, extensions=None, overrides=None):
-        svc, test_repo, exec_repo = self._make_service(tests)
+        svc, test_repo = self._make_service(tests)
         with tempfile.TemporaryDirectory() as tmpdir:
             folder = Path(tmpdir)
             for name in filenames:
@@ -77,7 +78,7 @@ class TestSyncServiceFileMatching:
 
     def test_tests_without_evidence_reported(self):
         result, _ = self._run_with_files(["Login flow.png"])
-        assert "PROJ-11" in result.tests_without_evidence
+        assert TestKey.from_value("PROJ-11") in result.tests_without_evidence
 
     def test_recursive_finds_nested_files(self):
         result, _ = self._run_with_files(
@@ -101,11 +102,19 @@ class TestSyncServiceFileMatching:
         )
         # PROJ-10 (Login) -> PASS (default)
         # PROJ-11 (Logout) -> FAIL (override)
-        test_repo.update_status.assert_any_call("PROJ-200", "PROJ-10", "PASS")
-        test_repo.update_status.assert_any_call("PROJ-200", "PROJ-11", "FAIL")
+        test_repo.update_status.assert_any_call(
+            ExecutionKey.from_value("PROJ-200"),
+            TestKey.from_value("PROJ-10"),
+            Status.from_value("PASS"),
+        )
+        test_repo.update_status.assert_any_call(
+            ExecutionKey.from_value("PROJ-200"),
+            TestKey.from_value("PROJ-11"),
+            Status.from_value("FAIL"),
+        )
 
     def test_nonexistent_folder_raises(self):
-        svc, _, _ = self._make_service()
+        svc, _ = self._make_service()
         with pytest.raises(FileNotFoundError):
             svc.run(SyncInput(
                 execution_key="PROJ-200",
@@ -114,7 +123,7 @@ class TestSyncServiceFileMatching:
 
     def test_progress_callback_is_called(self):
         messages = []
-        svc, _, _ = self._make_service()
+        svc, _ = self._make_service()
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "Login flow.png").write_text("data")
             svc.run(
@@ -125,16 +134,15 @@ class TestSyncServiceFileMatching:
 
     def test_fail_fast_on_invalid_execution(self):
         test_repo = MagicMock()
-        exec_repo = MagicMock()
-        exec_repo.list_from_execution.side_effect = Exception("Not found")
-        svc = SyncService(test_repo, exec_repo)
+        test_repo.list_from_execution.side_effect = Exception("Not found")
+        svc = SyncService(test_repo)
         
-        result = svc.run(SyncInput(execution_key="INVALID", folder="."))
+        result = svc.run(SyncInput(execution_key="PROJ-999", folder="."))
         assert len(result.errors) == 1
-        assert "INVALID" in result.errors[0]
+        assert "PROJ-999" in result.errors[0]
 
     def test_replace_mode_clears_evidence(self):
-        svc, test_repo, exec_repo = self._make_service()
+        svc, test_repo = self._make_service()
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "Login flow.png").write_text("data")
             
@@ -145,4 +153,7 @@ class TestSyncServiceFileMatching:
             ))
             
             # Verify clear_evidence was called for PROJ-10 (the matched test)
-            test_repo.clear_evidence.assert_called_once_with("PROJ-200", "PROJ-10")
+            test_repo.clear_evidence.assert_called_once_with(
+                ExecutionKey.from_value("PROJ-200"),
+                TestKey.from_value("PROJ-10"),
+            )

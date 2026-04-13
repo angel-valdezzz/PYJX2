@@ -31,9 +31,10 @@ from textual.reactive import reactive
 
 from ..api.client import PyJX2
 from ..bootstrap import build_api_from_credentials
+from ..domain.value_objects import Status
 
 
-STATUSES = ["PASS", "FAIL", "TODO", "EXECUTING", "ABORTED"]
+STATUSES = list(Status.allowed_values())
 
 
 class PyJX2App(App):

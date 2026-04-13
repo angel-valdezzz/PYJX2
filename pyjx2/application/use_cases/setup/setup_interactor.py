@@ -6,6 +6,7 @@ from .resolvers import (
 from ....domain.repositories import (
     TestPlanRepository, TestExecutionRepository, TestSetRepository, TestRepository
 )
+from ....domain.value_objects import TestKey
 
 class SetupInteractor:
     def __init__(
@@ -40,7 +41,7 @@ class SetupInteractor:
         self.plan_resolver.validate(config.test_plan.key)
         
         plan_tests_data = self.plan_repo.get_tests(config.test_plan.key)
-        valid_plan_test_keys = [t.get("key") for t in plan_tests_data if t.get("key")]
+        valid_plan_test_keys = [TestKey.from_value(t.get("key")) for t in plan_tests_data if t.get("key")]
         log(f"Test Plan validado correctamente ({len(valid_plan_test_keys)} tests maestros encontrados).")
 
         for exec_conf in config.test_executions:

@@ -66,7 +66,7 @@ def build_mocked_client(
     }
 
     test_repo = MagicMock()
-    test_repo.get.side_effect = lambda k: all_tests.get(k)
+    test_repo.get.side_effect = lambda k: all_tests.get(str(k))
     test_repo.create.return_value = Test(key="PROJ-50", summary="Created test")
     clone_counter = [0]
 
@@ -78,6 +78,7 @@ def build_mocked_client(
     test_repo.update_status.return_value = True
     test_repo.upload_evidence.return_value = True
     test_repo.list_from_execution.return_value = list(all_tests.values())
+    test_repo.clear_evidence.return_value = True
 
     test_set_repo = MagicMock()
     test_set_repo.get.return_value = test_set

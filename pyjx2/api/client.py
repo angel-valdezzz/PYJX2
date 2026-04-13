@@ -4,6 +4,15 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from ..application.services.sync_service import SyncInput, SyncResult, SyncService
 from ..domain.entities import Test, TestExecution, TestPlan, TestSet
+from ..domain.value_objects import (
+    ExecutionKey,
+    ProjectKey,
+    Status,
+    TestKey,
+    TestPlanKey,
+    TestSetKey,
+    TestType,
+)
 from ..infrastructure.config.settings import Settings
 
 if TYPE_CHECKING:
@@ -13,12 +22,6 @@ if TYPE_CHECKING:
 
 
 class PyJX2:
-    """
-    High-level API facade for Jira / Xray automation.
-
-    Public behavior stays compatible while dependency wiring lives in bootstrap.
-    """
-
     def __init__(self, settings_or_runtime: Settings | "PyJX2Runtime") -> None:
         if isinstance(settings_or_runtime, Settings):
             from ..bootstrap import build_runtime
@@ -57,77 +60,102 @@ class PyJX2:
         runtime = getattr(self, "_runtime", None)
         if runtime is not None:
             return runtime.sync_service
+        return SyncService(self._test_repo)
 
-        return SyncService(self._test_repo, self._test_exec_repo)
-
-    def get_test(self, key: str) -> Optional[Test]:
-        return self._test_repo.get(key)
+    def get_test(self, key: str | TestKey) -> Optional[Test]:
+        return self._test_repo.get(TestKey.from_value(key))
 
     def create_test(
         self,
-        project_key: str,
+        project_key: str | ProjectKey,
         summary: str,
-        test_type: str = "Manual",
+        test_type: str | TestType = "Manual",
         labels: Optional[list[str]] = None,
     ) -> Test:
         return self._test_repo.create(
-            project_key=project_key,
+            project_key=ProjectKey.from_value(project_key),
             summary=summary,
-            test_type=test_type,
+            test_type=TestType.from_value(test_type),
             labels=labels or [],
         )
 
-    def clone_test(self, source_key: str, target_project_key: str) -> Test:
-        return self._test_repo.clone(source_key, target_project_key)
+    def clone_test(self, source_key: str | TestKey, target_project_key: str | ProjectKey) -> Test:
+        return self._test_repo.clone(
+            TestKey.from_value(source_key),
+            ProjectKey.from_value(target_project_key),
+        )
 
-    def get_tests_from_execution(self, execution_key: str) -> list[Test]:
-        return self._test_repo.list_from_execution(execution_key)
+    def get_tests_from_execution(self, execution_key: str | ExecutionKey) -> list[Test]:
+        return self._test_repo.list_from_execution(ExecutionKey.from_value(execution_key))
 
     def update_test_status(
         self,
-        execution_key: str,
-        test_key: str,
-        status: str,
+        execution_key: str | ExecutionKey,
+        test_key: str | TestKey,
+        status: str | Status,
     ) -> bool:
-        return self._test_repo.update_status(execution_key, test_key, status)
+        return self._test_repo.update_status(
+            ExecutionKey.from_value(execution_key),
+            TestKey.from_value(test_key),
+            Status.from_value(status),
+        )
 
     def upload_test_evidence(
         self,
-        execution_key: str,
-        test_key: str,
+        execution_key: str | ExecutionKey,
+        test_key: str | TestKey,
         file_path: str,
     ) -> bool:
-        return self._test_repo.upload_evidence(execution_key, test_key, file_path)
+        return self._test_repo.upload_evidence(
+            ExecutionKey.from_value(execution_key),
+            TestKey.from_value(test_key),
+            file_path,
+        )
 
-    def get_test_set(self, key: str) -> Optional[TestSet]:
-        return self._test_set_repo.get(key)
+    def get_test_set(self, key: str | TestSetKey) -> Optional[TestSet]:
+        return self._test_set_repo.get(TestSetKey.from_value(key))
 
-    def create_test_set(self, project_key: str, summary: str) -> TestSet:
-        return self._test_set_repo.create(project_key, summary)
+    def create_test_set(self, project_key: str | ProjectKey, summary: str) -> TestSet:
+        return self._test_set_repo.create(ProjectKey.from_value(project_key), summary)
 
-    def update_test_set(self, key: str, **kwargs) -> TestSet:
-        return self._test_set_repo.update(key, **kwargs)
+    def update_test_set(self, key: str | TestSetKey, **kwargs) -> TestSet:
+        return self._test_set_repo.update(TestSetKey.from_value(key), **kwargs)
 
-    def add_tests_to_set(self, test_set_key: str, test_keys: list[str]) -> bool:
-        return self._test_set_repo.add_tests(test_set_key, test_keys)
+    def add_tests_to_set(self, test_set_key: str | TestSetKey, test_keys: list[str | TestKey]) -> bool:
+        return self._test_set_repo.add_tests(
+            TestSetKey.from_value(test_set_key),
+            [TestKey.from_value(test_key) for test_key in test_keys],
+        )
 
-    def get_test_execution(self, key: str) -> Optional[TestExecution]:
-        return self._test_exec_repo.get(key)
+    def get_test_execution(self, key: str | ExecutionKey) -> Optional[TestExecution]:
+        return self._test_exec_repo.get(ExecutionKey.from_value(key))
 
-    def create_test_execution(self, project_key: str, summary: str, **kwargs) -> TestExecution:
-        return self._test_exec_repo.create(project_key, summary, **kwargs)
+    def create_test_execution(
+        self,
+        project_key: str | ProjectKey,
+        summary: str,
+        **kwargs,
+    ) -> TestExecution:
+        return self._test_exec_repo.create(ProjectKey.from_value(project_key), summary, **kwargs)
 
-    def update_test_execution(self, key: str, **kwargs) -> TestExecution:
-        return self._test_exec_repo.update(key, **kwargs)
+    def update_test_execution(self, key: str | ExecutionKey, **kwargs) -> TestExecution:
+        return self._test_exec_repo.update(ExecutionKey.from_value(key), **kwargs)
 
-    def add_test_set_to_execution(self, execution_key: str, test_set_key: str) -> bool:
-        return self._test_exec_repo.add_test_set(execution_key, test_set_key)
+    def add_test_set_to_execution(
+        self,
+        execution_key: str | ExecutionKey,
+        test_set_key: str | TestSetKey,
+    ) -> bool:
+        return self._test_exec_repo.add_test_set(
+            ExecutionKey.from_value(execution_key),
+            TestSetKey.from_value(test_set_key),
+        )
 
-    def get_test_plan(self, key: str) -> Optional[TestPlan]:
-        return self._test_plan_repo.get(key)
+    def get_test_plan(self, key: str | TestPlanKey) -> Optional[TestPlan]:
+        return self._test_plan_repo.get(TestPlanKey.from_value(key))
 
-    def get_tests_from_plan(self, plan_key: str) -> list[dict]:
-        return self._test_plan_repo.get_tests(plan_key)
+    def get_tests_from_plan(self, plan_key: str | TestPlanKey) -> list[dict]:
+        return self._test_plan_repo.get_tests(TestPlanKey.from_value(plan_key))
 
     def setup(
         self,
@@ -171,7 +199,6 @@ class PyJX2:
             ],
             settings=SetupGlobalSettings(),
         )
-
         return interactor.execute(config, logger=progress_callback)
 
     def sync(
@@ -186,7 +213,6 @@ class PyJX2:
         progress_callback=None,
     ) -> SyncResult:
         service = self._get_sync_service()
-
         sync_input = SyncInput(
             execution_key=execution_key,
             folder=folder,
@@ -196,30 +222,19 @@ class PyJX2:
             upload_mode=upload_mode,
             recursive=recursive,
         )
-
         return service.run(sync_input, progress_callback=progress_callback)
 
     @classmethod
-    def from_credentials(
-        cls,
-        username: str,
-        password: str,
-        env: str = "QA",
-    ) -> "PyJX2":
+    def from_credentials(cls, username: str, password: str, env: str = "QA") -> "PyJX2":
         from ..bootstrap import build_runtime_from_credentials
 
-        runtime = build_runtime_from_credentials(username=username, password=password, env=env)
-        return cls(runtime)
+        return cls(build_runtime_from_credentials(username=username, password=password, env=env))
 
     @classmethod
-    def from_config(
-        cls,
-        config_file: Optional[str] = None,
-    ) -> "PyJX2":
+    def from_config(cls, config_file: Optional[str] = None) -> "PyJX2":
         from ..bootstrap import build_runtime_from_config
 
-        runtime = build_runtime_from_config(config_file=config_file)
-        return cls(runtime)
+        return cls(build_runtime_from_config(config_file=config_file))
 
     @property
     def jira(self) -> "JiraClient":
