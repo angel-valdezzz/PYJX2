@@ -174,7 +174,7 @@ class PyJX2:
         test_mode: str = "clone",
         progress_callback=None,
     ):
-        from ..application.use_cases.setup.models import (
+        from ..application.use_cases.setup import (
             SetupConfig,
             SetupGlobalSettings,
             SetupSourceConfig,

@@ -10,8 +10,8 @@ import pytest
 from pytest_bdd import scenarios, given, when, then, parsers
 from typer.testing import CliRunner
 
+from pyjx2.application.use_cases.setup import SetupResult, SetupResultMetrics
 from pyjx2.cli.app import app
-from pyjx2.application.use_cases.setup.models import SetupResult, SetupResultMetrics
 from pyjx2.application.services.sync_service import SyncResult, SyncMatch
 from pyjx2.domain.entities import Test, TestSet, TestExecution
 
