@@ -1,8 +1,11 @@
 from typing import Callable, Optional
-from .models import SetupConfig, SetupResult, SetupResultMetrics
-from .resolvers import (
-    TestPlanResolver, TestExecutionResolver, TestSetResolver, TestCaseSourceResolver
-)
+from .setup_config import SetupConfig
+from .setup_result import SetupResult
+from .setup_result_metrics import SetupResultMetrics
+from .test_case_source_resolver import TestCaseSourceResolver
+from .test_execution_resolver import TestExecutionResolver
+from .test_plan_resolver import TestPlanResolver
+from .test_set_resolver import TestSetResolver
 from ....domain.repositories import (
     TestPlanRepository, TestExecutionRepository, TestSetRepository, TestRepository
 )

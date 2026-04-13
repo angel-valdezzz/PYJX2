@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from pyjx2.application.use_cases.setup.setup_interactor import SetupInteractor
-from pyjx2.application.use_cases.setup.models import (
+from pyjx2.application.use_cases.setup import (
     SetupConfig, SetupTestPlanConfig, SetupTestExecutionConfig, SetupTestSetConfig,
     SetupGlobalSettings, SetupSourceConfig
 )
