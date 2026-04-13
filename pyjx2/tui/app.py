@@ -31,6 +31,7 @@ from textual.reactive import reactive
 
 from ..api.client import PyJX2
 from ..bootstrap import build_api_from_credentials
+from ..docs_runtime import bundled_docs_index, open_docs_target, repo_root
 from ..domain.value_objects import Status
 
 
@@ -757,12 +758,23 @@ class PyJX2App(App):
             self._log(log, f"[ERROR] {e}")
 
     def _toggle_docs(self, btn):
+        bundled_index = bundled_docs_index()
+        if bundled_index:
+            try:
+                open_docs_target(bundled_index.as_uri())
+                self._log("setup-log", "[ÉXITO] Documentación empaquetada abierta.")
+            except Exception as e:
+                self._log("setup-log", f"[ERROR] No se pudo abrir la documentación empaquetada: {e}")
+            return
+
         if not self.mkdocs_process:
-            # Calculate absolute path to the directory containing mkdocs.yml
-            # script is in pyjx2/pyjx2/tui/app.py
-            # we need to go up to pyjx2/ (where mkdocs.yml is)
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-            
+            root = repo_root()
+            if root is None:
+                self._log("setup-log", "[ERROR] No se encontró documentación empaquetada ni un proyecto MkDocs local.")
+                return
+
+            base_dir = str(root)
+
             try:
                 self.mkdocs_process = subprocess.Popen(["mkdocs", "serve"], cwd=base_dir)
                 btn.label = "Cerrar Docs"; btn.add_class("warning-btn")
@@ -770,27 +782,11 @@ class PyJX2App(App):
                 # Wait a bit for the server to initialize and open browser in full screen
                 def open_browser():
                     import time
-                    import os
-                    import webbrowser
-                    import subprocess
                     time.sleep(1.0)
-                    url = "http://127.0.0.1:8000"
                     try:
-                        if os.name == "nt": # Windows
-                            chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-                            edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-                            
-                            if os.path.isfile(chrome_path):
-                                subprocess.Popen([chrome_path, "--new-window", "--start-fullscreen", url])
-                            elif os.path.isfile(edge_path):
-                                subprocess.Popen([edge_path, "--new-window", "--start-fullscreen", url])
-                            else:
-                                webbrowser.open(url)
-
-                        else:
-                            webbrowser.open(url)
+                        open_docs_target("http://127.0.0.1:8000")
                     except Exception:
-                        webbrowser.open(url) # Fallback
+                        pass
 
 
                 

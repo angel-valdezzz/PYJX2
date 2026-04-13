@@ -27,7 +27,8 @@ pyjx2 = "pyjx2.cli.app:app"
 [tool.poetry]
 packages = [{ include = "pyjx2" }]
 include = [
-    { path = "pyjx2/infrastructure/config/schema.json", format = ["sdist", "wheel"] }
+    { path = "pyjx2/infrastructure/config/schema.json", format = ["sdist", "wheel"] },
+    { path = "pyjx2/_bundled_docs/**/*", format = ["sdist", "wheel"] }
 ]
 
 [tool.poetry.group.dev.dependencies]

@@ -12,6 +12,7 @@ from rich.table import Table
 
 from ..api.client import PyJX2
 from ..bootstrap import build_api_from_config
+from ..docs_runtime import bundled_docs_index, open_docs_target, repo_root
 from ..domain.value_objects import Status
 
 app = typer.Typer(name="pyjx2", help="Herramienta de automatizacion Jira/Xray â€” prepara ejecuciones y sincroniza evidencias.", no_args_is_help=True, rich_markup_mode="rich")
@@ -159,12 +160,18 @@ def sync(
 
 @app.command()
 def docs() -> None:
-    import webbrowser
+    bundled_index = bundled_docs_index()
+    if bundled_index:
+        console.print("\n[bold cyan]Abriendo documentacion empaquetada...[/bold cyan]\n")
+        open_docs_target(bundled_index.as_uri())
+        return
 
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    if not os.path.isdir(os.path.join(base_dir, "docs")):
-        console.print(f"[bold red]Error:[/bold red] Directorio de documentacion no encontrado en {base_dir}")
+    root = repo_root()
+    if root is None:
+        console.print("[bold red]Error:[/bold red] No se encontro documentacion empaquetada ni un proyecto MkDocs local.")
         raise typer.Exit(code=1)
+
+    base_dir = str(root)
     console.print(f"\n[bold cyan]Iniciando Servidor de Documentacion...[/bold cyan]")
     console.print(f"[dim]Ruta: {base_dir}[/dim]\n")
 
@@ -174,21 +181,7 @@ def docs() -> None:
 
         def open_browser():
             time.sleep(1.5)
-            url = "http://127.0.0.1:8000"
-            try:
-                if os.name == "nt":
-                    chrome = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-                    edge = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-                    if os.path.isfile(chrome):
-                        subprocess.Popen([chrome, "--new-window", "--start-fullscreen", url])
-                    elif os.path.isfile(edge):
-                        subprocess.Popen([edge, "--new-window", "--start-fullscreen", url])
-                    else:
-                        webbrowser.open(url)
-                else:
-                    webbrowser.open(url)
-            except Exception:
-                webbrowser.open(url)
+            open_docs_target("http://127.0.0.1:8000")
 
         threading.Thread(target=open_browser, daemon=True).start()
         console.print("[bold green]Documentacion abierta![/bold green]")
