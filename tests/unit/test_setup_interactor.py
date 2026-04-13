@@ -11,7 +11,7 @@ from pyjx2.application.use_cases.setup import (
     SetupGlobalSettings, SetupSourceConfig
 )
 from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
-from pyjx2.domain.value_objects import ProjectKey, TestKey
+from pyjx2.domain.value_objects import ProjectKey, TestKey, TestSetKey
 
 class TestSetupInteractorExecute:
     """Tests for SetupInteractor.execute()"""
@@ -115,6 +115,10 @@ class TestSetupInteractorExecute:
         assert mock_test_repo.clone.call_count == 0
         assert result.metrics.tests_linked == 2
         assert result.metrics.tests_cloned == 0
+        mock_test_set_repo.add_tests.assert_called_once_with(
+            TestSetKey.from_value("PROJ-20"),
+            [TestKey.from_value("PROJ-10"), TestKey.from_value("PROJ-11")],
+        )
 
     def test_fail_fast_on_missing_plan(
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,

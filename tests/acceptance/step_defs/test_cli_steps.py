@@ -6,19 +6,32 @@ from __future__ import annotations
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pytest_bdd import scenarios, given, when, then, parsers
 from typer.testing import CliRunner
 
 from pyjx2.application.use_cases.setup import SetupResult, SetupResultMetrics
 from pyjx2.cli.app import app
-from pyjx2.application.services.sync_service import SyncResult, SyncMatch
+from pyjx2.application.services.sync_service import SyncResult
 from pyjx2.domain.entities import Test, TestSet, TestExecution
 
 scenarios("../features/cli_setup.feature")
 scenarios("../features/cli_sync.feature")
 
 runner = CliRunner()
+
+
+def _remove_option(args: list[str], option: str) -> list[str]:
+    """Remove a CLI option and its value, if present."""
+    result = list(args)
+    try:
+        idx = result.index(option)
+    except ValueError:
+        return result
+
+    result.pop(idx)
+    if idx < len(result) and not result[idx].startswith("--"):
+        result.pop(idx)
+    return result
 
 
 # ── Shared CLI result data builders ───────────────────────────────────────────
@@ -104,26 +117,19 @@ def _(ctx):
 
 @when('invoco "pyjx2 setup" sin "--test-plan"')
 def _(ctx):
-    args = [a for a in BASE_SETUP_ARGS if a != "--test-plan"]
+    args = _remove_option(BASE_SETUP_ARGS, "--test-plan")
     ctx["cli_result"] = runner.invoke(app, ["setup"] + args)
 
 
 @when('invoco "pyjx2 setup" sin "--application"')
 def _(ctx):
-    args = [a for a in BASE_SETUP_ARGS if a != "--application"]
+    args = _remove_option(BASE_SETUP_ARGS, "--application")
     ctx["cli_result"] = runner.invoke(app, ["setup"] + args)
 
 
 @when('invoco "pyjx2 setup" sin "--execution-summary"')
 def _(ctx):
-    # Eliminamos el flag y su valor correspondiente para asegurar que falte
-    args = list(BASE_SETUP_ARGS)
-    try:
-        idx = args.index("--execution-summary")
-        args.pop(idx) # flag
-        args.pop(idx) # value
-    except ValueError:
-        pass
+    args = _remove_option(BASE_SETUP_ARGS, "--execution-summary")
     ctx["cli_result"] = runner.invoke(app, ["setup"] + args)
 
 
@@ -191,21 +197,19 @@ def _(ctx):
 
 @when('invoco "pyjx2 sync" sin "--execution"')
 def _(ctx):
-    args = [a for a in BASE_SYNC_ARGS if a != "--execution"]
+    args = _remove_option(BASE_SYNC_ARGS, "--execution")
     ctx["cli_result"] = runner.invoke(app, ["sync"] + args)
 
 
 @when('invoco "pyjx2 sync" sin "--folder"')
 def _(ctx):
-    args = [a for a in BASE_SYNC_ARGS if a != "--folder"]
+    args = _remove_option(BASE_SYNC_ARGS, "--folder")
     ctx["cli_result"] = runner.invoke(app, ["sync"] + args)
 
 
 @when('invoco "pyjx2 sync" sin "--status"')
 def _(ctx):
-    # En la nueva CLI, status es obligatorio (...). 
-    # Typer generara un codigo de error 2 si falta.
-    args = [a for a in BASE_SYNC_ARGS if a != "--status"]
+    args = _remove_option(BASE_SYNC_ARGS, "--status")
     ctx["cli_result"] = runner.invoke(app, ["sync"] + args)
 
 

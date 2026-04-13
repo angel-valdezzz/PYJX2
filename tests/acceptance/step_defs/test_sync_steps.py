@@ -42,6 +42,7 @@ def _(ctx, file1, file2):
     (folder / file1).write_text("evidence data")
     (folder / file2).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 2
 
 
 @given(parsers.parse('una carpeta de evidence solo con el archivo "{file1}"'))
@@ -51,6 +52,7 @@ def _(ctx, file1):
     folder = Path(tmpdir)
     (folder / file1).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given(parsers.parse('una carpeta de evidence con el archivo "{file1}"'))
@@ -60,6 +62,7 @@ def _(ctx, file1):
     folder = Path(tmpdir)
     (folder / file1).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given(parsers.parse('una carpeta de evidence con un archivo anidado "{nested_path}"'))
@@ -71,6 +74,7 @@ def _(ctx, nested_path):
     nested.parent.mkdir(parents=True, exist_ok=True)
     nested.write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given("una carpeta de evidence vacía")
@@ -78,6 +82,7 @@ def _(ctx):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
     ctx["folder"] = tmpdir
+    ctx["expected_files_uploaded"] = 0
 
 
 # ── When ──────────────────────────────────────────────────────────────────────
@@ -185,7 +190,15 @@ def _(ctx, status):
 @then("se sube la evidence para todos los tests emparejados")
 def _(ctx):
     result = ctx["sync_result"]
-    assert result.files_uploaded > 0
+    expected_uploads = ctx["expected_files_uploaded"]
+    upload_calls = ctx["client"]._test_repo.upload_evidence.call_args_list
+
+    assert result.files_uploaded == expected_uploads, (
+        f"Expected {expected_uploads} uploaded files, got {result.files_uploaded}"
+    )
+    assert len(upload_calls) == expected_uploads, (
+        f"Expected {expected_uploads} upload calls, got {len(upload_calls)}"
+    )
 
 
 @then(parsers.parse('"{key}" es emparejado'))
