@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -22,7 +20,7 @@ class TestLoadSettingsFromOverrides:
                 "username": "u@test.com",
                 "password": "token",
             },
-            "xray": {"client_id": "cid", "client_secret": "csec"},
+            "project": {"key": "PROJ"},
         }
         base.update(extra)
         return base
@@ -39,11 +37,11 @@ class TestLoadSettingsFromOverrides:
 
     def test_xray_default_base_url(self):
         s = load_settings(overrides=self._valid_overrides())
-        assert "xray.cloud.getxray.app" in s.xray.base_url
+        assert s.xray.base_url.endswith("/rest/raven/2.0/api")
 
-    def test_project_key_is_always_qax(self):
+    def test_project_key_comes_from_configuration(self):
         s = load_settings(overrides=self._valid_overrides())
-        assert s.jira.project_key == "QAX"
+        assert s.jira.project_key == "PROJ"
 
     def test_dev_env_uses_dev_url(self):
         overrides = self._valid_overrides()
@@ -54,7 +52,6 @@ class TestLoadSettingsFromOverrides:
     def test_missing_jira_username_raises(self):
         overrides = {
             "auth": {"env": "QA", "password": "token"},
-            "xray": {"client_id": "cid", "client_secret": "csec"},
         }
         with pytest.raises(ValueError, match="auth.username"):
             load_settings(overrides=overrides)
@@ -62,7 +59,6 @@ class TestLoadSettingsFromOverrides:
     def test_missing_jira_token_raises(self):
         overrides = {
             "auth": {"env": "QA", "username": "u@test.com"},
-            "xray": {"client_id": "cid", "client_secret": "csec"},
         }
         with pytest.raises(ValueError, match="auth.password"):
             load_settings(overrides=overrides)
@@ -95,10 +91,10 @@ class TestLoadSettingsFromOverrides:
     def test_setup_defaults_populated(self):
         overrides = self._valid_overrides()
         overrides["setup"] = {
-            "test_plan_key": "QAX-100",
+            "test_plan_key": "PROJ-100",
         }
         s = load_settings(overrides=overrides)
-        assert s.setup.test_plan_key == "QAX-100"
+        assert s.setup.test_plan_key == "PROJ-100"
 
     def test_sync_defaults_populated(self):
         overrides = self._valid_overrides()
@@ -137,6 +133,10 @@ class TestLoadSettingsFromTOML:
         assert s.sync.status == "PASS"
         assert s.sync.recursive is True
 
+    def test_toml_project_section(self, valid_toml_config):
+        s = load_settings(config_file=str(valid_toml_config))
+        assert s.jira.project_key == "PROJ"
+
     def test_nonexistent_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             load_settings(config_file=str(tmp_path / "nonexistent.toml"))
@@ -166,6 +166,10 @@ class TestLoadSettingsFromJSON:
         s = load_settings(config_file=str(valid_json_config))
         assert s.sync.status == "FAIL"
         assert s.sync.recursive is False
+
+    def test_json_project_section(self, valid_json_config):
+        s = load_settings(config_file=str(valid_json_config))
+        assert s.jira.project_key == "PROJ"
 
 
 class TestJsonSchemaValidation:
@@ -200,12 +204,14 @@ class TestEnvironmentVariableOverrides:
             "PYJX2_AUTH_ENV": "DEV",
             "PYJX2_AUTH_USERNAME": "env_user",
             "PYJX2_AUTH_PASSWORD": "env_token",
+            "PYJX2_PROJECT_KEY": "OPS",
         }
         with patch.dict(os.environ, env):
             s = load_settings()
         assert "dev" in s.jira.url.lower()
         assert s.jira.username == "env_user"
         assert s.xray.client_id == "env_user"
+        assert s.jira.project_key == "OPS"
 
     def test_runtime_override_wins_over_env_var(self):
         env = {
@@ -220,10 +226,11 @@ class TestEnvironmentVariableOverrides:
         assert "qa" in s.jira.url.lower()
 
     def test_apply_env_overrides_returns_merged_dict(self):
-        env = {"PYJX2_AUTH_ENV": "DEV"}
+        env = {"PYJX2_AUTH_ENV": "DEV", "PYJX2_PROJECT_KEY": "OPS"}
         with patch.dict(os.environ, env, clear=False):
             result = _apply_env_overrides({})
         assert result["auth"]["env"] == "DEV"
+        assert result["project"]["key"] == "OPS"
 
     def test_apply_env_overrides_does_not_set_empty_values(self):
         result = _apply_env_overrides({})

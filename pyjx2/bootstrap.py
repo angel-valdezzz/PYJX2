@@ -6,7 +6,7 @@ from typing import Optional
 from .application.services.sync_service import SyncService
 from .application.use_cases.setup.setup_interactor import SetupInteractor
 from .infrastructure.config import load_settings
-from .infrastructure.config.settings import JiraSettings, Settings, XraySettings
+from .infrastructure.config.settings import AuthSettings, ProjectSettings, Settings
 from .infrastructure.jira.client import JiraClient
 from .infrastructure.security.encryption import SymmetricEncryptionService
 from .infrastructure.xray.client import XrayClient
@@ -34,8 +34,8 @@ class PyJX2Runtime:
 
 def build_settings_from_credentials(username: str, password: str, env: str = "QA") -> Settings:
     return Settings(
-        jira=JiraSettings(username=username, password=password, env=env),
-        xray=XraySettings(client_id=username, client_secret=password),
+        auth=AuthSettings(username=username, password=password, env=env),
+        project=ProjectSettings(),
     )
 
 

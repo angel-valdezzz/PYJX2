@@ -4,13 +4,16 @@
     "username": "usuario@ejemplo.com",
     "password": "TU_PASSWORD_O_TOKEN"
   },
+  "project": {
+    "key": "PROJ"
+  },
   "setup": {
-    "test_plan_key": "QAX-100",
-    "execution_summary": "Ejecución Regresión Sprint",
+    "test_plan_key": "PROJ-100",
+    "execution_summary": "Ejecucion Regresion Sprint",
     "test_mode": "clone"
   },
   "sync": {
-    "execution_key": "QAX-200",
+    "execution_key": "PROJ-200",
     "folder": "./evidencias",
     "status": "PASS",
     "recursive": true,

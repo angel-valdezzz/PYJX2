@@ -30,7 +30,7 @@ from textual.widgets import (
 from textual.reactive import reactive
 
 from ..api.client import PyJX2
-from ..bootstrap import build_api_from_credentials
+from ..bootstrap import build_api_from_config
 from ..docs_runtime import bundled_docs_index, open_docs_target, repo_root
 from ..domain.value_objects import Status
 
@@ -428,11 +428,8 @@ class PyJX2App(App):
         return []
 
     def _compose_home_tab(self) -> ComposeResult:
-        from .ascii_parser import get_ascii_logo
-        logo_path = os.path.join(os.path.dirname(__file__), "assets", "AXA-Logo.html")
-        logo_markup = get_ascii_logo(logo_path)
         with ScrollableContainer(id="home-container"):
-            yield Static(logo_markup, id="logo-art")
+            yield Static("PYJX2", id="logo-art")
             with Horizontal(id="home-btn-container"):
                 yield Button("📖 Visualizar Documentación (MkDocs)", id="btn-docs", classes="run-btn", variant="primary")
         return []
@@ -443,7 +440,7 @@ class PyJX2App(App):
             with Container(classes="panel"):
                 yield Static("Parámetros de Preparación", classes="panel-title")
                 with Horizontal(classes="field-row"):
-                    yield Label("QAX Test Plan", classes="field-label")
+                    yield Label("Test Plan", classes="field-label")
                     yield Input(placeholder="eje. PROJ-100", id="setup-test-plan", classes="field-input")
                 with Horizontal(classes="field-row"):
                     yield Label("Titulo Test Execution", classes="field-label")
@@ -465,7 +462,7 @@ class PyJX2App(App):
                     yield Input(placeholder="ID Numerico", id="setup-source-xray-id", classes="field-input")
                 with Horizontal(classes="field-row", id="setup-source-manual-row"):
                     yield Label("", classes="field-label")
-                    yield Input(placeholder="QAX-1, QAX-2", id="setup-source-manual-text", classes="field-input")
+                    yield Input(placeholder="PROJ-1, PROJ-2", id="setup-source-manual-text", classes="field-input")
                 with Horizontal(classes="field-row", id="setup-source-manual-error-row"):
                     yield Label("", classes="field-label")
                     yield Static("", id="setup-manual-error", classes="field-error")
@@ -477,7 +474,7 @@ class PyJX2App(App):
                     yield TextArea("", id="setup-source-log-area")
                 with Horizontal(classes="field-row"):
                     yield Label("Aplicación", classes="field-label")
-                    yield Input(placeholder="e.g. AXA_WEB", id="setup-application", classes="field-input")
+                    yield Input(placeholder="e.g. APP_WEB", id="setup-application", classes="field-input")
 
             with Horizontal(classes="btn-row"):
                 yield Button("Ejecutar", id="btn-setup-run", classes="run-btn", variant="primary")
@@ -660,7 +657,7 @@ class PyJX2App(App):
         widgets = []
         for i, g in enumerate(self.sync_subgroups):
             widgets.append(Horizontal(
-                Input(value=g["qaxs"], placeholder="QAX-1...", classes="subgroup-qaxs", id=f"sync-sub-qaxs-{i}"),
+                Input(value=g["qaxs"], placeholder="PROJ-1...", classes="subgroup-qaxs", id=f"sync-sub-qaxs-{i}"),
                 Select(options=[(s, s) for s in STATUSES], value=g["status"], classes="subgroup-status", id=f"sync-sub-status-{i}"),
                 Button("🗑️", id=f"btn-remove-subgroup-{i}", classes="remove-btn"),
                 classes="subgroup-row"
@@ -870,7 +867,10 @@ class PyJX2App(App):
                 self._log(log_id, "[ERROR] Credenciales incompletas en el panel de Autenticación.")
                 return None
 
-            return build_api_from_credentials(username=username, password=password, env=env)
+            return build_api_from_config(
+                config_file=self._config_file,
+                overrides={"auth": {"env": env, "username": username, "password": password}},
+            )
         except Exception as e:
             self._log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
             return None

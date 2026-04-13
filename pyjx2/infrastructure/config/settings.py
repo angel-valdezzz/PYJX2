@@ -11,36 +11,107 @@ import jsonschema
 CONFIG_FILENAMES = ["pyjx2.toml", "pyjx2.json"]
 _SCHEMA_PATH = Path(__file__).parent / "schema.json"
 
+_ENV_ENDPOINTS = {
+    "QA": {
+        "platform_base_url": "https://qa.ejemplo.com",
+        "xray_api_path": "/rest/raven/2.0/api",
+        "xray_graphql_path": "/rest/raven/2.0/api/graphql",
+    },
+    "DEV": {
+        "platform_base_url": "https://dev.ejemplo.com",
+        "xray_api_path": "/rest/raven/2.0/api",
+        "xray_graphql_path": "/rest/raven/2.0/api/graphql",
+    },
+}
+
+
+def _normalize_env(env: Optional[str]) -> str:
+    normalized = env.upper().strip() if env else "QA"
+    if normalized not in _ENV_ENDPOINTS:
+        allowed = ", ".join(sorted(_ENV_ENDPOINTS))
+        raise ValueError(f"Invalid environment: {env!r}. Expected one of: {allowed}")
+    return normalized
+
+
+def _normalize_project_key(key: Optional[str]) -> Optional[str]:
+    if key is None:
+        return None
+    normalized = key.strip().upper()
+    return normalized or None
+
+
+def _platform_profile(env: Optional[str]) -> dict[str, str]:
+    return _ENV_ENDPOINTS[_normalize_env(env)]
+
 
 class JiraSettings:
-    """Jira connection settings. URL and project key are derived from the environment."""
+    """Internal Jira settings derived from public platform configuration."""
 
-    def __init__(self, username: str, password: str, env: str = "QA") -> None:
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        env: str = "QA",
+        project_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> None:
         self.username = username
         self.password = password
-        self.env = env.upper() if env else "QA"
+        self.env = _normalize_env(env)
+        profile = _platform_profile(self.env)
+        self._base_url = (base_url or profile["platform_base_url"]).rstrip("/")
+        self._project_key = _normalize_project_key(project_key)
 
     @property
     def url(self) -> str:
-        return "https://qa.ejemplo.com" if self.env == "QA" else "https://dev.ejemplo.com"
+        return self._base_url
 
     @property
-    def project_key(self) -> str:
-        return "QAX"
+    def project_key(self) -> Optional[str]:
+        return self._project_key
 
 
 @dataclass
 class XraySettings:
     client_id: str
     client_secret: str
-    base_url: str = "https://xray.cloud.getxray.app/api/v2"
+    env: str = "QA"
+    base_url: Optional[str] = None
+    graphql_url: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.env = _normalize_env(self.env)
+        profile = _platform_profile(self.env)
+        base = profile["platform_base_url"].rstrip("/")
+        if self.base_url is None:
+            self.base_url = f"{base}{profile['xray_api_path']}"
+        if self.graphql_url is None:
+            self.graphql_url = f"{base}{profile['xray_graphql_path']}"
+
+
+@dataclass
+class AuthSettings:
+    username: str
+    password: str
+    env: str = "QA"
+
+    def __post_init__(self) -> None:
+        self.env = _normalize_env(self.env)
+
+
+@dataclass
+class ProjectSettings:
+    key: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.key = _normalize_project_key(self.key)
 
 
 @dataclass
 class SetupDefaults:
     test_plan_key: Optional[str] = None
     execution_summary: Optional[str] = None
-    test_mode: str = "clone"   # "clone" | "add"
+    test_mode: str = "clone"
 
 
 @dataclass
@@ -49,37 +120,55 @@ class SyncDefaults:
     folder: Optional[str] = None
     status: Optional[str] = None
     recursive: bool = True
-    upload_mode: str = "append"  # "append" | "replace"
+    upload_mode: str = "append"
     allowed_extensions: list[str] = field(default_factory=lambda: [".pdf"])
 
 
 @dataclass
 class Settings:
-    jira: JiraSettings
-    xray: XraySettings
+    auth: AuthSettings
+    project: ProjectSettings = field(default_factory=ProjectSettings)
     setup: SetupDefaults = field(default_factory=SetupDefaults)
     sync: SyncDefaults = field(default_factory=SyncDefaults)
+
+    @property
+    def jira(self) -> JiraSettings:
+        return JiraSettings(
+            username=self.auth.username,
+            password=self.auth.password,
+            env=self.auth.env,
+            project_key=self.project.key,
+        )
+
+    @property
+    def xray(self) -> XraySettings:
+        return XraySettings(
+            client_id=self.auth.username,
+            client_secret=self.auth.password,
+            env=self.auth.env,
+        )
 
 
 def _load_file(path: Path) -> dict:
     if path.suffix == ".toml":
         try:
             import tomllib
+
             with open(path, "rb") as f:
                 return tomllib.load(f)
         except ModuleNotFoundError:
             import toml
-            with open(path, "r") as f:
+
+            with open(path, "r", encoding="utf-8") as f:
                 return toml.load(f)
-    elif path.suffix == ".json":
-        with open(path, "r") as f:
+    if path.suffix == ".json":
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    else:
-        raise ValueError(f"Unsupported config format: {path.suffix}")
+    raise ValueError(f"Unsupported config format: {path.suffix}")
 
 
 def _validate_schema(data: dict) -> None:
-    schema = json.loads(_SCHEMA_PATH.read_text())
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
     jsonschema.validate(instance=data, schema=schema)
 
 
@@ -94,6 +183,7 @@ def _find_config_file() -> Optional[Path]:
 
 def _dict_to_settings(data: dict) -> Settings:
     auth_data = data.get("auth", {})
+    project_data = data.get("project", {})
     setup_data = data.get("setup", {})
     sync_data = data.get("sync", {})
 
@@ -101,15 +191,13 @@ def _dict_to_settings(data: dict) -> Settings:
         raise ValueError("Missing authentication credentials (username/password)")
 
     return Settings(
-        jira=JiraSettings(
+        auth=AuthSettings(
             env=auth_data.get("env", "QA"),
             username=auth_data["username"],
             password=auth_data["password"],
         ),
-        xray=XraySettings(
-            client_id=auth_data["username"],
-            client_secret=auth_data["password"],
-            base_url="https://xray.cloud.getxray.app/api/v2",
+        project=ProjectSettings(
+            key=project_data.get("key"),
         ),
         setup=SetupDefaults(
             test_plan_key=setup_data.get("test_plan_key"),
@@ -133,12 +221,13 @@ def _apply_env_overrides(data: dict) -> dict:
         "PYJX2_AUTH_ENV": ("auth", "env"),
         "PYJX2_AUTH_USERNAME": ("auth", "username"),
         "PYJX2_AUTH_PASSWORD": ("auth", "password"),
+        "PYJX2_PROJECT_KEY": ("project", "key"),
     }
-    result = {k: dict(v) for k, v in data.items()} if data else {}
+    result = {k: dict(v) if isinstance(v, dict) else v for k, v in data.items()} if data else {}
     for env_key, (section, key) in env_map.items():
         val = os.environ.get(env_key)
         if val:
-            if section not in result:
+            if section not in result or not isinstance(result.get(section), dict):
                 result[section] = {}
             result[section][key] = val
     return result
@@ -172,21 +261,27 @@ def load_settings(
             if section not in data:
                 data[section] = {}
             if isinstance(values, dict):
-                data[section].update({k: v for k, v in values.items() if v is not None})
+                current = data.get(section)
+                if not isinstance(current, dict):
+                    current = {}
+                    data[section] = current
+                current.update({k: v for k, v in values.items() if v is not None})
             else:
                 data[section] = values
 
-    # Validation: Auth credentials are always required.
     missing = []
-    
+
     auth_data = data.get("auth", {})
-    if not auth_data.get("username"): missing.append("auth.username")
-    if not auth_data.get("password"): missing.append("auth.password")
+    if not auth_data.get("username"):
+        missing.append("auth.username")
+    if not auth_data.get("password"):
+        missing.append("auth.password")
 
     if missing:
         raise ValueError(
             f"Missing required configuration: {', '.join(missing)}. "
-            "Provide them via pyjx2.toml, pyjx2.json, environment variables (PYJX2_AUTH_*), or CLI arguments."
+            "Provide them via pyjx2.toml, pyjx2.json, environment variables "
+            "(PYJX2_AUTH_* / PYJX2_PROJECT_KEY), or CLI arguments."
         )
 
     return _dict_to_settings(data)

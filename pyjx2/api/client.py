@@ -157,6 +157,15 @@ class PyJX2:
     def get_tests_from_plan(self, plan_key: str | TestPlanKey) -> list[dict]:
         return self._test_plan_repo.get_tests(TestPlanKey.from_value(plan_key))
 
+    def resolve_project_key(self, test_plan_key: Optional[str] = None) -> Optional[str]:
+        explicit_key = self._settings.jira.project_key
+        if explicit_key:
+            return explicit_key
+        if test_plan_key:
+            normalized_plan_key = str(TestPlanKey.from_value(test_plan_key))
+            return normalized_plan_key.split("-", 1)[0]
+        return None
+
     def setup(
         self,
         test_plan_key: str,
@@ -176,11 +185,16 @@ class PyJX2:
 
         effective_mode = test_mode if test_mode in ("clone", "link", "add") else "clone"
         interactor = self._get_setup_interactor()
-        project_key = self._settings.jira.project_key
+        normalized_plan_key = str(TestPlanKey.from_value(test_plan_key))
+        project_key = self.resolve_project_key(normalized_plan_key)
+        if not project_key:
+            raise ValueError(
+                "Missing project key. Configure project.key or provide a test plan key with format PROJ-123."
+            )
 
         config = SetupConfig(
             project_key=project_key,
-            test_plan=SetupTestPlanConfig(key=test_plan_key),
+            test_plan=SetupTestPlanConfig(key=normalized_plan_key),
             test_executions=[
                 SetupTestExecutionConfig(
                     mode="create",
