@@ -1,5 +1,6 @@
 site_name: PYJX2
 docs_dir: docs
+site_dir: pyjx2/_bundled_docs
 
 extra_css:
   - stylesheets/extra.css
