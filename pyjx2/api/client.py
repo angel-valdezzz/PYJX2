@@ -22,12 +22,6 @@ if TYPE_CHECKING:
 
 
 class PyJX2:
-    """
-    High-level API facade for Jira / Xray automation.
-
-    Public behavior stays compatible while dependency wiring lives in bootstrap.
-    """
-
     def __init__(self, settings_or_runtime: Settings | "PyJX2Runtime") -> None:
         if isinstance(settings_or_runtime, Settings):
             from ..bootstrap import build_runtime
@@ -66,7 +60,6 @@ class PyJX2:
         runtime = getattr(self, "_runtime", None)
         if runtime is not None:
             return runtime.sync_service
-
         return SyncService(self._test_repo)
 
     def get_test(self, key: str | TestKey) -> Optional[Test]:
@@ -86,11 +79,7 @@ class PyJX2:
             labels=labels or [],
         )
 
-    def clone_test(
-        self,
-        source_key: str | TestKey,
-        target_project_key: str | ProjectKey,
-    ) -> Test:
+    def clone_test(self, source_key: str | TestKey, target_project_key: str | ProjectKey) -> Test:
         return self._test_repo.clone(
             TestKey.from_value(source_key),
             ProjectKey.from_value(target_project_key),
@@ -132,11 +121,7 @@ class PyJX2:
     def update_test_set(self, key: str | TestSetKey, **kwargs) -> TestSet:
         return self._test_set_repo.update(TestSetKey.from_value(key), **kwargs)
 
-    def add_tests_to_set(
-        self,
-        test_set_key: str | TestSetKey,
-        test_keys: list[str | TestKey],
-    ) -> bool:
+    def add_tests_to_set(self, test_set_key: str | TestSetKey, test_keys: list[str | TestKey]) -> bool:
         return self._test_set_repo.add_tests(
             TestSetKey.from_value(test_set_key),
             [TestKey.from_value(test_key) for test_key in test_keys],
@@ -214,7 +199,6 @@ class PyJX2:
             ],
             settings=SetupGlobalSettings(),
         )
-
         return interactor.execute(config, logger=progress_callback)
 
     def sync(
@@ -229,7 +213,6 @@ class PyJX2:
         progress_callback=None,
     ) -> SyncResult:
         service = self._get_sync_service()
-
         sync_input = SyncInput(
             execution_key=execution_key,
             folder=folder,
@@ -239,30 +222,19 @@ class PyJX2:
             upload_mode=upload_mode,
             recursive=recursive,
         )
-
         return service.run(sync_input, progress_callback=progress_callback)
 
     @classmethod
-    def from_credentials(
-        cls,
-        username: str,
-        password: str,
-        env: str = "QA",
-    ) -> "PyJX2":
+    def from_credentials(cls, username: str, password: str, env: str = "QA") -> "PyJX2":
         from ..bootstrap import build_runtime_from_credentials
 
-        runtime = build_runtime_from_credentials(username=username, password=password, env=env)
-        return cls(runtime)
+        return cls(build_runtime_from_credentials(username=username, password=password, env=env))
 
     @classmethod
-    def from_config(
-        cls,
-        config_file: Optional[str] = None,
-    ) -> "PyJX2":
+    def from_config(cls, config_file: Optional[str] = None) -> "PyJX2":
         from ..bootstrap import build_runtime_from_config
 
-        runtime = build_runtime_from_config(config_file=config_file)
-        return cls(runtime)
+        return cls(build_runtime_from_config(config_file=config_file))
 
     @property
     def jira(self) -> "JiraClient":

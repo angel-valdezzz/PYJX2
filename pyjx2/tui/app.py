@@ -29,8 +29,8 @@ from textual.widgets import (
 )
 from textual.reactive import reactive
 
-from ..bootstrap import build_api_from_credentials
 from ..api.client import PyJX2
+from ..bootstrap import build_api_from_credentials
 from ..domain.value_objects import Status
 
 
@@ -352,7 +352,6 @@ class PyJX2App(App):
         super().__init__()
         self._config_file = config_file
         self._pjx: Optional[PyJX2] = None
-        self._settings = None
         self.mkdocs_process = None
 
     def on_mount(self) -> None:

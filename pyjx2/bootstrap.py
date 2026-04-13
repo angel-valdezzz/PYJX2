@@ -32,11 +32,7 @@ class PyJX2Runtime:
     encryption_service: SymmetricEncryptionService
 
 
-def build_settings_from_credentials(
-    username: str,
-    password: str,
-    env: str = "QA",
-) -> Settings:
+def build_settings_from_credentials(username: str, password: str, env: str = "QA") -> Settings:
     return Settings(
         jira=JiraSettings(username=username, password=password, env=env),
         xray=XraySettings(client_id=username, client_secret=password),
@@ -75,15 +71,10 @@ def build_runtime_from_config(
     config_file: Optional[str] = None,
     overrides: Optional[dict] = None,
 ) -> PyJX2Runtime:
-    settings = load_settings(config_file=config_file, overrides=overrides)
-    return build_runtime(settings)
+    return build_runtime(load_settings(config_file=config_file, overrides=overrides))
 
 
-def build_runtime_from_credentials(
-    username: str,
-    password: str,
-    env: str = "QA",
-) -> PyJX2Runtime:
+def build_runtime_from_credentials(username: str, password: str, env: str = "QA") -> PyJX2Runtime:
     return build_runtime(build_settings_from_credentials(username, password, env=env))
 
 
@@ -102,11 +93,7 @@ def build_api_from_config(
     return PyJX2(build_runtime_from_config(config_file=config_file, overrides=overrides))
 
 
-def build_api_from_credentials(
-    username: str,
-    password: str,
-    env: str = "QA",
-):
+def build_api_from_credentials(username: str, password: str, env: str = "QA"):
     from .api.client import PyJX2
 
     return PyJX2(build_runtime_from_credentials(username, password, env=env))
