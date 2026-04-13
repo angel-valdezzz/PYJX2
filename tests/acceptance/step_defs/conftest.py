@@ -3,8 +3,6 @@ Shared fixtures and step definitions reused across all BDD acceptance tests.
 """
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock
 
@@ -44,7 +42,7 @@ def _sample_plan():
 
 def build_mocked_client(
     settings,
-    plan_tests: list[dict],
+    plan_tests: list[Test],
     exec_test_keys: Optional[list[str]] = None,
     sample_execution: Optional[TestExecution] = None,
     sample_test_set: Optional[TestSet] = None,
@@ -92,7 +90,10 @@ def build_mocked_client(
     exec_repo.update.return_value = execution
     exec_repo.add_test_set.return_value = True
     keys = exec_test_keys if exec_test_keys is not None else ["PROJ-10", "PROJ-11", "PROJ-12"]
-    exec_repo.get_tests.return_value = [{"key": k} for k in keys]
+    exec_repo.get_tests.return_value = [
+        all_tests.get(k, Test(key=k, summary=k))
+        for k in keys
+    ]
 
     plan_repo = MagicMock()
     plan_repo.get.return_value = plan
@@ -113,8 +114,8 @@ def build_mocked_client(
 def _(ctx, settings):
     """Build a default client with 2-test plan; overridden by more specific steps."""
     ctx.setdefault("plan_tests", [
-        {"key": "PROJ-10", "summary": "Login flow"},
-        {"key": "PROJ-11", "summary": "Logout flow"},
+        Test(key="PROJ-10", summary="Login flow"),
+        Test(key="PROJ-11", summary="Logout flow"),
     ])
     ctx["client"] = build_mocked_client(settings, ctx["plan_tests"])
     ctx["settings"] = settings
@@ -123,7 +124,7 @@ def _(ctx, settings):
 @given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} tests'))
 def _(ctx, settings, plan_key, n):
     tests = [
-        {"key": f"PROJ-{10 + i}", "summary": f"Test {i}"}
+        Test(key=f"PROJ-{10 + i}", summary=f"Test {i}")
         for i in range(n)
     ]
     ctx["plan_tests"] = tests

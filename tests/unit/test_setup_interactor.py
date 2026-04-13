@@ -51,7 +51,10 @@ class TestSetupInteractorExecute:
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,
         sample_execution, sample_test_set
     ):
-        mock_plan_repo.get_tests.return_value = [{"key": "PROJ-10"}, {"key": "PROJ-11"}]
+        mock_plan_repo.get_tests.return_value = [
+            Test(key="PROJ-10", summary="Login flow"),
+            Test(key="PROJ-11", summary="Logout flow"),
+        ]
         
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
@@ -78,7 +81,10 @@ class TestSetupInteractorExecute:
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,
         sample_test_set
     ):
-        mock_plan_repo.get_tests.return_value = [{"key": "PROJ-10"}, {"key": "PROJ-11"}]
+        mock_plan_repo.get_tests.return_value = [
+            Test(key="PROJ-10", summary="Login flow"),
+            Test(key="PROJ-11", summary="Logout flow"),
+        ]
         
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
@@ -95,7 +101,10 @@ class TestSetupInteractorExecute:
     def test_reusing_tests(
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,
     ):
-        mock_plan_repo.get_tests.return_value = [{"key": "PROJ-10"}, {"key": "PROJ-11"}]
+        mock_plan_repo.get_tests.return_value = [
+            Test(key="PROJ-10", summary="Login flow"),
+            Test(key="PROJ-11", summary="Logout flow"),
+        ]
         
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
@@ -120,7 +129,7 @@ class TestSetupInteractorExecute:
     def test_skips_duplicates(
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,
     ):
-        mock_plan_repo.get_tests.return_value = [{"key": "PROJ-10"}]
+        mock_plan_repo.get_tests.return_value = [Test(key="PROJ-10", summary="Login flow")]
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
         config.test_executions[0].test_sets[0].source.items = [

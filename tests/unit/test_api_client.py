@@ -52,7 +52,7 @@ def test_setup_and_sync_accept_string_inputs_and_coerce_early():
     client = _build_client()
 
     client._test_plan_repo.get.return_value = TestPlan(key="PROJ-100", summary="Plan")
-    client._test_plan_repo.get_tests.return_value = [{"key": "PROJ-1"}]
+    client._test_plan_repo.get_tests.return_value = [Test(key="PROJ-1", summary="Plan test")]
     client._test_exec_repo.create.return_value = TestExecution(key="PROJ-200", summary="Exec")
     client._test_set_repo.create.return_value = TestSet(key="PROJ-300", summary="Set")
     client._test_repo.clone.return_value = Test(key="PROJ-400", summary="Clone")

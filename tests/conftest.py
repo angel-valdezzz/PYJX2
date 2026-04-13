@@ -92,7 +92,7 @@ def mock_exec_repo(sample_execution):
     repo.update.return_value = sample_execution
     repo.add_test_set.return_value = True
     repo.get_tests.return_value = [
-        {"key": "PROJ-10", "summary": "Login test", "status": "TODO"},
+        Test(key="PROJ-10", summary="Login test", status="TODO"),
     ]
     return repo
 
@@ -102,8 +102,8 @@ def mock_plan_repo(sample_test_plan):
     repo = MagicMock()
     repo.get.return_value = sample_test_plan
     repo.get_tests.return_value = [
-        {"key": "PROJ-10", "summary": "Login test"},
-        {"key": "PROJ-11", "summary": "Logout test"},
+        Test(key="PROJ-10", summary="Login test"),
+        Test(key="PROJ-11", summary="Logout test"),
     ]
     return repo
 
