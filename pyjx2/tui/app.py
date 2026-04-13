@@ -29,12 +29,12 @@ from textual.widgets import (
 )
 from textual.reactive import reactive
 
-from ..infrastructure.config import load_settings
-from ..infrastructure.config.settings import Settings, JiraSettings, XraySettings
+from ..bootstrap import build_api_from_credentials
 from ..api.client import PyJX2
+from ..domain.value_objects import Status
 
 
-STATUSES = ["PASS", "FAIL", "TODO", "EXECUTING", "ABORTED"]
+STATUSES = list(Status.allowed_values())
 
 
 class PyJX2App(App):
@@ -875,10 +875,7 @@ class PyJX2App(App):
                 self._log(log_id, "[ERROR] Credenciales incompletas en el panel de Autenticación.")
                 return None
 
-            jira = JiraSettings(username=username, password=password, env=env)
-            xray = XraySettings(client_id=username, client_secret=password)
-            settings = Settings(jira=jira, xray=xray)
-            return PyJX2(settings)
+            return build_api_from_credentials(username=username, password=password, env=env)
         except Exception as e:
             self._log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
             return None

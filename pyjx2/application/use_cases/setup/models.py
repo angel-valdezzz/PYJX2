@@ -4,24 +4,39 @@ from typing import Optional, Literal, List
 from ....domain.entities.test_execution import TestExecution
 from ....domain.entities.test_set import TestSet
 from ....domain.entities.test import Test
+from ....domain.value_objects import (
+    Application,
+    ExecutionKey,
+    ProjectKey,
+    TestKey,
+    TestPlanKey,
+    TestSetKey,
+)
 
 
 @dataclass
 class SetupTestPlanConfig:
-    key: str
+    key: TestPlanKey
+
+    def __post_init__(self) -> None:
+        self.key = TestPlanKey.from_value(self.key)
 
 
 @dataclass
 class SetupSourceConfig:
-    type: Literal["folder", "list"]
+    type: Literal["folder", "list", "test_plan"]
     path: Optional[str] = None
-    items: Optional[List[str]] = None
+    items: Optional[List[TestKey]] = None
+
+    def __post_init__(self) -> None:
+        if self.items is not None:
+            self.items = [TestKey.from_value(item) for item in self.items]
 
 
 @dataclass
 class SetupTestSetConfig:
     mode: Literal["create", "reuse"]
-    application: str
+    application: Application
     key: Optional[str] = None
     apply_source: bool = False
     source: Optional[SetupSourceConfig] = None
@@ -29,13 +44,22 @@ class SetupTestSetConfig:
     # "link" / "add" = agregar el test original directamente (sin clonar)
     test_case_mode: Literal["clone", "link", "add"] = "clone"
 
+    def __post_init__(self) -> None:
+        self.application = Application.from_value(self.application)
+        if self.mode == "reuse" and self.key is not None:
+            self.key = TestSetKey.from_value(self.key)
+
 
 @dataclass
 class SetupTestExecutionConfig:
     mode: Literal["create", "reuse"]
     test_sets: List[SetupTestSetConfig] = field(default_factory=list)
-    key: Optional[str] = None
+    key: Optional[ExecutionKey] = None
     name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.mode == "reuse" and self.key is not None:
+            self.key = ExecutionKey.from_value(self.key)
 
 
 @dataclass
@@ -48,10 +72,13 @@ class SetupGlobalSettings:
 
 @dataclass
 class SetupConfig:
-    project_key: str
+    project_key: ProjectKey
     test_plan: SetupTestPlanConfig
     test_executions: List[SetupTestExecutionConfig] = field(default_factory=list)
     settings: SetupGlobalSettings = field(default_factory=SetupGlobalSettings)
+
+    def __post_init__(self) -> None:
+        self.project_key = ProjectKey.from_value(self.project_key)
 
 
 @dataclass

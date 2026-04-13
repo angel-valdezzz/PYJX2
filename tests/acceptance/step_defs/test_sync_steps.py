@@ -10,6 +10,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 
 from pyjx2.api.client import PyJX2
 from pyjx2.domain.entities import Test
+from pyjx2.domain.value_objects import TestKey
 from .conftest import build_mocked_client
 
 scenarios("../features/sync_flow.feature")
@@ -30,7 +31,7 @@ def _(ctx, settings, exec_key):
         settings, [], exec_test_keys=["PROJ-10", "PROJ-11", "PROJ-12"]
     )
     # Sobrescribir el mock para que devuelva los objetos Test con summary
-    ctx["client"]._test_exec_repo.list_from_execution.return_value = ctx["test_defs"]
+    ctx["client"]._test_repo.list_from_execution.return_value = ctx["test_defs"]
 
 
 @given(parsers.parse('una carpeta de evidence con los archivos "{file1}" y "{file2}"'))
@@ -167,8 +168,8 @@ def _(ctx, key1, key2):
     # En el nuevo SyncResult no guardamos la lista de matches directos por key, 
     # pero podemos inferir por tests_without_evidence
     without = ctx["sync_result"].tests_without_evidence
-    assert key1 not in without, f"{key1} matches not found"
-    assert key2 not in without, f"{key2} matches not found"
+    assert TestKey.from_value(key1) not in without, f"{key1} matches not found"
+    assert TestKey.from_value(key2) not in without, f"{key2} matches not found"
 
 
 @then(parsers.parse('el status "{status}" se establece para todos los tests emparejados'))
@@ -178,7 +179,7 @@ def _(ctx, status):
     assert len(calls) > 0, "update_status was never called"
     for call in calls:
         actual_status = call[0][2]
-        assert actual_status == status, f"Expected status {status}, got {actual_status}"
+        assert str(actual_status) == status, f"Expected status {status}, got {actual_status}"
 
 
 @then("se sube la evidence para todos los tests emparejados")
@@ -190,20 +191,20 @@ def _(ctx):
 @then(parsers.parse('"{key}" es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
-    assert key not in without, f"{key} was not matched"
+    assert TestKey.from_value(key) not in without, f"{key} was not matched"
 
 
 @then(parsers.parse('"{key}" no es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
-    assert key in without, f"{key} was matched but should not be"
+    assert TestKey.from_value(key) in without, f"{key} was matched but should not be"
 
 
 @then(parsers.parse('los tests sin emparejar incluyen "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
     unmatched = ctx["sync_result"].tests_without_evidence
-    assert key1 in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
-    assert key2 in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
+    assert TestKey.from_value(key1) in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
+    assert TestKey.from_value(key2) in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
 
 
 @then(parsers.parse('los archivos no utilizados incluyen "{filename}"'))

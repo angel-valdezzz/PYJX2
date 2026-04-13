@@ -96,7 +96,7 @@ def _(ctx):
     mock_pjx.setup.return_value = _default_setup_result()
     if ctx.get("setup_api_error"):
         mock_pjx.setup.side_effect = ctx["setup_api_error"]
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["setup"] + BASE_SETUP_ARGS)
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx
@@ -144,7 +144,7 @@ def _(ctx):
 def _(ctx):
     mock_pjx = MagicMock()
     mock_pjx.setup.return_value = _default_setup_result()
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["setup"] + BASE_SETUP_ARGS + ["--test-mode", "add"])
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx
@@ -154,7 +154,7 @@ def _(ctx):
 def _(ctx):
     mock_pjx = MagicMock()
     mock_pjx.setup.return_value = _default_setup_result()
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, [
             "setup",
             "--config", ctx["config_file"],
@@ -183,7 +183,7 @@ def _(ctx):
     else:
         mock_pjx.sync.side_effect = sync_side_effect
     
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["sync"] + BASE_SYNC_ARGS)
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx
@@ -216,7 +216,7 @@ def _(ctx, status):
     args = BASE_SYNC_ARGS[:]
     idx = args.index("--status") + 1
     args[idx] = status
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["sync"] + args)
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx
@@ -226,7 +226,7 @@ def _(ctx, status):
 def _(ctx):
     mock_pjx = MagicMock()
     mock_pjx.sync.return_value = _default_sync_result()
-    with patch("pyjx2.cli.app.PyJX2", return_value=mock_pjx):
+    with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["sync"] + BASE_SYNC_ARGS + ["--no-recursive"])
     ctx["cli_result"] = result
     ctx["mock_pjx"] = mock_pjx

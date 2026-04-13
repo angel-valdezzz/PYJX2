@@ -10,8 +10,9 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ..infrastructure.config import load_settings
+from ..bootstrap import build_api_from_config
 from ..api.client import PyJX2
+from ..domain.value_objects import Status
 
 app = typer.Typer(
     name="pyjx2",
@@ -40,8 +41,7 @@ def _common_options(
             "username": jira_username,
             "password": jira_password,
         }
-    settings = load_settings(config_file=config, overrides=overrides or None)
-    return PyJX2(settings)
+    return build_api_from_config(config_file=config, overrides=overrides or None)
 
 
 # -- Shared options -------------------------------------------------------------
@@ -122,8 +122,8 @@ def setup(
     table = Table(title="Resumen de Preparacion", show_header=True, header_style="bold magenta")
     table.add_column("Elemento", style="cyan")
     table.add_column("Valor", style="white")
-    table.add_row("Test Executions creadas", ", ".join(ex.key for ex in result.test_executions))
-    table.add_row("Test Sets creados", ", ".join(ts.key for ts in result.test_sets))
+    table.add_row("Test Executions creadas", ", ".join(str(ex.key) for ex in result.test_executions))
+    table.add_row("Test Sets creados", ", ".join(str(ts.key) for ts in result.test_sets))
     table.add_row("Tests procesados", str(len(result.tests)))
     table.add_row("Tests clonados", str(result.metrics.tests_cloned))
     table.add_row("Tests agregados (link)", str(result.metrics.tests_linked))
@@ -156,7 +156,7 @@ def sync(
         console.print("[bold red]Error:[/bold red] --execution y --folder son obligatorios.")
         raise typer.Exit(code=2)
 
-    valid_statuses = {"PASS", "FAIL", "TODO", "EXECUTING", "ABORTED"}
+    valid_statuses = set(Status.allowed_values())
     if status.upper() not in valid_statuses:
         console.print(
             f"[bold red]Estado invalido:[/bold red] '{status}'."
@@ -232,7 +232,7 @@ def sync(
             for f in result.files_unused:
                 console.print(f"  [dim]{f}[/dim]")
 
-            keys = ", ".join(result.tests_without_evidence)
+            keys = ", ".join(str(key) for key in result.tests_without_evidence)
             console.print(f"\n[yellow]Tests sin evidencia ({len(result.tests_without_evidence)}):[/yellow] {keys}")
             # Step para compatibilidad con BDD antiguo
             console.print("[dim italic]Unmatched tests found.[/dim italic]")

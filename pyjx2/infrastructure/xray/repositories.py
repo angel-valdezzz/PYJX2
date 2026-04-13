@@ -10,6 +10,15 @@ from ...domain.repositories import (
     TestExecutionRepository,
     TestPlanRepository,
 )
+from ...domain.value_objects import (
+    ExecutionKey,
+    ProjectKey,
+    Status,
+    TestKey,
+    TestPlanKey,
+    TestSetKey,
+    TestType,
+)
 from .client import XrayClient
 from ..jira.client import JiraClient
 
@@ -24,9 +33,9 @@ class XrayTestRepository(TestRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: str) -> Optional[Test]:
+    def get(self, key: TestKey) -> Optional[Test]:
         try:
-            issue = self._jira.get_issue(key)
+            issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
             return Test(
                 key=issue["key"],
@@ -39,9 +48,15 @@ class XrayTestRepository(TestRepository):
         except Exception:
             return None
 
-    def create(self, project_key: str, summary: str, test_type: str = "Manual", **kwargs) -> Test:
+    def create(
+        self,
+        project_key: ProjectKey,
+        summary: str,
+        test_type: TestType = TestType.from_value("Manual"),
+        **kwargs,
+    ) -> Test:
         fields: dict = {
-            "project": {"key": project_key},
+            "project": {"key": str(project_key)},
             "issuetype": {"name": XRAY_TEST_ISSUE_TYPE},
             "summary": summary,
         }
@@ -55,7 +70,7 @@ class XrayTestRepository(TestRepository):
             issue_id=issue.get("id"),
         )
 
-    def clone(self, source_key: str, target_project_key: str) -> Test:
+    def clone(self, source_key: TestKey, target_project_key: ProjectKey) -> Test:
         source = self.get(source_key)
         if not source:
             raise ValueError(f"Source test not found: {source_key}")
@@ -66,44 +81,44 @@ class XrayTestRepository(TestRepository):
         )
         return cloned
 
-    def update_labels(self, key: str, new_labels: list[str]) -> bool:
+    def update_labels(self, key: TestKey, new_labels: list[str]) -> bool:
         try:
-            issue = self._jira.get_issue(key)
+            issue = self._jira.get_issue(str(key))
             existing = issue.get("fields", {}).get("labels", [])
             merged = list(set(existing + new_labels))
-            self._jira.update_issue(key, {"labels": merged})
+            self._jira.update_issue(str(key), {"labels": merged})
             return True
         except Exception:
             return False
 
-    def update_status(self, execution_key: str, test_key: str, status: str) -> bool:
-        issue = self._jira.get_issue(test_key)
+    def update_status(self, execution_key: ExecutionKey, test_key: TestKey, status: Status) -> bool:
+        issue = self._jira.get_issue(str(test_key))
         test_id = issue.get("id")
-        exec_issue = self._jira.get_issue(execution_key)
+        exec_issue = self._jira.get_issue(str(execution_key))
         exec_id = exec_issue.get("id")
 
         tests = self._xray.get(f"testexec/{exec_id}/test")
         run_id = None
         if isinstance(tests, list):
             for t in tests:
-                if t.get("key") == test_key:
+                if t.get("key") == str(test_key):
                     run_id = t.get("id")
                     break
 
         if run_id:
-            self._xray.put(f"testrun/{run_id}/status", {"status": status})
+            self._xray.put(f"testrun/{run_id}/status", {"status": str(status)})
             return True
         return False
 
-    def upload_evidence(self, execution_key: str, test_key: str, file_path: str) -> bool:
+    def upload_evidence(self, execution_key: ExecutionKey, test_key: TestKey, file_path: str) -> bool:
         try:
-            exec_issue = self._jira.get_issue(execution_key)
+            exec_issue = self._jira.get_issue(str(execution_key))
             exec_id = exec_issue.get("id")
             tests = self._xray.get(f"testexec/{exec_id}/test")
             run_id = None
             if isinstance(tests, list):
                 for t in tests:
-                    if t.get("key") == test_key:
+                    if t.get("key") == str(test_key):
                         run_id = t.get("id")
                         break
             if run_id:
@@ -113,16 +128,16 @@ class XrayTestRepository(TestRepository):
         except Exception:
             return False
 
-    def clear_evidence(self, execution_key: str, test_key: str) -> bool:
+    def clear_evidence(self, execution_key: ExecutionKey, test_key: TestKey) -> bool:
         """Elimina todos los adjuntos existentes en un Test Run."""
         try:
-            exec_issue = self._jira.get_issue(execution_key)
+            exec_issue = self._jira.get_issue(str(execution_key))
             exec_id = exec_issue.get("id")
             tests = self._xray.get(f"testexec/{exec_id}/test")
             run_id = None
             if isinstance(tests, list):
                 for t in tests:
-                    if t.get("key") == test_key:
+                    if t.get("key") == str(test_key):
                         run_id = t.get("id")
                         break
             
@@ -140,8 +155,8 @@ class XrayTestRepository(TestRepository):
         except Exception:
             return False
 
-    def list_from_execution(self, execution_key: str) -> list[Test]:
-        exec_issue = self._jira.get_issue(execution_key)
+    def list_from_execution(self, execution_key: ExecutionKey) -> list[Test]:
+        exec_issue = self._jira.get_issue(str(execution_key))
         exec_id = exec_issue.get("id")
         tests_data = self._xray.get(f"testexec/{exec_id}/test")
         result = []
@@ -161,9 +176,9 @@ class XrayTestSetRepository(TestSetRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: str) -> Optional[TestSet]:
+    def get(self, key: TestSetKey) -> Optional[TestSet]:
         try:
-            issue = self._jira.get_issue(key)
+            issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
             issue_id = issue.get("id")
             tests_data = self._xray.get(f"testset/{issue_id}/test")
@@ -181,30 +196,30 @@ class XrayTestSetRepository(TestSetRepository):
         except Exception:
             return None
 
-    def create(self, project_key: str, summary: str) -> TestSet:
+    def create(self, project_key: ProjectKey, summary: str) -> TestSet:
         fields = {
-            "project": {"key": project_key},
+            "project": {"key": str(project_key)},
             "issuetype": {"name": XRAY_TEST_SET_ISSUE_TYPE},
             "summary": summary,
         }
         issue = self._jira.create_issue(fields)
         return TestSet(key=issue["key"], summary=summary, issue_id=issue.get("id"))
 
-    def update(self, key: str, **kwargs) -> TestSet:
+    def update(self, key: TestSetKey, **kwargs) -> TestSet:
         fields: dict = {}
         if "summary" in kwargs:
             fields["summary"] = kwargs["summary"]
         if fields:
-            self._jira.update_issue(key, fields)
+            self._jira.update_issue(str(key), fields)
         updated = self.get(key)
         if not updated:
             raise ValueError(f"Test set not found after update: {key}")
         return updated
 
-    def add_tests(self, key: str, test_keys: list[str]) -> bool:
-        issue = self._jira.get_issue(key)
+    def add_tests(self, key: TestSetKey, test_keys: list[TestKey]) -> bool:
+        issue = self._jira.get_issue(str(key))
         issue_id = issue.get("id")
-        self._xray.post(f"testset/{issue_id}/test", {"add": test_keys})
+        self._xray.post(f"testset/{issue_id}/test", {"add": [str(test_key) for test_key in test_keys]})
         return True
 
 
@@ -213,9 +228,9 @@ class XrayTestExecutionRepository(TestExecutionRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: str) -> Optional[TestExecution]:
+    def get(self, key: ExecutionKey) -> Optional[TestExecution]:
         try:
-            issue = self._jira.get_issue(key)
+            issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
             return TestExecution(
                 key=issue["key"],
@@ -225,36 +240,36 @@ class XrayTestExecutionRepository(TestExecutionRepository):
         except Exception:
             return None
 
-    def create(self, project_key: str, summary: str, **kwargs) -> TestExecution:
+    def create(self, project_key: ProjectKey, summary: str, **kwargs) -> TestExecution:
         fields: dict = {
-            "project": {"key": project_key},
+            "project": {"key": str(project_key)},
             "issuetype": {"name": XRAY_TEST_EXECUTION_ISSUE_TYPE},
             "summary": summary,
         }
         issue = self._jira.create_issue(fields)
         return TestExecution(key=issue["key"], summary=summary, issue_id=issue.get("id"))
 
-    def update(self, key: str, **kwargs) -> TestExecution:
+    def update(self, key: ExecutionKey, **kwargs) -> TestExecution:
         fields: dict = {}
         if "summary" in kwargs:
             fields["summary"] = kwargs["summary"]
         if fields:
-            self._jira.update_issue(key, fields)
+            self._jira.update_issue(str(key), fields)
         updated = self.get(key)
         if not updated:
             raise ValueError(f"Test execution not found after update: {key}")
         return updated
 
-    def add_test_set(self, key: str, test_set_key: str) -> bool:
-        issue = self._jira.get_issue(key)
+    def add_test_set(self, key: ExecutionKey, test_set_key: TestSetKey) -> bool:
+        issue = self._jira.get_issue(str(key))
         exec_id = issue.get("id")
-        ts_issue = self._jira.get_issue(test_set_key)
+        ts_issue = self._jira.get_issue(str(test_set_key))
         ts_id = ts_issue.get("id")
         self._xray.post(f"testexec/{exec_id}/testset", {"add": [ts_id]})
         return True
 
-    def get_tests(self, key: str) -> list[dict]:
-        issue = self._jira.get_issue(key)
+    def get_tests(self, key: ExecutionKey) -> list[dict]:
+        issue = self._jira.get_issue(str(key))
         exec_id = issue.get("id")
         result = self._xray.get(f"testexec/{exec_id}/test")
         if isinstance(result, list):
@@ -267,9 +282,9 @@ class XrayTestPlanRepository(TestPlanRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: str) -> Optional[TestPlan]:
+    def get(self, key: TestPlanKey) -> Optional[TestPlan]:
         try:
-            issue = self._jira.get_issue(key)
+            issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
             return TestPlan(
                 key=issue["key"],
@@ -279,8 +294,8 @@ class XrayTestPlanRepository(TestPlanRepository):
         except Exception:
             return None
 
-    def get_tests(self, key: str) -> list[dict]:
-        issue = self._jira.get_issue(key)
+    def get_tests(self, key: TestPlanKey) -> list[dict]:
+        issue = self._jira.get_issue(str(key))
         plan_id = issue.get("id")
         result = self._xray.get(f"testplan/{plan_id}/test")
         if isinstance(result, list):

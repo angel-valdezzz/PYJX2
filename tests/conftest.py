@@ -74,6 +74,7 @@ def mock_test_repo(sample_test):
     repo.update_status.return_value = True
     repo.upload_evidence.return_value = True
     repo.list_from_execution.return_value = [sample_test]
+    repo.clear_evidence.return_value = True
     return repo
 
 

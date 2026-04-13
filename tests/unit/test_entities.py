@@ -1,17 +1,25 @@
 """Unit tests for domain entities."""
 import pytest
 from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
+from pyjx2.domain.value_objects import (
+    ExecutionKey,
+    Status,
+    TestKey,
+    TestPlanKey,
+    TestSetKey,
+    TestType,
+)
 
 
 class TestTestEntity:
     def test_creation_with_required_fields(self):
         t = Test(key="PROJ-1", summary="My test")
-        assert t.key == "PROJ-1"
+        assert t.key == TestKey.from_value("PROJ-1")
         assert t.summary == "My test"
 
     def test_default_test_type_is_manual(self):
         t = Test(key="PROJ-1", summary="My test")
-        assert t.test_type == "Manual"
+        assert t.test_type == TestType.from_value("Manual")
 
     def test_optional_fields_default_to_none_or_empty(self):
         t = Test(key="PROJ-1", summary="My test")
@@ -32,8 +40,8 @@ class TestTestEntity:
             description="Tests login flow",
             issue_id="10002",
         )
-        assert t.test_type == "Automated"
-        assert t.status == "PASS"
+        assert t.test_type == TestType.from_value("Automated")
+        assert t.status == Status.from_value("PASS")
         assert t.labels == ["smoke", "login"]
         assert t.description == "Tests login flow"
         assert t.issue_id == "10002"
@@ -53,7 +61,7 @@ class TestTestEntity:
 class TestTestSetEntity:
     def test_creation(self):
         ts = TestSet(key="PROJ-20", summary="My Set")
-        assert ts.key == "PROJ-20"
+        assert ts.key == TestSetKey.from_value("PROJ-20")
         assert ts.summary == "My Set"
         assert ts.issue_id is None
         assert ts.test_keys == []
@@ -61,7 +69,7 @@ class TestTestSetEntity:
     def test_with_test_keys(self):
         ts = TestSet(key="PROJ-20", summary="Set", test_keys=["PROJ-1", "PROJ-2"])
         assert len(ts.test_keys) == 2
-        assert "PROJ-1" in ts.test_keys
+        assert TestKey.from_value("PROJ-1") in ts.test_keys
 
     def test_repr(self):
         ts = TestSet(key="PROJ-20", summary="My Set")
@@ -71,7 +79,7 @@ class TestTestSetEntity:
 class TestTestExecutionEntity:
     def test_creation(self):
         te = TestExecution(key="PROJ-30", summary="Sprint 1")
-        assert te.key == "PROJ-30"
+        assert te.key == ExecutionKey.from_value("PROJ-30")
         assert te.summary == "Sprint 1"
         assert te.issue_id is None
         assert te.test_set_keys == []
@@ -85,7 +93,7 @@ class TestTestExecutionEntity:
 class TestTestPlanEntity:
     def test_creation(self):
         tp = TestPlan(key="PROJ-1", summary="Sprint Plan")
-        assert tp.key == "PROJ-1"
+        assert tp.key == TestPlanKey.from_value("PROJ-1")
         assert tp.summary == "Sprint Plan"
         assert tp.issue_id is None
         assert tp.test_keys == []

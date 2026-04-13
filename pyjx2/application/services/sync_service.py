@@ -3,38 +3,55 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Callable, Dict, List
 
-from ...domain.repositories import TestRepository, TestExecutionRepository
+from ...domain.repositories import TestRepository
+from ...domain.value_objects import ExecutionKey, Status, TestKey, UploadMode
 
 
 @dataclass
 class SyncInput:
-    execution_key: str
+    execution_key: ExecutionKey
     folder: str
-    default_status: str = "PASS"
-    status_overrides: Dict[str, str] = field(default_factory=dict)
+    default_status: Status = field(default_factory=lambda: Status.from_value("PASS"))
+    status_overrides: Dict[TestKey, Status] = field(default_factory=dict)
     allowed_extensions: Optional[List[str]] = None
     recursive: bool = True
-    upload_mode: str = "append"  # "append" | "replace"
+    upload_mode: UploadMode = field(default_factory=lambda: UploadMode.from_value("append"))
+
+    def __post_init__(self) -> None:
+        self.execution_key = ExecutionKey.from_value(self.execution_key)
+        self.default_status = Status.from_value(self.default_status)
+        self.status_overrides = {
+            TestKey.from_value(test_key): Status.from_value(status)
+            for test_key, status in self.status_overrides.items()
+        }
+        self.upload_mode = UploadMode.from_value(self.upload_mode)
 
 
 @dataclass
 class SyncMatch:
-    test_key: str
+    test_key: TestKey
     test_summary: str
     file_path: str
     uploaded: bool
     status_updated: bool
 
+    def __post_init__(self) -> None:
+        self.test_key = TestKey.from_value(self.test_key)
+
 
 @dataclass
 class SyncResult:
-    test_execution: str
+    test_execution: ExecutionKey
     processed_tests: int = 0
     updated_tests: int = 0
-    tests_without_evidence: List[str] = field(default_factory=list)
+    tests_without_evidence: List[TestKey] = field(default_factory=list)
     files_uploaded: int = 0
     files_unused: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.test_execution = ExecutionKey.from_value(self.test_execution)
+        self.tests_without_evidence = [TestKey.from_value(key) for key in self.tests_without_evidence]
 
 
 class SyncService:
@@ -49,10 +66,8 @@ class SyncService:
     def __init__(
         self,
         test_repo: TestRepository,
-        test_exec_repo: TestExecutionRepository,
     ) -> None:
         self._test_repo = test_repo
-        self._test_exec_repo = test_exec_repo
 
     def _collect_files(self, folder: str, recursive: bool, allowed_ext: Optional[List[str]]) -> list[Path]:
         root = Path(folder)
@@ -94,7 +109,7 @@ class SyncService:
 
         try:
             notify(f"Obteniendo tests de la ejecución: {input_data.execution_key}")
-            tests = self._test_exec_repo.list_from_execution(input_data.execution_key)
+            tests = self._test_repo.list_from_execution(input_data.execution_key)
             result.processed_tests = len(tests)
             notify(f"Se encontraron {len(tests)} tests procesables.")
         except Exception as e:
@@ -127,7 +142,7 @@ class SyncService:
                 tests_updated_count += 1
 
             # Si el modo es REPLACE, limpiar evidencias previas
-            if input_data.upload_mode == "replace":
+            if input_data.upload_mode == UploadMode.from_value("replace"):
                 notify(f"  Modo REPLACE: Limpiando evidencias previas para {test.key}...")
                 self._test_repo.clear_evidence(input_data.execution_key, test.key)
 

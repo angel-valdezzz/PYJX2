@@ -11,6 +11,7 @@ from pyjx2.application.use_cases.setup.models import (
     SetupGlobalSettings, SetupSourceConfig
 )
 from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
+from pyjx2.domain.value_objects import ProjectKey, TestKey
 
 class TestSetupInteractorExecute:
     """Tests for SetupInteractor.execute()"""
@@ -59,11 +60,17 @@ class TestSetupInteractorExecute:
         
         assert len(result.test_executions) == 1
         assert result.test_executions[0].key == sample_execution.key
-        mock_exec_repo.create.assert_called_once_with(project_key="PROJ", summary="Sprint Exec")
+        mock_exec_repo.create.assert_called_once_with(
+            project_key=ProjectKey.from_value("PROJ"),
+            summary="Sprint Exec",
+        )
         
         assert len(result.test_sets) == 1
         assert result.test_sets[0].key == sample_test_set.key
-        mock_test_set_repo.create.assert_called_once_with(project_key="PROJ", summary="[AXA_WEB] Test Set Sprint Set")
+        mock_test_set_repo.create.assert_called_once_with(
+            project_key=ProjectKey.from_value("PROJ"),
+            summary="[AXA_WEB] Test Set Sprint Set",
+        )
         
         mock_exec_repo.add_test_set.assert_called_once_with(sample_execution.key, sample_test_set.key)
 
@@ -80,6 +87,10 @@ class TestSetupInteractorExecute:
         assert mock_test_repo.clone.call_count == 2
         assert result.metrics.tests_cloned == 2
         assert mock_test_set_repo.add_tests.called
+        mock_test_repo.clone.assert_any_call(
+            TestKey.from_value("PROJ-10"),
+            ProjectKey.from_value("PROJ"),
+        )
 
     def test_reusing_tests(
         self, mock_test_repo, mock_test_set_repo, mock_exec_repo, mock_plan_repo,
@@ -112,7 +123,10 @@ class TestSetupInteractorExecute:
         mock_plan_repo.get_tests.return_value = [{"key": "PROJ-10"}]
         interactor = self._make_interactor(mock_plan_repo, mock_exec_repo, mock_test_set_repo, mock_test_repo)
         config = self._make_base_config()
-        config.test_executions[0].test_sets[0].source.items = ["PROJ-10", "PROJ-10"]
+        config.test_executions[0].test_sets[0].source.items = [
+            TestKey.from_value("PROJ-10"),
+            TestKey.from_value("PROJ-10"),
+        ]
         
         result = interactor.execute(config)
         
