@@ -1,24 +1,27 @@
-# pyjx2.toml — Archivo de configuración para pyjx2
+# pyjx2.toml - Archivo de configuracion para pyjx2
 # Copia este archivo como pyjx2.toml (o pyjx2.json) en tu directorio de trabajo.
 # Todos los valores pueden definirse mediante variables de entorno:
-#   PYJX2_AUTH_ENV, PYJX2_AUTH_USERNAME, PYJX2_AUTH_PASSWORD
+#   PYJX2_AUTH_ENV, PYJX2_AUTH_USERNAME, PYJX2_AUTH_PASSWORD, PYJX2_PROJECT_KEY
 
 [auth]
 env = "QA"                          # "QA" o "DEV"
 username = "usuario@ejemplo.com"
 password = "TU_PASSWORD_O_TOKEN"    # Puede ser texto plano o ENC:... (ver comando config encrypt-pass)
 
+[project]
+key = "PROJ"                        # Proyecto por defecto; si no se define, se infiere del Test Plan
+
 [setup]
 # Valores por defecto para el comando `pyjx2 setup`
-test_plan_key = "QAX-100"
-execution_summary = "Ejecución Regresión Sprint"
+test_plan_key = "PROJ-100"
+execution_summary = "Ejecucion Regresion Sprint"
 test_mode = "clone"                 # "clone" (clonar tests) o "add" (usar originales)
 
 [sync]
 # Valores por defecto para el comando `pyjx2 sync`
-execution_key = "QAX-200"
+execution_key = "PROJ-200"
 folder = "./evidencias"
 status = "PASS"                     # PASS, FAIL, TODO, EXECUTING, ABORTED
 recursive = true
-upload_mode = "append"              # "append" (añadir) o "replace" (limpiar y subir)
+upload_mode = "append"              # "append" (anadir) o "replace" (limpiar y subir)
 allowed_extensions = [".pdf", ".png", ".jpg"]

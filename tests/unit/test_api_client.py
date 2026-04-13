@@ -14,14 +14,14 @@ from pyjx2.domain.value_objects import (
     TestSetKey,
     TestType,
 )
-from pyjx2.infrastructure.config.settings import JiraSettings, Settings, XraySettings
+from pyjx2.infrastructure.config.settings import AuthSettings, ProjectSettings, Settings
 
 
 def _build_client() -> PyJX2:
     client = PyJX2.__new__(PyJX2)
     client._settings = Settings(
-        jira=JiraSettings(env="QA", username="user@test.com", password="token"),
-        xray=XraySettings(client_id="user@test.com", client_secret="token"),
+        auth=AuthSettings(env="QA", username="user@test.com", password="token"),
+        project=ProjectSettings(key="PROJ"),
     )
     client._test_repo = MagicMock()
     client._test_set_repo = MagicMock()
@@ -51,11 +51,11 @@ def test_create_and_clone_test_coerce_string_arguments():
 def test_setup_and_sync_accept_string_inputs_and_coerce_early():
     client = _build_client()
 
-    client._test_plan_repo.get.return_value = TestPlan(key="QAX-100", summary="Plan")
-    client._test_plan_repo.get_tests.return_value = [{"key": "QAX-1"}]
-    client._test_exec_repo.create.return_value = TestExecution(key="QAX-200", summary="Exec")
-    client._test_set_repo.create.return_value = TestSet(key="QAX-300", summary="Set")
-    client._test_repo.clone.return_value = Test(key="QAX-400", summary="Clone")
+    client._test_plan_repo.get.return_value = TestPlan(key="PROJ-100", summary="Plan")
+    client._test_plan_repo.get_tests.return_value = [{"key": "PROJ-1"}]
+    client._test_exec_repo.create.return_value = TestExecution(key="PROJ-200", summary="Exec")
+    client._test_set_repo.create.return_value = TestSet(key="PROJ-300", summary="Set")
+    client._test_repo.clone.return_value = Test(key="PROJ-400", summary="Clone")
     client._test_repo.list_from_execution.return_value = []
 
     client.setup(
@@ -73,8 +73,8 @@ def test_setup_and_sync_accept_string_inputs_and_coerce_early():
 
     client._test_plan_repo.get.assert_called_once_with(TestPlanKey.from_value("QAX-100"))
     client._test_repo.clone.assert_called_once_with(
-        TestKey.from_value("QAX-1"),
-        ProjectKey.from_value("QAX"),
+        TestKey.from_value("PROJ-1"),
+        ProjectKey.from_value("PROJ"),
     )
     client._test_repo.list_from_execution.assert_called_once_with(ExecutionKey.from_value("QAX-200"))
 

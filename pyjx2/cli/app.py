@@ -21,10 +21,18 @@ config_app = typer.Typer(help="Utilidades de configuracion.")
 app.add_typer(config_app, name="config")
 
 
-def _common_options(config: Optional[str], env: Optional[str], jira_username: Optional[str], jira_password: Optional[str]) -> PyJX2:
+def _common_options(
+    config: Optional[str],
+    env: Optional[str],
+    jira_username: Optional[str],
+    jira_password: Optional[str],
+    project_key: Optional[str],
+) -> PyJX2:
     overrides: dict = {}
     if env or jira_username or jira_password:
         overrides["auth"] = {"env": env, "username": jira_username, "password": jira_password}
+    if project_key:
+        overrides["project"] = {"key": project_key}
     return build_api_from_config(config_file=config, overrides=overrides or None)
 
 
@@ -44,22 +52,27 @@ def _jira_password_option():
     return typer.Option(None, "--password", "-p", help="Contrasena o token de Jira.")
 
 
+def _project_key_option():
+    return typer.Option(None, "--project-key", help="Clave del proyecto para crear issues (ej. PROJ).")
+
+
 @app.command()
 def setup(
-    test_plan_key: str = typer.Option(..., "--test-plan", help="Llave del Test Plan en Jira (ej. QAX-100)."),
+    test_plan_key: str = typer.Option(..., "--test-plan", help="Llave del Test Plan en Jira (ej. PROJ-100)."),
     execution_summary: str = typer.Option(..., "--execution-summary", "-e", help="Titulo para el nuevo Test Execution."),
-    application: str = typer.Option(..., "--application", "-a", help="Calificador de aplicacion (ej. AXA_WEB)."),
-    test_mode: str = typer.Option("clone", "--test-mode", "-m", help="Modo de tests: clone (clonar en QAX) o add (agregar sin clonar).", metavar="clone|add"),
+    application: str = typer.Option(..., "--application", "-a", help="Calificador de aplicacion (ej. APP_WEB)."),
+    test_mode: str = typer.Option("clone", "--test-mode", "-m", help="Modo de tests: clone (clonar) o add (agregar sin clonar).", metavar="clone|add"),
     config: Optional[str] = _config_option(),
     env: Optional[str] = _env_option(),
     jira_username: Optional[str] = _jira_username_option(),
     jira_password: Optional[str] = _jira_password_option(),
+    project_key: Optional[str] = _project_key_option(),
 ) -> None:
     if not test_plan_key or not execution_summary:
         console.print("[bold red]Error:[/bold red] --test-plan y --execution-summary son obligatorios.")
         raise typer.Exit(code=2)
     try:
-        pjx = _common_options(config, env, jira_username, jira_password)
+        pjx = _common_options(config, env, jira_username, jira_password, project_key)
     except ValueError as e:
         console.print(f"[bold red]Error de configuracion:[/bold red] {e}")
         raise typer.Exit(code=1)
@@ -67,7 +80,11 @@ def setup(
     def on_progress(msg: str) -> None:
         console.print(f"  [dim]->[/dim] {msg}")
 
-    console.print(f"\n[bold cyan]Ejecutando Setup para proyecto [white]QAX[/white] con plan [white]{test_plan_key}[/white][/bold cyan]\n")
+    effective_project = pjx.resolve_project_key(test_plan_key)
+    console.print(
+        f"\n[bold cyan]Ejecutando Setup para proyecto [white]{effective_project or 'N/A'}[/white] "
+        f"con plan [white]{test_plan_key}[/white][/bold cyan]\n"
+    )
     try:
         result = pjx.setup(test_plan_key=test_plan_key, execution_summary=execution_summary, application=application, test_mode=test_mode, progress_callback=on_progress)
     except Exception as e:
@@ -88,7 +105,7 @@ def setup(
 
 @app.command()
 def sync(
-    execution_key: str = typer.Option(..., "--execution", "-e", help="Llave del Test Execution en Jira (ej. QAX-200)."),
+    execution_key: str = typer.Option(..., "--execution", "-e", help="Llave del Test Execution en Jira (ej. PROJ-200)."),
     folder: str = typer.Option(..., "--folder", "-f", help="Ruta a la carpeta local con los archivos de evidencia."),
     status: str = typer.Option(..., "--status", "-s", help="Estado del test: PASS, FAIL, TODO, EXECUTING, ABORTED."),
     recursive: bool = typer.Option(True, "--recursive/--no-recursive", "-r/-R", help="Escanear subcarpetas recursivamente."),
@@ -99,6 +116,7 @@ def sync(
     env: Optional[str] = _env_option(),
     jira_username: Optional[str] = _jira_username_option(),
     jira_password: Optional[str] = _jira_password_option(),
+    project_key: Optional[str] = _project_key_option(),
 ) -> None:
     if not execution_key or not folder:
         console.print("[bold red]Error:[/bold red] --execution y --folder son obligatorios.")
@@ -120,7 +138,7 @@ def sync(
 
     allowed_ext = [e.strip() for e in extensions.split(",")] if extensions else [".pdf"]
     try:
-        pjx = _common_options(config, env, jira_username, jira_password)
+        pjx = _common_options(config, env, jira_username, jira_password, project_key)
     except ValueError as e:
         console.print(f"[bold red]Error de configuracion:[/bold red] {e}")
         raise typer.Exit(code=1)

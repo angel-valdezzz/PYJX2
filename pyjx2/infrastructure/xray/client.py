@@ -11,12 +11,11 @@ from ..config.settings import XraySettings
 class XrayClient:
     """Low-level Xray Cloud REST API client with automatic token refresh."""
 
-    GRAPHQL_URL = "https://xray.cloud.getxray.app/api/v2/graphql"
-
     def __init__(self, settings: XraySettings, timeout: float = 30.0) -> None:
         self._client_id = settings.client_id
         self._client_secret = settings.client_secret
         self._base_url = settings.base_url.rstrip("/")
+        self._graphql_url = settings.graphql_url.rstrip("/")
         self._timeout = timeout
         self._token: Optional[str] = None
 
@@ -67,7 +66,7 @@ class XrayClient:
 
     def graphql(self, query: str, variables: Optional[dict] = None) -> dict:
         resp = requests.post(
-            self.GRAPHQL_URL,
+            self._graphql_url,
             headers=self._headers(),
             json={"query": query, "variables": variables or {}},
             timeout=self._timeout,
