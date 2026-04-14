@@ -1,22 +1,20 @@
 """
 Shared pytest fixtures for pyjx2 test suite.
 """
+
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 from pathlib import Path
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-
-from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
+from pyjx2.domain.entities import Test, TestExecution, TestPlan, TestSet
 from pyjx2.infrastructure.config.settings import AuthSettings, ProjectSettings, Settings
 
-
 # ── Settings fixture ────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def auth_settings():
@@ -39,6 +37,7 @@ def settings(auth_settings, project_settings):
 
 # ── Entity fixtures ─────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def sample_test():
     return Test(key="PROJ-10", summary="Login test", test_type="Manual", labels=["smoke"])
@@ -60,6 +59,7 @@ def sample_test_plan():
 
 
 # ── Mock repository factories ───────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_test_repo(sample_test):
@@ -110,6 +110,7 @@ def mock_plan_repo(sample_test_plan):
 
 # ── Filesystem fixtures ─────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def evidence_folder():
     """A temporary folder with evidence files named after test keys."""
@@ -124,6 +125,7 @@ def evidence_folder():
 
 
 # ── Config file fixtures ────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def valid_toml_config(tmp_path):
@@ -155,22 +157,27 @@ recursive = true
 @pytest.fixture
 def valid_json_config(tmp_path):
     cfg = tmp_path / "pyjx2.json"
-    cfg.write_text(json.dumps({
-        "auth": {
-            "env": "QA",
-            "username": "user@example.com",
-            "password": "my_json_token",
-        },
-        "project": {
-            "key": "PROJ",
-        },
-        "setup": {
-            "test_plan_key": "PROJ-200",
-            "reuse_tests": True,
-        },
-        "sync": {
-            "status": "FAIL",
-            "recursive": False,
-        },
-    }, indent=2))
+    cfg.write_text(
+        json.dumps(
+            {
+                "auth": {
+                    "env": "QA",
+                    "username": "user@example.com",
+                    "password": "my_json_token",
+                },
+                "project": {
+                    "key": "PROJ",
+                },
+                "setup": {
+                    "test_plan_key": "PROJ-200",
+                    "reuse_tests": True,
+                },
+                "sync": {
+                    "status": "FAIL",
+                    "recursive": False,
+                },
+            },
+            indent=2,
+        )
+    )
     return cfg

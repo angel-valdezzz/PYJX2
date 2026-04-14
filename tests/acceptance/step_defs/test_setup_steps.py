@@ -1,12 +1,11 @@
 """
 Step definitions for: features/setup_flow.feature
 """
+
 from __future__ import annotations
 
-import pytest
-from pytest_bdd import scenarios, given, when, then, parsers
-
 from pyjx2.domain.entities import Test
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from .conftest import build_mocked_client
 
@@ -15,6 +14,7 @@ scenarios("../features/setup_flow.feature")
 
 # ── Dado ──────────────────────────────────────────────────────────────────────
 
+
 @given(parsers.parse('que el plan de pruebas "{plan_key}" no existe'))
 def _(ctx, settings, plan_key):
     client = build_mocked_client(settings, [])
@@ -22,19 +22,22 @@ def _(ctx, settings, plan_key):
     ctx["client"] = client
     ctx["plan_key"] = plan_key
 
+
 @given(parsers.parse('que el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
 def _(ctx, settings, plan_key, n):
-    tests = [Test(key=f"PROJ-{i+10}", summary=f"Test {i}") for i in range(n)]
+    tests = [Test(key=f"PROJ-{i + 10}", summary=f"Test {i}") for i in range(n)]
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
     ctx["plan_key"] = plan_key
 
+
 @given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} pruebas'))
 def _(ctx, settings, plan_key, n):
-    tests = [Test(key=f"PROJ-{i+10}", summary=f"Test {i}") for i in range(n)]
+    tests = [Test(key=f"PROJ-{i + 10}", summary=f"Test {i}") for i in range(n)]
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
     ctx["plan_key"] = plan_key
+
 
 @given("un cliente PyJX2 configurado")
 def _(ctx, settings):
@@ -42,9 +45,15 @@ def _(ctx, settings):
     client = build_mocked_client(settings, tests)
     ctx["client"] = client
 
+
 # ── Cuando ────────────────────────────────────────────────────────────────────
 
-@when(parsers.parse('ejecuto el comando setup con test plan "{plan_key}" y aplicacion "{application}"'))
+
+@when(
+    parsers.parse(
+        'ejecuto el comando setup con test plan "{plan_key}" y aplicacion "{application}"'
+    )
+)
 def _(ctx, plan_key, application):
     try:
         result = ctx["client"].setup(
@@ -123,6 +132,7 @@ def _(ctx):
 
 # ── Entonces ──────────────────────────────────────────────────────────────────
 
+
 @then("se crea una ejecución de pruebas")
 def _(ctx):
     assert ctx.get("error") is None, f"Encountered error: {ctx.get('error')}"
@@ -143,8 +153,6 @@ def _(ctx):
 @then("el test set queda enlazado a la ejecución de pruebas")
 def _(ctx):
     client = ctx["client"]
-    exec_key = ctx["result"].test_executions[0].key
-    set_key = ctx["result"].test_sets[0].key
     assert client._test_exec_repo.add_test_set.call_count >= 1
 
 
@@ -165,7 +173,7 @@ def _(ctx):
     client = ctx["client"]
     add_call = client._test_set_repo.add_tests.call_args
     assert add_call is not None, "add_tests was never called"
-    
+
     added_keys = set(add_call[0][1])
     assert len(added_keys) == ctx["result"].metrics.tests_cloned
 

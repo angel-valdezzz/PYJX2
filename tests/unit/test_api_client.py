@@ -1,4 +1,5 @@
 """Unit tests for PyJX2 API boundary coercion."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -76,7 +77,9 @@ def test_setup_and_sync_accept_string_inputs_and_coerce_early():
         TestKey.from_value("PROJ-1"),
         ProjectKey.from_value("PROJ"),
     )
-    client._test_repo.list_from_execution.assert_called_once_with(ExecutionKey.from_value("QAX-200"))
+    client._test_repo.list_from_execution.assert_called_once_with(
+        ExecutionKey.from_value("QAX-200")
+    )
 
 
 def test_mutation_methods_coerce_keys_and_statuses():

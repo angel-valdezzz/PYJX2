@@ -19,7 +19,9 @@ class UploadMode(_StringValueObject):
     def _validate(cls, value: str) -> None:
         super()._validate(value)
         if value not in cls.allowed:
-            raise ValueError(f"Invalid {cls.label}: {value!r}. Allowed values: {', '.join(cls.allowed)}")
+            raise ValueError(
+                f"Invalid {cls.label}: {value!r}. Allowed values: {', '.join(cls.allowed)}"
+            )
 
     @classmethod
     def allowed_values(cls) -> tuple[str, ...]:

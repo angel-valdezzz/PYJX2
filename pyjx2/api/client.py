@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING
 
 from ..application.services.sync_service import SyncInput, SyncResult, SyncService
 from ..domain.entities import Test, TestExecution, TestPlan, TestSet
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class PyJX2:
-    def __init__(self, settings_or_runtime: Settings | "PyJX2Runtime") -> None:
+    def __init__(self, settings_or_runtime: Settings | PyJX2Runtime) -> None:
         if isinstance(settings_or_runtime, Settings):
             from ..bootstrap import build_runtime
 
@@ -32,7 +32,7 @@ class PyJX2:
 
         self._bind_runtime(runtime)
 
-    def _bind_runtime(self, runtime: "PyJX2Runtime") -> None:
+    def _bind_runtime(self, runtime: PyJX2Runtime) -> None:
         self._runtime = runtime
         self._settings = runtime.settings
         self._jira = runtime.jira
@@ -62,7 +62,7 @@ class PyJX2:
             return runtime.sync_service
         return SyncService(self._test_repo)
 
-    def get_test(self, key: str | TestKey) -> Optional[Test]:
+    def get_test(self, key: str | TestKey) -> Test | None:
         return self._test_repo.get(TestKey.from_value(key))
 
     def create_test(
@@ -70,7 +70,7 @@ class PyJX2:
         project_key: str | ProjectKey,
         summary: str,
         test_type: str | TestType = "Manual",
-        labels: Optional[list[str]] = None,
+        labels: list[str] | None = None,
     ) -> Test:
         return self._test_repo.create(
             project_key=ProjectKey.from_value(project_key),
@@ -112,7 +112,7 @@ class PyJX2:
             file_path,
         )
 
-    def get_test_set(self, key: str | TestSetKey) -> Optional[TestSet]:
+    def get_test_set(self, key: str | TestSetKey) -> TestSet | None:
         return self._test_set_repo.get(TestSetKey.from_value(key))
 
     def create_test_set(self, project_key: str | ProjectKey, summary: str) -> TestSet:
@@ -121,13 +121,15 @@ class PyJX2:
     def update_test_set(self, key: str | TestSetKey, **kwargs) -> TestSet:
         return self._test_set_repo.update(TestSetKey.from_value(key), **kwargs)
 
-    def add_tests_to_set(self, test_set_key: str | TestSetKey, test_keys: list[str | TestKey]) -> bool:
+    def add_tests_to_set(
+        self, test_set_key: str | TestSetKey, test_keys: list[str | TestKey]
+    ) -> bool:
         return self._test_set_repo.add_tests(
             TestSetKey.from_value(test_set_key),
             [TestKey.from_value(test_key) for test_key in test_keys],
         )
 
-    def get_test_execution(self, key: str | ExecutionKey) -> Optional[TestExecution]:
+    def get_test_execution(self, key: str | ExecutionKey) -> TestExecution | None:
         return self._test_exec_repo.get(ExecutionKey.from_value(key))
 
     def create_test_execution(
@@ -151,13 +153,13 @@ class PyJX2:
             TestSetKey.from_value(test_set_key),
         )
 
-    def get_test_plan(self, key: str | TestPlanKey) -> Optional[TestPlan]:
+    def get_test_plan(self, key: str | TestPlanKey) -> TestPlan | None:
         return self._test_plan_repo.get(TestPlanKey.from_value(key))
 
     def get_tests_from_plan(self, plan_key: str | TestPlanKey) -> list[Test]:
         return self._test_plan_repo.get_tests(TestPlanKey.from_value(plan_key))
 
-    def resolve_project_key(self, test_plan_key: Optional[str] = None) -> Optional[str]:
+    def resolve_project_key(self, test_plan_key: str | None = None) -> str | None:
         explicit_key = self._settings.jira.project_key
         if explicit_key:
             return explicit_key
@@ -220,8 +222,8 @@ class PyJX2:
         execution_key: str,
         folder: str,
         status: str = "PASS",
-        status_overrides: Optional[Dict[str, str]] = None,
-        allowed_extensions: Optional[List[str]] = None,
+        status_overrides: dict[str, str] | None = None,
+        allowed_extensions: list[str] | None = None,
         upload_mode: str = "append",
         recursive: bool = True,
         progress_callback=None,
@@ -239,23 +241,23 @@ class PyJX2:
         return service.run(sync_input, progress_callback=progress_callback)
 
     @classmethod
-    def from_credentials(cls, username: str, password: str, env: str = "QA") -> "PyJX2":
+    def from_credentials(cls, username: str, password: str, env: str = "QA") -> PyJX2:
         from ..bootstrap import build_runtime_from_credentials
 
         return cls(build_runtime_from_credentials(username=username, password=password, env=env))
 
     @classmethod
-    def from_config(cls, config_file: Optional[str] = None) -> "PyJX2":
+    def from_config(cls, config_file: str | None = None) -> PyJX2:
         from ..bootstrap import build_runtime_from_config
 
         return cls(build_runtime_from_config(config_file=config_file))
 
     @property
-    def jira(self) -> "JiraClient":
+    def jira(self) -> JiraClient:
         return self._jira
 
     @property
-    def xray(self) -> "XrayClient":
+    def xray(self) -> XrayClient:
         return self._xray
 
     @staticmethod

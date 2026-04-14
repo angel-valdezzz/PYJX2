@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Literal, Optional
+from typing import Literal
 
 from ....domain.value_objects import TestKey
 
@@ -7,8 +7,8 @@ from ....domain.value_objects import TestKey
 @dataclass
 class SetupSourceConfig:
     type: Literal["folder", "list", "test_plan"]
-    path: Optional[str] = None
-    items: Optional[List[TestKey]] = None
+    path: str | None = None
+    items: list[TestKey] | None = None
 
     def __post_init__(self) -> None:
         self.path = self.path.strip() if self.path else None
@@ -19,7 +19,9 @@ class SetupSourceConfig:
     def _validate_shape(self) -> None:
         if self.type == "test_plan":
             if self.path or self.items:
-                raise ValueError("SetupSourceConfig(type='test_plan') does not accept path or items")
+                raise ValueError(
+                    "SetupSourceConfig(type='test_plan') does not accept path or items"
+                )
             return
 
         if self.type == "list":

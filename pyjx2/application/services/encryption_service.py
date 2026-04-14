@@ -1,5 +1,6 @@
 import abc
 
+
 class EncryptionService(abc.ABC):
     """
     Port / Interface for encryption capabilities in the Application layer.

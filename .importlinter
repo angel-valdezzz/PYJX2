@@ -1,0 +1,41 @@
+[importlinter]
+root_package = pyjx2
+include_external_packages = False
+
+[importlinter:contract:domain_independence]
+name = Domain must be independent from outer layers
+type = forbidden
+source_modules =
+    pyjx2.domain
+forbidden_modules =
+    pyjx2.application
+    pyjx2.infrastructure
+    pyjx2.api
+    pyjx2.cli
+    pyjx2.tui
+    pyjx2.bootstrap
+    pyjx2.docs_runtime
+
+[importlinter:contract:application_independence]
+name = Application must not depend on infrastructure or delivery layers
+type = forbidden
+source_modules =
+    pyjx2.application
+forbidden_modules =
+    pyjx2.infrastructure
+    pyjx2.api
+    pyjx2.cli
+    pyjx2.tui
+    pyjx2.bootstrap
+    pyjx2.docs_runtime
+
+[importlinter:contract:interfaces_use_facades]
+name = CLI and TUI must not use infrastructure directly
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    pyjx2.cli
+    pyjx2.tui
+forbidden_modules =
+    pyjx2.infrastructure.jira
+    pyjx2.infrastructure.xray

@@ -4,7 +4,6 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import jsonschema
 
@@ -25,7 +24,7 @@ _ENV_ENDPOINTS = {
 }
 
 
-def _normalize_env(env: Optional[str]) -> str:
+def _normalize_env(env: str | None) -> str:
     normalized = env.upper().strip() if env else "QA"
     if normalized not in _ENV_ENDPOINTS:
         allowed = ", ".join(sorted(_ENV_ENDPOINTS))
@@ -33,14 +32,14 @@ def _normalize_env(env: Optional[str]) -> str:
     return normalized
 
 
-def _normalize_project_key(key: Optional[str]) -> Optional[str]:
+def _normalize_project_key(key: str | None) -> str | None:
     if key is None:
         return None
     normalized = key.strip().upper()
     return normalized or None
 
 
-def _platform_profile(env: Optional[str]) -> dict[str, str]:
+def _platform_profile(env: str | None) -> dict[str, str]:
     return _ENV_ENDPOINTS[_normalize_env(env)]
 
 
@@ -52,8 +51,8 @@ class JiraSettings:
         username: str,
         password: str,
         env: str = "QA",
-        project_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        project_key: str | None = None,
+        base_url: str | None = None,
     ) -> None:
         self.username = username
         self.password = password
@@ -67,7 +66,7 @@ class JiraSettings:
         return self._base_url
 
     @property
-    def project_key(self) -> Optional[str]:
+    def project_key(self) -> str | None:
         return self._project_key
 
 
@@ -76,8 +75,8 @@ class XraySettings:
     client_id: str
     client_secret: str
     env: str = "QA"
-    base_url: Optional[str] = None
-    graphql_url: Optional[str] = None
+    base_url: str | None = None
+    graphql_url: str | None = None
 
     def __post_init__(self) -> None:
         self.env = _normalize_env(self.env)
@@ -101,7 +100,7 @@ class AuthSettings:
 
 @dataclass
 class ProjectSettings:
-    key: Optional[str] = None
+    key: str | None = None
 
     def __post_init__(self) -> None:
         self.key = _normalize_project_key(self.key)
@@ -109,16 +108,16 @@ class ProjectSettings:
 
 @dataclass
 class SetupDefaults:
-    test_plan_key: Optional[str] = None
-    execution_summary: Optional[str] = None
+    test_plan_key: str | None = None
+    execution_summary: str | None = None
     test_mode: str = "clone"
 
 
 @dataclass
 class SyncDefaults:
-    execution_key: Optional[str] = None
-    folder: Optional[str] = None
-    status: Optional[str] = None
+    execution_key: str | None = None
+    folder: str | None = None
+    status: str | None = None
     recursive: bool = True
     upload_mode: str = "append"
     allowed_extensions: list[str] = field(default_factory=lambda: [".pdf"])
@@ -159,10 +158,10 @@ def _load_file(path: Path) -> dict:
         except ModuleNotFoundError:
             import toml
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return toml.load(f)
     if path.suffix == ".json":
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     raise ValueError(f"Unsupported config format: {path.suffix}")
 
@@ -172,7 +171,7 @@ def _validate_schema(data: dict) -> None:
     jsonschema.validate(instance=data, schema=schema)
 
 
-def _find_config_file() -> Optional[Path]:
+def _find_config_file() -> Path | None:
     cwd = Path.cwd()
     for name in CONFIG_FILENAMES:
         candidate = cwd / name
@@ -234,8 +233,8 @@ def _apply_env_overrides(data: dict) -> dict:
 
 
 def load_settings(
-    config_file: Optional[str] = None,
-    overrides: Optional[dict] = None,
+    config_file: str | None = None,
+    overrides: dict | None = None,
 ) -> Settings:
     """
     Load settings from:

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar, TypeVar
-
+from typing import ClassVar, TypeVar, cast
 
 TValueObject = TypeVar("TValueObject", bound="_StringValueObject")
 
@@ -18,10 +17,10 @@ class _StringValueObject:
         object.__setattr__(self, "value", normalized)
 
     @classmethod
-    def from_value(cls, value: str | TValueObject) -> TValueObject:
+    def from_value(cls: type[TValueObject], value: str | TValueObject) -> TValueObject:
         if isinstance(value, cls):
             return value
-        return cls(value)
+        return cls(cast(str, value))
 
     @classmethod
     def _normalize(cls, value: str) -> str:

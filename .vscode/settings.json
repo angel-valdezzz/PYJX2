@@ -1,0 +1,19 @@
+{
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "ruff.nativeServer": "on",
+  "ruff.organizeImports": true,
+  "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.reportingScope": "workspace",
+  "mypy-type-checker.args": [
+    "--config-file",
+    "${workspaceFolder}/pyproject.toml"
+  ]
+}

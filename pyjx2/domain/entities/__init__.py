@@ -1,7 +1,3 @@
-from .test import Test
-from .test_set import TestSet
-from .test_execution import TestExecution
-from .test_plan import TestPlan
 from ..value_objects import (
     Application,
     ExecutionKey,
@@ -13,6 +9,10 @@ from ..value_objects import (
     TestType,
     UploadMode,
 )
+from .test import Test
+from .test_execution import TestExecution
+from .test_plan import TestPlan
+from .test_set import TestSet
 
 __all__ = [
     "Application",

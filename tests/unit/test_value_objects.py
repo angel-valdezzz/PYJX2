@@ -1,8 +1,8 @@
 """Unit tests for domain value objects."""
+
 from __future__ import annotations
 
 import pytest
-
 from pyjx2.domain.value_objects import (
     Application,
     ExecutionKey,

@@ -20,6 +20,7 @@ nav:
       - Interfaz Gráfica (TUI): interfaces/tui.md
   - Avanzado:
       - API Python: advanced/python-api.md
+      - Calidad de Código: advanced/code-quality.md
 
 theme:
   name: material

@@ -1,8 +1,8 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from ....domain.entities import TestSet
 from ....domain.repositories import TestSetRepository
-from ....domain.value_objects import ProjectKey
+from ....domain.value_objects import ProjectKey, TestSetKey
 from .setup_test_set_config import SetupTestSetConfig
 
 
@@ -15,7 +15,7 @@ class TestSetResolver:
         config: SetupTestSetConfig,
         project_key: ProjectKey,
         clean_before: bool = False,
-        logger: Optional[Callable] = None,
+        logger: Callable | None = None,
     ) -> TestSet:
         if not str(config.application):
             raise ValueError("[FAIL FAST] Application es abstracta pero mandatoria en Test Sets")
@@ -26,7 +26,7 @@ class TestSetResolver:
         if config.mode == "reuse":
             if not config.key:
                 raise ValueError("[FAIL FAST] Key de TestSet requerida para modo reuse")
-            existing = self.repo.get(config.key)
+            existing = self.repo.get(TestSetKey.from_value(config.key))
             if not existing:
                 raise ValueError(f"[FAIL FAST] Test Set {config.key} invalido o no existe.")
             if clean_before and logger:

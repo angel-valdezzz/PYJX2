@@ -1,4 +1,5 @@
 """Unit tests for SyncService."""
+
 from __future__ import annotations
 
 import tempfile
@@ -6,8 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
-from pyjx2.application.services.sync_service import SyncService, SyncInput
+from pyjx2.application.services.sync_service import SyncInput, SyncService
 from pyjx2.domain.entities import Test
 from pyjx2.domain.value_objects import ExecutionKey, Status, TestKey
 
@@ -32,7 +32,9 @@ class TestSyncServiceFileMatching:
 
         return SyncService(test_repo), test_repo
 
-    def _run_with_files(self, filenames, tests=None, recursive=True, extensions=None, overrides=None):
+    def _run_with_files(
+        self, filenames, tests=None, recursive=True, extensions=None, overrides=None
+    ):
         svc, test_repo = self._make_service(tests)
         with tempfile.TemporaryDirectory() as tmpdir:
             folder = Path(tmpdir)
@@ -41,7 +43,7 @@ class TestSyncServiceFileMatching:
                 if len(parts) > 1:
                     (folder / Path(*parts[:-1])).mkdir(parents=True, exist_ok=True)
                 (folder / name).write_text("data")
-            
+
             return svc.run(
                 SyncInput(
                     execution_key="PROJ-200",
@@ -164,17 +166,15 @@ class TestSyncServiceFileMatching:
         )
 
     def test_extension_filter_works(self):
-        result, _ = self._run_with_files(
-            ["Login flow.png", "Login flow.txt"],
-            extensions=[".png"]
-        )
+        result, _ = self._run_with_files(["Login flow.png", "Login flow.txt"], extensions=[".png"])
         assert result.files_uploaded == 1
-        assert "Login flow.txt" not in result.files_unused # It's ignored by collector, so not unused
+        assert (
+            "Login flow.txt" not in result.files_unused
+        )  # It's ignored by collector, so not unused
 
     def test_status_override_per_test(self):
         result, test_repo = self._run_with_files(
-            ["Login flow.png", "Logout flow.png"],
-            overrides={"PROJ-11": "FAIL"}
+            ["Login flow.png", "Logout flow.png"], overrides={"PROJ-11": "FAIL"}
         )
         # PROJ-10 (Login) -> PASS (default)
         # PROJ-11 (Logout) -> FAIL (override)
@@ -192,10 +192,12 @@ class TestSyncServiceFileMatching:
     def test_nonexistent_folder_raises(self):
         svc, _ = self._make_service()
         with pytest.raises(FileNotFoundError):
-            svc.run(SyncInput(
-                execution_key="PROJ-200",
-                folder="/nonexistent/path/that/does/not/exist",
-            ))
+            svc.run(
+                SyncInput(
+                    execution_key="PROJ-200",
+                    folder="/nonexistent/path/that/does/not/exist",
+                )
+            )
 
     def test_progress_callback_is_called(self):
         messages = []
@@ -212,7 +214,7 @@ class TestSyncServiceFileMatching:
         test_repo = MagicMock()
         test_repo.list_from_execution.side_effect = Exception("Not found")
         svc = SyncService(test_repo)
-        
+
         result = svc.run(SyncInput(execution_key="PROJ-999", folder="."))
         assert len(result.errors) == 1
         assert "PROJ-999" in result.errors[0]
@@ -221,13 +223,9 @@ class TestSyncServiceFileMatching:
         svc, test_repo = self._make_service()
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "Login flow.png").write_text("data")
-            
-            svc.run(SyncInput(
-                execution_key="PROJ-200",
-                folder=tmpdir,
-                upload_mode="replace"
-            ))
-            
+
+            svc.run(SyncInput(execution_key="PROJ-200", folder=tmpdir, upload_mode="replace"))
+
             # Verify clear_evidence was called for PROJ-10 (the matched test)
             test_repo.clear_evidence.assert_called_once_with(
                 ExecutionKey.from_value("PROJ-200"),
@@ -240,10 +238,12 @@ class TestSyncServiceFileMatching:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "Login flow.png").write_text("data")
-            result = svc.run(SyncInput(
-                execution_key="PROJ-200",
-                folder=tmpdir,
-            ))
+            result = svc.run(
+                SyncInput(
+                    execution_key="PROJ-200",
+                    folder=tmpdir,
+                )
+            )
 
         assert result.files_uploaded == 0
         assert len(result.errors) == 1
@@ -255,10 +255,12 @@ class TestSyncServiceFileMatching:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "Login flow.png").write_text("data")
-            result = svc.run(SyncInput(
-                execution_key="PROJ-200",
-                folder=tmpdir,
-            ))
+            result = svc.run(
+                SyncInput(
+                    execution_key="PROJ-200",
+                    folder=tmpdir,
+                )
+            )
 
         assert result.updated_tests == 0
         assert result.files_uploaded == 1

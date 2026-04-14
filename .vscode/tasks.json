@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "quality: ruff",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "ruff",
+        "check",
+        "pyjx2",
+        "tests"
+      ],
+      "group": "test"
+    },
+    {
+      "label": "quality: mypy",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "mypy"
+      ],
+      "group": "test"
+    },
+    {
+      "label": "quality: import-linter",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "lint-imports"
+      ],
+      "group": "test"
+    }
+  ]
+}

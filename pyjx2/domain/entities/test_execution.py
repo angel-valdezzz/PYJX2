@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..value_objects import ExecutionKey, TestKey, TestSetKey
 
@@ -8,7 +7,7 @@ from ..value_objects import ExecutionKey, TestKey, TestSetKey
 class TestExecution:
     key: ExecutionKey
     summary: str
-    issue_id: Optional[str] = None
+    issue_id: str | None = None
     test_set_keys: list[TestSetKey] = field(default_factory=list)
     test_keys: list[TestKey] = field(default_factory=list)
 

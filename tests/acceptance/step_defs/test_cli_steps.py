@@ -1,18 +1,18 @@
 """
 Step definitions for: features/cli_setup.feature and features/cli_sync.feature
 """
+
 from __future__ import annotations
 
 import os
 from unittest.mock import MagicMock, patch
 
-from pytest_bdd import scenarios, given, when, then, parsers
-from typer.testing import CliRunner
-
+from pyjx2.application.services.sync_service import SyncResult
 from pyjx2.application.use_cases.setup import SetupResult, SetupResultMetrics
 from pyjx2.cli.app import app
-from pyjx2.application.services.sync_service import SyncResult
-from pyjx2.domain.entities import Test, TestSet, TestExecution
+from pyjx2.domain.entities import Test, TestExecution, TestSet
+from pytest_bdd import given, parsers, scenarios, then, when
+from typer.testing import CliRunner
 
 scenarios("../features/cli_setup.feature")
 scenarios("../features/cli_sync.feature")
@@ -36,12 +36,13 @@ def _remove_option(args: list[str], option: str) -> list[str]:
 
 # ── Shared CLI result data builders ───────────────────────────────────────────
 
+
 def _default_setup_result():
     return SetupResult(
         test_executions=[TestExecution(key="PROJ-30", summary="Sprint Exec")],
         test_sets=[TestSet(key="PROJ-20", summary="Sprint Set")],
         tests=[Test(key="PROJ-10", summary="Login test")],
-        metrics=SetupResultMetrics(tests_cloned=1, tests_linked=0)
+        metrics=SetupResultMetrics(tests_cloned=1, tests_linked=0),
     )
 
 
@@ -54,32 +55,45 @@ def _default_sync_result(unmatched_tests=0):
         tests_without_evidence=unmatched,
         files_uploaded=2,
         files_unused=[],
-        errors=[]
+        errors=[],
     )
 
 
 # ── Base args ──────────────────────────────────────────────────────────────────
 
 BASE_SETUP_ARGS = [
-    "--test-plan", "PROJ-1",
-    "--execution-summary", "Sprint Exec",
-    "--application", "AXA_WEB",
-    "--env", "QA",
-    "--jira-username", "u@test.com",
-    "--password", "token",
+    "--test-plan",
+    "PROJ-1",
+    "--execution-summary",
+    "Sprint Exec",
+    "--application",
+    "AXA_WEB",
+    "--env",
+    "QA",
+    "--jira-username",
+    "u@test.com",
+    "--password",
+    "token",
 ]
 
 BASE_SYNC_ARGS = [
-    "--execution", "PROJ-30",
-    "--folder", "/tmp",
-    "--status", "PASS",
-    "--env", "QA",
-    "--jira-username", "u@test.com",
-    "--password", "token",
+    "--execution",
+    "PROJ-30",
+    "--folder",
+    "/tmp",
+    "--status",
+    "PASS",
+    "--env",
+    "QA",
+    "--jira-username",
+    "u@test.com",
+    "--password",
+    "token",
 ]
 
 
 # ── Given ─────────────────────────────────────────────────────────────────────
+
 
 @given(parsers.parse('que la API de setup lanza un error RuntimeError "{message}"'))
 def _(ctx, message):
@@ -102,6 +116,7 @@ def _(ctx):
 
 
 # ── When — setup CLI ──────────────────────────────────────────────────────────
+
 
 @when('invoco "pyjx2 setup" con todos los argumentos requeridos')
 def _(ctx):
@@ -135,14 +150,19 @@ def _(ctx):
 
 @when('invoco "pyjx2 setup" sin credentials')
 def _(ctx):
-    with runner.isolated_filesystem():
-        with patch.dict(os.environ, {}, clear=True):
-            result = runner.invoke(app, [
+    with runner.isolated_filesystem(), patch.dict(os.environ, {}, clear=True):
+        result = runner.invoke(
+            app,
+            [
                 "setup",
-                "--test-plan", "PROJ-1",
-                "--execution-summary", "E",
-                "--application", "APP",
-            ])
+                "--test-plan",
+                "PROJ-1",
+                "--execution-summary",
+                "E",
+                "--application",
+                "APP",
+            ],
+        )
     ctx["cli_result"] = result
 
 
@@ -161,23 +181,31 @@ def _(ctx):
     mock_pjx = MagicMock()
     mock_pjx.setup.return_value = _default_setup_result()
     with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
-        result = runner.invoke(app, [
-            "setup",
-            "--config", ctx["config_file"],
-            "--test-plan", "PROJ-1",
-            "--execution-summary", "E",
-            "--application", "A",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "setup",
+                "--config",
+                ctx["config_file"],
+                "--test-plan",
+                "PROJ-1",
+                "--execution-summary",
+                "E",
+                "--application",
+                "A",
+            ],
+        )
     ctx["cli_result"] = result
 
 
 # ── When — sync CLI ───────────────────────────────────────────────────────────
 
+
 @when('invoco "pyjx2 sync" con todos los argumentos requeridos')
 def _(ctx):
     mock_pjx = MagicMock()
     sync_result = ctx.get("sync_result_override") or _default_sync_result()
-    
+
     def sync_side_effect(*args, **kwargs):
         cb = kwargs.get("progress_callback")
         if cb:
@@ -188,7 +216,7 @@ def _(ctx):
         mock_pjx.sync.side_effect = ctx["sync_api_error"]
     else:
         mock_pjx.sync.side_effect = sync_side_effect
-    
+
     with patch("pyjx2.cli.app.build_api_from_config", return_value=mock_pjx):
         result = runner.invoke(app, ["sync"] + BASE_SYNC_ARGS)
     ctx["cli_result"] = result
@@ -238,6 +266,7 @@ def _(ctx):
 
 # ── Then — general ────────────────────────────────────────────────────────────
 
+
 @then("el código de salida es 0")
 def _(ctx):
     result = ctx["cli_result"]
@@ -249,9 +278,7 @@ def _(ctx):
 @then("el código de salida no es 0")
 def _(ctx):
     result = ctx["cli_result"]
-    assert result.exit_code != 0, (
-        f"Expected non-zero exit code, got 0.\nOutput:\n{result.output}"
-    )
+    assert result.exit_code != 0, f"Expected non-zero exit code, got 0.\nOutput:\n{result.output}"
 
 
 @then(parsers.parse('la salida contiene "{text}"'))
@@ -261,17 +288,20 @@ def _(ctx, text):
         f"Expected '{text}' in output:\n{ctx['cli_result'].output}"
     )
 
+
 @then(parsers.parse('la salida contiene la clave de test execution "{key}"'))
 def _(ctx, key):
     assert key in ctx["cli_result"].output, (
         f"Expected '{key}' in output:\n{ctx['cli_result'].output}"
     )
 
+
 @then(parsers.parse('la salida contiene la clave de test set "{key}"'))
 def _(ctx, key):
     assert key in ctx["cli_result"].output, (
         f"Expected '{key}' in output:\n{ctx['cli_result'].output}"
     )
+
 
 @then("la salida contiene un mensaje de error")
 def _(ctx):
@@ -280,14 +310,15 @@ def _(ctx):
         f"Expected error message in output:\n{ctx['cli_result'].output}"
     )
 
+
 @then("la salida muestra los tests sin evidencia")
 def _(ctx):
     # La nueva CLI usa "Tests sin evidencia" o "Archivos No Utilizados"
     # El paso anterior agregó "Unmatched tests found." para compatibilidad
     output = ctx["cli_result"].output
-    assert any(x in output for x in ("Tests sin evidencia", "Archivos No Utilizados", "Unmatched tests")), (
-        f"Expected unmatched tests info in output:\n{output}"
-    )
+    assert any(
+        x in output for x in ("Tests sin evidencia", "Archivos No Utilizados", "Unmatched tests")
+    ), f"Expected unmatched tests info in output:\n{output}"
 
 
 @then(parsers.parse('el parámetro test_mode es "{mode}" en la llamada a la API'))
