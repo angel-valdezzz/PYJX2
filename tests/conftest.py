@@ -13,14 +13,14 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
-from pyjx2.infrastructure.config.settings import Settings, JiraSettings, XraySettings
+from pyjx2.infrastructure.config.settings import AuthSettings, ProjectSettings, Settings
 
 
 # ── Settings fixture ────────────────────────────────────────────────────────
 
 @pytest.fixture
-def jira_settings():
-    return JiraSettings(
+def auth_settings():
+    return AuthSettings(
         env="QA",
         username="user@test.com",
         password="test_token",
@@ -28,17 +28,13 @@ def jira_settings():
 
 
 @pytest.fixture
-def xray_settings(jira_settings):
-    # Recycled from jira_settings as per new policy
-    return XraySettings(
-        client_id=jira_settings.username,
-        client_secret=jira_settings.password,
-    )
+def project_settings():
+    return ProjectSettings(key="PROJ")
 
 
 @pytest.fixture
-def settings(jira_settings, xray_settings):
-    return Settings(jira=jira_settings, xray=xray_settings)
+def settings(auth_settings, project_settings):
+    return Settings(auth=auth_settings, project=project_settings)
 
 
 # ── Entity fixtures ─────────────────────────────────────────────────────────
@@ -74,6 +70,7 @@ def mock_test_repo(sample_test):
     repo.update_status.return_value = True
     repo.upload_evidence.return_value = True
     repo.list_from_execution.return_value = [sample_test]
+    repo.clear_evidence.return_value = True
     return repo
 
 
@@ -95,7 +92,7 @@ def mock_exec_repo(sample_execution):
     repo.update.return_value = sample_execution
     repo.add_test_set.return_value = True
     repo.get_tests.return_value = [
-        {"key": "PROJ-10", "summary": "Login test", "status": "TODO"},
+        Test(key="PROJ-10", summary="Login test", status="TODO"),
     ]
     return repo
 
@@ -105,8 +102,8 @@ def mock_plan_repo(sample_test_plan):
     repo = MagicMock()
     repo.get.return_value = sample_test_plan
     repo.get_tests.return_value = [
-        {"key": "PROJ-10", "summary": "Login test"},
-        {"key": "PROJ-11", "summary": "Logout test"},
+        Test(key="PROJ-10", summary="Login test"),
+        Test(key="PROJ-11", summary="Logout test"),
     ]
     return repo
 
@@ -137,6 +134,9 @@ env = "QA"
 username = "user@example.com"
 password = "my_token"
 
+[project]
+key = "PROJ"
+
 [setup]
 test_plan_key = "PROJ-100"
 execution_summary = "Sprint Execution"
@@ -160,6 +160,9 @@ def valid_json_config(tmp_path):
             "env": "QA",
             "username": "user@example.com",
             "password": "my_json_token",
+        },
+        "project": {
+            "key": "PROJ",
         },
         "setup": {
             "test_plan_key": "PROJ-200",

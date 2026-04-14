@@ -6,11 +6,11 @@
   "properties": {
     "auth": {
       "type": "object",
-      "description": "Authentication settings for Jira and Xray",
+      "description": "Authentication settings for the Atlassian platform",
       "properties": {
         "env": {
           "type": "string",
-          "description": "Environment to connect to: QA or DEV",
+          "description": "Deployment target to connect to: QA or DEV",
           "enum": ["QA", "DEV"]
         },
         "username": {
@@ -23,6 +23,16 @@
         }
       },
       "required": ["username", "password"]
+    },
+    "project": {
+      "type": "object",
+      "description": "Project defaults shared by setup flows",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Default project key for created issues (ej. PROJ)"
+        }
+      }
     },
     "setup": {
       "type": "object",

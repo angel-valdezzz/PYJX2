@@ -10,6 +10,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 
 from pyjx2.api.client import PyJX2
 from pyjx2.domain.entities import Test
+from pyjx2.domain.value_objects import TestKey
 from .conftest import build_mocked_client
 
 scenarios("../features/sync_flow.feature")
@@ -30,7 +31,7 @@ def _(ctx, settings, exec_key):
         settings, [], exec_test_keys=["PROJ-10", "PROJ-11", "PROJ-12"]
     )
     # Sobrescribir el mock para que devuelva los objetos Test con summary
-    ctx["client"]._test_exec_repo.list_from_execution.return_value = ctx["test_defs"]
+    ctx["client"]._test_repo.list_from_execution.return_value = ctx["test_defs"]
 
 
 @given(parsers.parse('una carpeta de evidence con los archivos "{file1}" y "{file2}"'))
@@ -41,6 +42,7 @@ def _(ctx, file1, file2):
     (folder / file1).write_text("evidence data")
     (folder / file2).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 2
 
 
 @given(parsers.parse('una carpeta de evidence solo con el archivo "{file1}"'))
@@ -50,6 +52,7 @@ def _(ctx, file1):
     folder = Path(tmpdir)
     (folder / file1).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given(parsers.parse('una carpeta de evidence con el archivo "{file1}"'))
@@ -59,6 +62,7 @@ def _(ctx, file1):
     folder = Path(tmpdir)
     (folder / file1).write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given(parsers.parse('una carpeta de evidence con un archivo anidado "{nested_path}"'))
@@ -70,6 +74,7 @@ def _(ctx, nested_path):
     nested.parent.mkdir(parents=True, exist_ok=True)
     nested.write_text("evidence data")
     ctx["folder"] = str(folder)
+    ctx["expected_files_uploaded"] = 1
 
 
 @given("una carpeta de evidence vacía")
@@ -77,6 +82,7 @@ def _(ctx):
     tmpdir = tempfile.mkdtemp()
     ctx.setdefault("_tmpdirs", []).append(tmpdir)
     ctx["folder"] = tmpdir
+    ctx["expected_files_uploaded"] = 0
 
 
 # ── When ──────────────────────────────────────────────────────────────────────
@@ -167,8 +173,8 @@ def _(ctx, key1, key2):
     # En el nuevo SyncResult no guardamos la lista de matches directos por key, 
     # pero podemos inferir por tests_without_evidence
     without = ctx["sync_result"].tests_without_evidence
-    assert key1 not in without, f"{key1} matches not found"
-    assert key2 not in without, f"{key2} matches not found"
+    assert TestKey.from_value(key1) not in without, f"{key1} matches not found"
+    assert TestKey.from_value(key2) not in without, f"{key2} matches not found"
 
 
 @then(parsers.parse('el status "{status}" se establece para todos los tests emparejados'))
@@ -178,32 +184,40 @@ def _(ctx, status):
     assert len(calls) > 0, "update_status was never called"
     for call in calls:
         actual_status = call[0][2]
-        assert actual_status == status, f"Expected status {status}, got {actual_status}"
+        assert str(actual_status) == status, f"Expected status {status}, got {actual_status}"
 
 
 @then("se sube la evidence para todos los tests emparejados")
 def _(ctx):
     result = ctx["sync_result"]
-    assert result.files_uploaded > 0
+    expected_uploads = ctx["expected_files_uploaded"]
+    upload_calls = ctx["client"]._test_repo.upload_evidence.call_args_list
+
+    assert result.files_uploaded == expected_uploads, (
+        f"Expected {expected_uploads} uploaded files, got {result.files_uploaded}"
+    )
+    assert len(upload_calls) == expected_uploads, (
+        f"Expected {expected_uploads} upload calls, got {len(upload_calls)}"
+    )
 
 
 @then(parsers.parse('"{key}" es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
-    assert key not in without, f"{key} was not matched"
+    assert TestKey.from_value(key) not in without, f"{key} was not matched"
 
 
 @then(parsers.parse('"{key}" no es emparejado'))
 def _(ctx, key):
     without = ctx["sync_result"].tests_without_evidence
-    assert key in without, f"{key} was matched but should not be"
+    assert TestKey.from_value(key) in without, f"{key} was matched but should not be"
 
 
 @then(parsers.parse('los tests sin emparejar incluyen "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
     unmatched = ctx["sync_result"].tests_without_evidence
-    assert key1 in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
-    assert key2 in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
+    assert TestKey.from_value(key1) in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
+    assert TestKey.from_value(key2) in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
 
 
 @then(parsers.parse('los archivos no utilizados incluyen "{filename}"'))

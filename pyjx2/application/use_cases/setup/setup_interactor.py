@@ -1,11 +1,15 @@
 from typing import Callable, Optional
-from .models import SetupConfig, SetupResult, SetupResultMetrics
-from .resolvers import (
-    TestPlanResolver, TestExecutionResolver, TestSetResolver, TestCaseSourceResolver
-)
+from .setup_config import SetupConfig
+from .setup_result import SetupResult
+from .setup_result_metrics import SetupResultMetrics
+from .test_case_source_resolver import TestCaseSourceResolver
+from .test_execution_resolver import TestExecutionResolver
+from .test_plan_resolver import TestPlanResolver
+from .test_set_resolver import TestSetResolver
 from ....domain.repositories import (
     TestPlanRepository, TestExecutionRepository, TestSetRepository, TestRepository
 )
+from ....domain.value_objects import TestKey
 
 class SetupInteractor:
     def __init__(
@@ -39,8 +43,8 @@ class SetupInteractor:
         # 1. Validar Test Plan (FAIL FAST)
         self.plan_resolver.validate(config.test_plan.key)
         
-        plan_tests_data = self.plan_repo.get_tests(config.test_plan.key)
-        valid_plan_test_keys = [t.get("key") for t in plan_tests_data if t.get("key")]
+        plan_tests = self.plan_repo.get_tests(config.test_plan.key)
+        valid_plan_test_keys = [test.key for test in plan_tests]
         log(f"Test Plan validado correctamente ({len(valid_plan_test_keys)} tests maestros encontrados).")
 
         for exec_conf in config.test_executions:
