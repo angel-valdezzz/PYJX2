@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyjx2.api.client import PyJX2
 from pyjx2.domain.entities import Test, TestExecution, TestPlan, TestSet
+from pyjx2.domain.value_objects import ExecutionKey, TestKey, TestPlanKey, TestSetKey
 from pytest_bdd import given, parsers
 
 # ── Mutable context dict shared across all steps in a scenario ───────────────
@@ -25,17 +26,21 @@ def ctx() -> dict:
 
 @pytest.fixture
 def _sample_execution():
-    return TestExecution(key="PROJ-30", summary="Sprint 1 Execution", issue_id="100030")
+    return TestExecution(
+        key=ExecutionKey.from_value("PROJ-30"),
+        summary="Sprint 1 Execution",
+        issue_id="100030",
+    )
 
 
 @pytest.fixture
 def _sample_test_set():
-    return TestSet(key="PROJ-20", summary="Sprint 1 Test Set", issue_id="100020")
+    return TestSet(key=TestSetKey.from_value("PROJ-20"), summary="Sprint 1 Test Set", issue_id="100020")
 
 
 @pytest.fixture
 def _sample_plan():
-    return TestPlan(key="PROJ-1", summary="Sprint 1 Plan", issue_id="100001")
+    return TestPlan(key=TestPlanKey.from_value("PROJ-1"), summary="Sprint 1 Plan", issue_id="100001")
 
 
 # ── Mock repository builder ───────────────────────────────────────────────────
@@ -51,27 +56,32 @@ def build_mocked_client(
 ) -> PyJX2:
     """Build a PyJX2 instance with all repositories mocked."""
     execution = sample_execution or TestExecution(
-        key="PROJ-30", summary="Sprint 1 Execution", issue_id="100030"
+        key=ExecutionKey.from_value("PROJ-30"), summary="Sprint 1 Execution", issue_id="100030"
     )
     test_set = sample_test_set or TestSet(
-        key="PROJ-20", summary="Sprint 1 Test Set", issue_id="100020"
+        key=TestSetKey.from_value("PROJ-20"), summary="Sprint 1 Test Set", issue_id="100020"
     )
-    plan = sample_plan or TestPlan(key="PROJ-1", summary="Sprint Plan", issue_id="100001")
+    plan = sample_plan or TestPlan(
+        key=TestPlanKey.from_value("PROJ-1"), summary="Sprint Plan", issue_id="100001"
+    )
 
     all_tests = {
-        "PROJ-10": Test(key="PROJ-10", summary="Login flow"),
-        "PROJ-11": Test(key="PROJ-11", summary="Logout flow"),
-        "PROJ-12": Test(key="PROJ-12", summary="Dashboard load"),
+        "PROJ-10": Test(key=TestKey.from_value("PROJ-10"), summary="Login flow"),
+        "PROJ-11": Test(key=TestKey.from_value("PROJ-11"), summary="Logout flow"),
+        "PROJ-12": Test(key=TestKey.from_value("PROJ-12"), summary="Dashboard load"),
     }
 
     test_repo = MagicMock()
     test_repo.get.side_effect = lambda k: all_tests.get(str(k))
-    test_repo.create.return_value = Test(key="PROJ-50", summary="Created test")
+    test_repo.create.return_value = Test(key=TestKey.from_value("PROJ-50"), summary="Created test")
     clone_counter = [0]
 
     def _clone(src, proj):
         clone_counter[0] += 1
-        return Test(key=f"PROJ-{50 + clone_counter[0]}", summary=f"[Clone] {src}")
+        return Test(
+            key=TestKey.from_value(f"PROJ-{50 + clone_counter[0]}"),
+            summary=f"[Clone] {src}",
+        )
 
     test_repo.clone.side_effect = _clone
     test_repo.update_status.return_value = True
@@ -91,7 +101,9 @@ def build_mocked_client(
     exec_repo.update.return_value = execution
     exec_repo.add_test_set.return_value = True
     keys = exec_test_keys if exec_test_keys is not None else ["PROJ-10", "PROJ-11", "PROJ-12"]
-    exec_repo.get_tests.return_value = [all_tests.get(k, Test(key=k, summary=k)) for k in keys]
+    exec_repo.get_tests.return_value = [
+        all_tests.get(k, Test(key=TestKey.from_value(k), summary=k)) for k in keys
+    ]
 
     plan_repo = MagicMock()
     plan_repo.get.return_value = plan

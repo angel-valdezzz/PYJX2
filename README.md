@@ -1,11 +1,11 @@
 # pyjx2
 
-Herramienta de automatización para **Jira** y **Xray** — arquitectura limpia en Python con interfaces CLI, TUI y API de scripting.
+Herramienta de automatización para **Jira** y **Xray** con arquitectura limpia en Python, interfaces CLI y TUI, y una API de scripting.
 
 ## Características
 
 - **`setup`**: Crea un entorno de pruebas a partir de un Test Plan, permitiendo clonar o agregar casos de prueba, organizarlos en Test Sets y vincularlos a un Test Execution.
-- **`sync`**: Escanea carpetas de evidencias, hace coincidencia con casos de prueba y actualiza estados además de subir adjuntos.
+- **`sync`**: Escanea carpetas de evidencias, hace coincidencia con casos de prueba y actualiza estados, además de subir adjuntos.
 - **`docs`**: Lanza el manual de usuario inmersivo en pantalla completa.
 - **TUI**: Interfaz gráfica de terminal con áreas dedicadas para Preparación, Sincronización, Configuración y Seguridad.
 - **Configuración flexible**: Soporte para archivos `.toml`, `.json` y variables de entorno.
@@ -14,6 +14,7 @@ Herramienta de automatización para **Jira** y **Xray** — arquitectura limpia 
 ## Instalación
 
 ### Usando Pip
+
 A fin de ejecutar una regresión, puedes instalar el proyecto localmente:
 
 ```bash
@@ -27,6 +28,7 @@ pip install requests typer rich textual toml jsonschema cryptography
 ```
 
 ### Usando Poetry
+
 ```bash
 poetry install
 poetry shell
@@ -51,6 +53,7 @@ password = "ENC:gAAAAAB..." # Password cifrado opcional
 Para evitar guardar contraseñas en texto plano:
 
 1. Genera tu token cifrado:
+
 ```bash
 pyjx2 config encrypt-pass TU_PASSWORD
 ```
@@ -60,6 +63,7 @@ pyjx2 config encrypt-pass TU_PASSWORD
 ## Uso de la CLI
 
 ### Flujo de Preparación (Setup)
+
 ```bash
 pyjx2 setup \
   --test-plan PROJ-100 \
@@ -69,6 +73,7 @@ pyjx2 setup \
 ```
 
 ### Flujo de Sincronización (Sync)
+
 ```bash
 pyjx2 sync \
   --execution PROJ-200 \
@@ -77,7 +82,8 @@ pyjx2 sync \
   --recursive
 ```
 
-#### Opciones de `sync`:
+#### Opciones de `sync`
+
 | Parámetro | Shorthand | Descripción |
 |---|---|---|
 | `--execution` | `-e` | ID de la ejecución (MANDATORIO). |
@@ -85,15 +91,17 @@ pyjx2 sync \
 | `--status` | `-s` | Estado por defecto (MANDATORIO: PASS, FAIL, etc.). |
 | `--recursive` | `-r` | Escaneo en subcarpetas (Default: True). |
 | `--mode` | `-m` | `append` o `replace` evidencias previas. |
-| `--extensions` | | Lista separada por coma (ej. `.png, .jpg`). |
+| `--extensions` | | Lista separada por coma (ej. `.png,.jpg`). |
 | `--status-map` | | JSON para estados específicos por test key. |
 
-### Visualizar Documentación
+### Visualizar documentación
+
 ```bash
 pyjx2 docs
 ```
 
-### Interfaz Gráfica (TUI)
+### Interfaz gráfica (TUI)
+
 ```bash
 pyjx2 tui
 ```
@@ -109,8 +117,8 @@ pjx = PyJX2.from_config()
 # Opción 2: Usar credenciales directas (sin archivos)
 pjx = PyJX2.from_credentials(
     username="usuario@ejemplo.com",
-    password="mi_password", # Soporta ENC:...
-    env="QA"
+    password="mi_password",  # Soporta ENC:...
+    env="QA",
 )
 
 # Ejecutar flujo de Preparación (Setup)
@@ -118,7 +126,7 @@ pjx.setup(
     test_plan_key="PROJ-100",
     execution_summary="Regresión Sprint 1",
     application="AXA_WEB",
-    test_mode="clone" # u "add" para usar originales
+    test_mode="clone",  # o "add" para usar originales
 )
 
 # Ejecutar flujo de Sincronización (Sync)
@@ -126,7 +134,7 @@ pjx.sync(
     execution_key="PROJ-200",
     folder="./evidencias",
     status="PASS",
-    upload_mode="append" # u "replace"
+    upload_mode="append",  # o "replace"
 )
 ```
 
@@ -134,18 +142,18 @@ pjx.sync(
 
 ```bash
 # Ejecutar todos los tests
-python -m pytest tests/
+poetry run pytest tests -q
 
 # Solo tests unitarios
-python -m pytest tests/unit/
+poetry run pytest tests/unit -q
 
 # Solo tests de aceptación (BDD)
-python -m pytest tests/acceptance/
+poetry run pytest tests/acceptance -q
 ```
 
 ## Arquitectura
 
-```
+```text
 pyjx2/
 ├── domain/               # Entidades e interfaces de repositorio (Python puro)
 ├── application/          # Servicios de casos de uso (Setup, Sync)
@@ -162,8 +170,25 @@ El proyecto incluye análisis estático y de arquitectura:
 ```bash
 poetry run ruff format pyjx2 tests
 poetry run ruff check pyjx2 tests
-poetry run mypy
+poetry run mypy pyjx2 tests
 poetry run lint-imports
+```
+
+### Validación completa del proyecto
+
+Para validar tests, lint, tipos y reglas de arquitectura en una sola pasada:
+
+```bash
+poetry run ruff check pyjx2 tests
+poetry run mypy pyjx2 tests
+poetry run lint-imports
+poetry run pytest tests -q
+```
+
+Si prefieres ejecutarlo como un solo comando en PowerShell:
+
+```powershell
+poetry run ruff check pyjx2 tests; poetry run mypy pyjx2 tests; poetry run lint-imports; poetry run pytest tests -q
 ```
 
 ### Integración con VS Code
