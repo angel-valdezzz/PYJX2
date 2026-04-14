@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, cast
 
 import jsonschema
 
@@ -148,18 +150,17 @@ class Settings:
         )
 
 
-def _load_file(path: Path) -> dict:
+def _load_file(path: Path) -> dict[str, Any]:
     if path.suffix == ".toml":
-        try:
+        if sys.version_info >= (3, 11):
             import tomllib
 
             with open(path, "rb") as f:
                 return tomllib.load(f)
-        except ModuleNotFoundError:
-            import toml
+        import toml
 
-            with open(path, encoding="utf-8") as f:
-                return toml.load(f)
+        with open(path, encoding="utf-8") as f:
+            return cast(dict[str, Any], toml.load(f))
     if path.suffix == ".json":
         with open(path, encoding="utf-8") as f:
             return json.load(f)

@@ -5,6 +5,7 @@ import re
 import subprocess
 import threading
 from contextlib import suppress
+from typing import cast
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -342,7 +343,7 @@ class PyJX2App(App):
         Binding("f5", "switch_tab('config')", "Configuración", show=False),
     ]
 
-    sync_subgroups = reactive([])
+    sync_subgroups = reactive[list[dict[str, str]]](cast(list[dict[str, str]], []))
 
     TITLE = "pyjx2 — Jira/Xray Automation"
     SUB_TITLE = "Herramienta de Preparación y Sincronización"
@@ -351,7 +352,7 @@ class PyJX2App(App):
         super().__init__()
         self._config_file = config_file
         self._pjx: PyJX2 | None = None
-        self.mkdocs_process = None
+        self.mkdocs_process: subprocess.Popen[bytes] | None = None
 
     def on_mount(self) -> None:
         import atexit
@@ -371,13 +372,14 @@ class PyJX2App(App):
         else:
             self.remove_class("-narrow")
 
-    def _kill_mkdocs(self):
-        if getattr(self, "mkdocs_process", None) and self.mkdocs_process.poll() is None:
-            self.mkdocs_process.terminate()
-            self.mkdocs_process.wait(timeout=2)
+    def _kill_mkdocs(self) -> None:
+        proc = self.mkdocs_process
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            proc.wait(timeout=2)
             self.mkdocs_process = None
 
-    def action_quit(self):
+    async def action_quit(self) -> None:
         self._kill_mkdocs()
         self.exit()
 
@@ -397,7 +399,7 @@ class PyJX2App(App):
                 )
         except Exception as e:
             with suppress(Exception):
-                self._log("sec-log", f"[ERROR] No se pudo copiar: {e}")
+                self._write_log("sec-log", f"[ERROR] No se pudo copiar: {e}")
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -450,8 +452,6 @@ class PyJX2App(App):
                     "⚠️ Nota: Las credenciales se utilizan para todas las operaciones de Preparación y Sincronización.",
                     classes="field-hint",
                 )
-        return []
-
     def _compose_home_tab(self) -> ComposeResult:
         with ScrollableContainer(id="home-container"):
             yield Static("PYJX2", id="logo-art")
@@ -462,8 +462,6 @@ class PyJX2App(App):
                     classes="run-btn",
                     variant="primary",
                 )
-        return []
-
     def _compose_setup_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static(
@@ -544,8 +542,6 @@ class PyJX2App(App):
                 yield Static("", id="setup-progress-label", classes="progress-label")
                 yield ProgressBar(id="setup-progress-bar", total=100, show_eta=False)
             yield Log(id="setup-log", highlight=True)
-        return []
-
     def _compose_sync_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static(
@@ -598,8 +594,6 @@ class PyJX2App(App):
                 yield Static("", id="sync-progress-label", classes="progress-label")
                 yield ProgressBar(id="sync-progress-bar", total=100, show_eta=False)
             yield Log(id="sync-log", highlight=True)
-        return []
-
     def _compose_config_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static("Archivo de Configuración", classes="panel-title")
@@ -610,8 +604,6 @@ class PyJX2App(App):
                     "[b][sync][/b]\nexecution_key = 'PROJ-200'\nfolder = './evidencias'\nstatus = 'PASS'\nrecursive = true",
                     markup=True,
                 )
-        return []
-
     def _compose_security_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static("Seguridad — Encriptación", classes="panel-title")
@@ -631,8 +623,6 @@ class PyJX2App(App):
                         "Desencriptar", id="btn-sec-decrypt", classes="run-btn", variant="warning"
                     )
             yield Log(id="sec-log")
-        return []
-
     # ── Logic ──────────────────────────────────────────────────────────────────
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
@@ -645,11 +635,12 @@ class PyJX2App(App):
 
     def on_input_changed(self, event: Input.Changed) -> None:
         is_sub = event.input.id and event.input.id.startswith("sync-sub-qaxs-")
-        if is_sub or event.input.id == "setup-source-manual-text":
+        input_id = event.input.id
+        if is_sub or input_id == "setup-source-manual-text":
             has_err = bool(event.value and re.search(r"[^a-zA-Z0-9\-,\s]", event.value))
             event.input.set_class(has_err, "input-error")
-            if is_sub:
-                idx = int(event.input.id.split("-")[-1])
+            if is_sub and input_id is not None:
+                idx = int(input_id.split("-")[-1])
                 if idx < len(self.sync_subgroups):
                     self.sync_subgroups[idx]["qaxs"] = event.value
 
@@ -788,7 +779,7 @@ class PyJX2App(App):
         pjx = self._build_pjx("setup", log)
         if not pjx:
             return
-        self._log(log, "Iniciando Preparación...")
+        self._write_log(log, "Iniciando Preparación...")
         self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         try:
             # Steps: validate(10%) → fetch plan(25%) → create exec(50%) → create set(70%) → add tests(90%) → done(100%)
@@ -803,7 +794,7 @@ class PyJX2App(App):
             _step_iter = iter(_setup_steps)
 
             def _setup_cb(m: str):
-                self._log(log, f" → {m}")
+                self._write_log(log, f" → {m}")
                 try:
                     pct, label = next(_step_iter)
                     self.call_from_thread(self._show_progress, prefix, pct, label)
@@ -820,10 +811,10 @@ class PyJX2App(App):
                 progress_callback=_setup_cb,
             )
             self.call_from_thread(self._show_progress, prefix, 100, "✔ Preparación completada")
-            self._log(log, "[ÉXITO] Preparación finalizada.")
+            self._write_log(log, "[ÉXITO] Preparación finalizada.")
         except Exception as e:
             self.call_from_thread(self._show_progress, prefix, 0, "✖ Error")
-            self._log(log, f"[ERROR] {e}")
+            self._write_log(log, f"[ERROR] {e}")
 
     def _run_sync(self):
         log = "sync-log"
@@ -831,7 +822,7 @@ class PyJX2App(App):
         pjx = self._build_pjx("sync", log)
         if not pjx:
             return
-        self._log(log, "Iniciando Sincronización...")
+        self._write_log(log, "Iniciando Sincronización...")
         self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         overrides = {}
         for g in self.sync_subgroups:
@@ -855,7 +846,7 @@ class PyJX2App(App):
         _step_iter = iter(_sync_steps)
 
         def _sync_cb(m: str):
-            self._log(log, f" → {m}")
+            self._write_log(log, f" → {m}")
             try:
                 pct, label = next(_step_iter)
                 self.call_from_thread(self._show_progress, prefix, pct, label)
@@ -877,19 +868,19 @@ class PyJX2App(App):
                 progress_callback=_sync_cb,
             )
             self.call_from_thread(self._show_progress, prefix, 100, "✔ Sincronización completada")
-            self._log(log, f"[ÉXITO] Sincronización finalizada (Modo: {mode.upper()}).")
+            self._write_log(log, f"[ÉXITO] Sincronización finalizada (Modo: {mode.upper()}).")
         except Exception as e:
             self.call_from_thread(self._show_progress, prefix, 0, "✖ Error")
-            self._log(log, f"[ERROR] {e}")
+            self._write_log(log, f"[ERROR] {e}")
 
     def _toggle_docs(self, btn):
         bundled_index = bundled_docs_index()
         if bundled_index:
             try:
                 open_docs_target(bundled_index.as_uri())
-                self._log("setup-log", "[ÉXITO] Documentación empaquetada abierta.")
+                self._write_log("setup-log", "[ÉXITO] Documentación empaquetada abierta.")
             except Exception as e:
-                self._log(
+                self._write_log(
                     "setup-log", f"[ERROR] No se pudo abrir la documentación empaquetada: {e}"
                 )
             return
@@ -897,7 +888,7 @@ class PyJX2App(App):
         if not self.mkdocs_process:
             root = repo_root()
             if root is None:
-                self._log(
+                self._write_log(
                     "setup-log",
                     "[ERROR] No se encontró documentación empaquetada ni un proyecto MkDocs local.",
                 )
@@ -923,7 +914,7 @@ class PyJX2App(App):
             except Exception as e:
                 # Fallback if somehow base_dir doesn't exist
                 with suppress(Exception):
-                    self._log("setup-log", f"[ERROR] No se pudo iniciar MkDocs: {e}")
+                    self._write_log("setup-log", f"[ERROR] No se pudo iniciar MkDocs: {e}")
         else:
             self._kill_mkdocs()
             btn.label = "📖 Visualizar Documentación (MkDocs)"
@@ -936,24 +927,24 @@ class PyJX2App(App):
         from ..infrastructure.security.encryption import SymmetricEncryptionService
 
         self.query_one("#sec-encrypted", Input).value = SymmetricEncryptionService().encrypt(p)
-        self._log("sec-log", "[ÉXITO] Encriptado.")
+        self._write_log("sec-log", "[ÉXITO] Encriptado.")
 
     def _run_decrypt(self):
         e = self._get_input("sec-encrypted")
         if not e:
             return
         if not e.startswith("ENC:"):
-            self._log("sec-log", "[ERROR] Formato inválido: debe iniciar con 'ENC:'.")
+            self._write_log("sec-log", "[ERROR] Formato inválido: debe iniciar con 'ENC:'.")
             return
 
         from ..infrastructure.security.encryption import SymmetricEncryptionService
 
         try:
             self.query_one("#sec-plain", Input).value = SymmetricEncryptionService().decrypt(e)
-            self._log("sec-log", "[ÉXITO] Desencriptado.")
+            self._write_log("sec-log", "[ÉXITO] Desencriptado.")
         except Exception:
             self.query_one("#sec-plain", Input).value = ""
-            self._log("sec-log", "[ERROR] Token corrupto o llave incorrecta.")
+            self._write_log("sec-log", "[ERROR] Token corrupto o llave incorrecta.")
 
     def _get_input(self, id: str) -> str:
         try:
@@ -985,7 +976,7 @@ class PyJX2App(App):
         except Exception:
             pass
 
-    def _log(self, id: str, msg: str):
+    def _write_log(self, id: str, msg: str) -> None:
         with suppress(Exception):
             self.query_one(f"#{id}", Log).write(msg + "\n")
 
@@ -998,7 +989,9 @@ class PyJX2App(App):
             password = self._get_input("auth-jira-password")
 
             if not username or not password:
-                self._log(log_id, "[ERROR] Credenciales incompletas en el panel de Autenticación.")
+                self._write_log(
+                    log_id, "[ERROR] Credenciales incompletas en el panel de Autenticación."
+                )
                 return None
 
             return build_api_from_config(
@@ -1006,18 +999,5 @@ class PyJX2App(App):
                 overrides={"auth": {"env": env, "username": username, "password": password}},
             )
         except Exception as e:
-            self._log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
+            self._write_log(log_id, f"[ERROR] No se pudo inicializar el motor: {e}")
             return None
-
-    def _kill_mkdocs(self):
-        if self.mkdocs_process:
-            with suppress(Exception):
-                self.mkdocs_process.terminate()
-            self.mkdocs_process = None
-
-    def _copy_to_clipboard(self, text: str):
-        import subprocess
-
-        with suppress(Exception):
-            # Use PowerShell to set clipboard to avoid potential issues with CMD/Shell
-            subprocess.run(["powershell", "-Command", f"Set-Clipboard -Value '{text}'"], shell=True)
