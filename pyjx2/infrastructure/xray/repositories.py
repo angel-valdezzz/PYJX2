@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional
-
-from ...domain.entities import Test, TestSet, TestExecution, TestPlan
+from ...domain.entities import Test, TestExecution, TestPlan, TestSet
 from ...domain.repositories import (
-    TestRepository,
-    TestSetRepository,
     TestExecutionRepository,
     TestPlanRepository,
+    TestRepository,
+    TestSetRepository,
 )
 from ...domain.value_objects import (
     ExecutionKey,
@@ -19,13 +16,13 @@ from ...domain.value_objects import (
     TestSetKey,
     TestType,
 )
-from .client import XrayClient
 from ..jira.client import JiraClient
-
+from .client import XrayClient
 
 XRAY_TEST_ISSUE_TYPE = "Test"
 XRAY_TEST_SET_ISSUE_TYPE = "Test Set"
 XRAY_TEST_EXECUTION_ISSUE_TYPE = "Test Execution"
+DEFAULT_TEST_TYPE = TestType.from_value("Manual")
 
 
 class XrayTestRepository(TestRepository):
@@ -33,7 +30,7 @@ class XrayTestRepository(TestRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: TestKey) -> Optional[Test]:
+    def get(self, key: TestKey) -> Test | None:
         try:
             issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
@@ -42,7 +39,12 @@ class XrayTestRepository(TestRepository):
                 summary=fields.get("summary", ""),
                 test_type=fields.get("issuetype", {}).get("name", "Manual"),
                 labels=fields.get("labels", []),
-                description=fields.get("description", {}).get("content", [{}])[0].get("content", [{}])[0].get("text", "") if fields.get("description") else None,
+                description=fields.get("description", {})
+                .get("content", [{}])[0]
+                .get("content", [{}])[0]
+                .get("text", "")
+                if fields.get("description")
+                else None,
                 issue_id=issue.get("id"),
             )
         except Exception:
@@ -52,7 +54,7 @@ class XrayTestRepository(TestRepository):
         self,
         project_key: ProjectKey,
         summary: str,
-        test_type: TestType = TestType.from_value("Manual"),
+        test_type: TestType = DEFAULT_TEST_TYPE,
         **kwargs,
     ) -> Test:
         fields: dict = {
@@ -92,8 +94,7 @@ class XrayTestRepository(TestRepository):
             return False
 
     def update_status(self, execution_key: ExecutionKey, test_key: TestKey, status: Status) -> bool:
-        issue = self._jira.get_issue(str(test_key))
-        test_id = issue.get("id")
+        self._jira.get_issue(str(test_key))
         exec_issue = self._jira.get_issue(str(execution_key))
         exec_id = exec_issue.get("id")
 
@@ -110,7 +111,9 @@ class XrayTestRepository(TestRepository):
             return True
         return False
 
-    def upload_evidence(self, execution_key: ExecutionKey, test_key: TestKey, file_path: str) -> bool:
+    def upload_evidence(
+        self, execution_key: ExecutionKey, test_key: TestKey, file_path: str
+    ) -> bool:
         try:
             exec_issue = self._jira.get_issue(str(execution_key))
             exec_id = exec_issue.get("id")
@@ -140,7 +143,7 @@ class XrayTestRepository(TestRepository):
                     if t.get("key") == str(test_key):
                         run_id = t.get("id")
                         break
-            
+
             if not run_id:
                 return False
 
@@ -162,12 +165,14 @@ class XrayTestRepository(TestRepository):
         result = []
         if isinstance(tests_data, list):
             for t in tests_data:
-                result.append(Test(
-                    key=t.get("key", ""),
-                    summary=t.get("summary", ""),
-                    status=t.get("status"),
-                    issue_id=t.get("id"),
-                ))
+                result.append(
+                    Test(
+                        key=t.get("key", ""),
+                        summary=t.get("summary", ""),
+                        status=t.get("status"),
+                        issue_id=t.get("id"),
+                    )
+                )
         return result
 
 
@@ -176,7 +181,7 @@ class XrayTestSetRepository(TestSetRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: TestSetKey) -> Optional[TestSet]:
+    def get(self, key: TestSetKey) -> TestSet | None:
         try:
             issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
@@ -219,7 +224,9 @@ class XrayTestSetRepository(TestSetRepository):
     def add_tests(self, key: TestSetKey, test_keys: list[TestKey]) -> bool:
         issue = self._jira.get_issue(str(key))
         issue_id = issue.get("id")
-        self._xray.post(f"testset/{issue_id}/test", {"add": [str(test_key) for test_key in test_keys]})
+        self._xray.post(
+            f"testset/{issue_id}/test", {"add": [str(test_key) for test_key in test_keys]}
+        )
         return True
 
 
@@ -228,7 +235,7 @@ class XrayTestExecutionRepository(TestExecutionRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: ExecutionKey) -> Optional[TestExecution]:
+    def get(self, key: ExecutionKey) -> TestExecution | None:
         try:
             issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})
@@ -296,7 +303,7 @@ class XrayTestPlanRepository(TestPlanRepository):
         self._xray = xray
         self._jira = jira
 
-    def get(self, key: TestPlanKey) -> Optional[TestPlan]:
+    def get(self, key: TestPlanKey) -> TestPlan | None:
         try:
             issue = self._jira.get_issue(str(key))
             fields = issue.get("fields", {})

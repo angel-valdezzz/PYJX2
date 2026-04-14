@@ -1,7 +1,8 @@
 from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Callable, Dict, List
 
 from ...domain.repositories import TestRepository
 from ...domain.value_objects import ExecutionKey, Status, TestKey, UploadMode
@@ -12,8 +13,8 @@ class SyncInput:
     execution_key: ExecutionKey
     folder: str
     default_status: Status = field(default_factory=lambda: Status.from_value("PASS"))
-    status_overrides: Dict[TestKey, Status] = field(default_factory=dict)
-    allowed_extensions: Optional[List[str]] = None
+    status_overrides: dict[TestKey, Status] = field(default_factory=dict)
+    allowed_extensions: list[str] | None = None
     recursive: bool = True
     upload_mode: UploadMode = field(default_factory=lambda: UploadMode.from_value("append"))
 
@@ -44,14 +45,16 @@ class SyncResult:
     test_execution: ExecutionKey
     processed_tests: int = 0
     updated_tests: int = 0
-    tests_without_evidence: List[TestKey] = field(default_factory=list)
+    tests_without_evidence: list[TestKey] = field(default_factory=list)
     files_uploaded: int = 0
-    files_unused: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    files_unused: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.test_execution = ExecutionKey.from_value(self.test_execution)
-        self.tests_without_evidence = [TestKey.from_value(key) for key in self.tests_without_evidence]
+        self.tests_without_evidence = [
+            TestKey.from_value(key) for key in self.tests_without_evidence
+        ]
 
 
 class SyncService:
@@ -69,19 +72,21 @@ class SyncService:
     ) -> None:
         self._test_repo = test_repo
 
-    def _collect_files(self, folder: str, recursive: bool, allowed_ext: Optional[List[str]]) -> list[Path]:
+    def _collect_files(
+        self, folder: str, recursive: bool, allowed_ext: list[str] | None
+    ) -> list[Path]:
         root = Path(folder)
         if not root.exists():
             raise FileNotFoundError(f"Directorio de evidencias no encontrado: {folder}")
-        
+
         pattern = "**/*" if recursive else "*"
         files = [p for p in root.glob(pattern) if p.is_file()]
-        
+
         if allowed_ext:
             # Normalizar extensiones a .ext
             exts = [e.lower() if e.startswith(".") else f".{e.lower()}" for e in allowed_ext]
             files = [f for f in files if f.suffix.lower() in exts]
-            
+
         return files
 
     def _match_files_to_test(self, test_summary: str, files: list[Path]) -> list[Path]:
@@ -99,7 +104,7 @@ class SyncService:
     def run(
         self,
         input_data: SyncInput,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> SyncResult:
         def notify(msg: str) -> None:
             if progress_callback:
@@ -119,7 +124,9 @@ class SyncService:
             return result
 
         notify(f"Escaneando evidencias en: {input_data.folder} (recursivo={input_data.recursive})")
-        all_files = self._collect_files(input_data.folder, input_data.recursive, input_data.allowed_extensions)
+        all_files = self._collect_files(
+            input_data.folder, input_data.recursive, input_data.allowed_extensions
+        )
         notify(f"Se encontraron {len(all_files)} archivos válidos para procesar.")
 
         matched_files_paths: set[str] = set()
@@ -128,7 +135,7 @@ class SyncService:
 
         for test in tests:
             test_matches = self._match_files_to_test(test.summary, all_files)
-            
+
             if not test_matches:
                 result.tests_without_evidence.append(test.key)
                 continue
@@ -136,7 +143,7 @@ class SyncService:
             # Determinar estado
             status = input_data.status_overrides.get(test.key, input_data.default_status)
             notify(f"Actualizando {test.key} ('{test.summary}') a estado: {status}")
-            
+
             status_ok = self._test_repo.update_status(input_data.execution_key, test.key, status)
             if status_ok:
                 tests_updated_count += 1
@@ -148,21 +155,24 @@ class SyncService:
 
             for f_path in test_matches:
                 notify(f"  Subiendo evidencia: {f_path.name}")
-                upload_ok = self._test_repo.upload_evidence(input_data.execution_key, test.key, str(f_path))
+                upload_ok = self._test_repo.upload_evidence(
+                    input_data.execution_key, test.key, str(f_path)
+                )
                 if upload_ok:
                     total_uploads += 1
                 else:
                     result.errors.append(f"Falla al subir {f_path.name} para {test.key}")
-                
+
                 matched_files_paths.add(str(f_path))
 
         result.updated_tests = tests_updated_count
         result.files_uploaded = total_uploads
         result.files_unused = [str(f.name) for f in all_files if str(f) not in matched_files_paths]
 
-        notify(f"Sincronización finalizada. Tests actualizados: {result.updated_tests}. Archivos subidos: {result.files_uploaded}.")
+        notify(
+            f"Sincronización finalizada. Tests actualizados: {result.updated_tests}. Archivos subidos: {result.files_uploaded}."
+        )
         if result.files_unused:
             notify(f"Archivos sin asociación: {len(result.files_unused)}")
 
         return result
-

@@ -1,22 +1,21 @@
 """
 Step definitions for: features/config_flow.feature
 """
+
 from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-from pytest_bdd import scenarios, given, when, then, parsers
-
 from pyjx2.infrastructure.config.settings import load_settings
+from pytest_bdd import given, parsers, scenarios, then, when
 
 scenarios("../features/config_flow.feature")
 
 
 # ── Given ─────────────────────────────────────────────────────────────────────
+
 
 @given("a TOML config file with valid credentials")
 @given("un archivo de configuración TOML con credenciales válidas")
@@ -61,13 +60,17 @@ password = "found_token"
 @given(parsers.parse('que existe un archivo "pyjx2.json" en el directorio actual'))
 def _(ctx, tmp_path, monkeypatch):
     cfg = tmp_path / "pyjx2.json"
-    cfg.write_text(json.dumps({
-        "auth": {
-            "env": "DEV",
-            "username": "json@example.com",
-            "password": "json_token",
-        },
-    }))
+    cfg.write_text(
+        json.dumps(
+            {
+                "auth": {
+                    "env": "DEV",
+                    "username": "json@example.com",
+                    "password": "json_token",
+                },
+            }
+        )
+    )
     monkeypatch.chdir(tmp_path)
     ctx["config_file"] = None
 
@@ -79,7 +82,11 @@ def _(ctx, var, value):
 
 
 @given(parsers.parse('a TOML config file with invalid sync status "{status}"'))
-@given(parsers.parse('un archivo de configuración TOML con un estado de sincronización inválido "{status}"'))
+@given(
+    parsers.parse(
+        'un archivo de configuración TOML con un estado de sincronización inválido "{status}"'
+    )
+)
 def _(ctx, tmp_path, status):
     cfg = tmp_path / "pyjx2.toml"
     cfg.write_text(f"""
@@ -95,7 +102,11 @@ status = "{status}"
 
 
 @given(parsers.parse('a JSON config file missing "{field}" in the auth section'))
-@given(parsers.parse('un archivo de configuración JSON al que le falta el campo "{field}" en la sección auth'))
+@given(
+    parsers.parse(
+        'un archivo de configuración JSON al que le falta el campo "{field}" en la sección auth'
+    )
+)
 def _(ctx, tmp_path, field):
     auth = {
         "env": "QA",
@@ -104,13 +115,18 @@ def _(ctx, tmp_path, field):
     }
     del auth[field]
     cfg = tmp_path / "pyjx2.json"
-    cfg.write_text(json.dumps({
-        "auth": auth,
-    }))
+    cfg.write_text(
+        json.dumps(
+            {
+                "auth": auth,
+            }
+        )
+    )
     ctx["config_file"] = str(cfg)
 
 
 # ── When ──────────────────────────────────────────────────────────────────────
+
 
 @when("I load settings from that file")
 @when("cargo los ajustes desde ese archivo")
@@ -157,7 +173,11 @@ def _(ctx):
 
 
 @when(parsers.parse('I load settings from that file with password override "{password}"'))
-@when(parsers.parse('cargo los ajustes desde ese archivo con el password sobreescrito como "{password}"'))
+@when(
+    parsers.parse(
+        'cargo los ajustes desde ese archivo con el password sobreescrito como "{password}"'
+    )
+)
 def _(ctx, password):
     try:
         s = load_settings(
@@ -172,6 +192,7 @@ def _(ctx, password):
 
 
 # ── Then ──────────────────────────────────────────────────────────────────────
+
 
 @then(parsers.parse('the Jira environment is "{env}"'))
 @then(parsers.parse('el entorno de Jira es "{env}"'))
@@ -218,8 +239,6 @@ def _(ctx, status):
     assert ctx["settings"].sync.status == status
 
 
-
-
 @then(parsers.parse("the sync recursive is {value}"))
 @then(parsers.parse("el valor de recursividad en sincronización es {value}"))
 def _(ctx, value):
@@ -240,9 +259,7 @@ def _(ctx, error_type):
 @then(parsers.parse('el mensaje de error menciona "{field}"'))
 def _(ctx, field):
     assert ctx["error"] is not None
-    assert field in str(ctx["error"]), (
-        f"Expected '{field}' in error: {ctx['error']}"
-    )
+    assert field in str(ctx["error"]), f"Expected '{field}' in error: {ctx['error']}"
 
 
 @then("a schema validation error is raised")
@@ -253,4 +270,3 @@ def _(ctx):
     assert err_type in ("ValidationError", "ValueError", "jsonschema.exceptions.ValidationError"), (
         f"Expected a schema validation error, got {err_type}: {ctx['error']}"
     )
-

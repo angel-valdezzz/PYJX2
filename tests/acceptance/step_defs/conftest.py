@@ -1,19 +1,18 @@
 """
 Shared fixtures and step definitions reused across all BDD acceptance tests.
 """
+
 from __future__ import annotations
 
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
+from pyjx2.api.client import PyJX2
+from pyjx2.domain.entities import Test, TestExecution, TestPlan, TestSet
 from pytest_bdd import given, parsers
 
-from pyjx2.api.client import PyJX2
-from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
-
-
 # ── Mutable context dict shared across all steps in a scenario ───────────────
+
 
 @pytest.fixture
 def ctx() -> dict:
@@ -22,6 +21,7 @@ def ctx() -> dict:
 
 
 # ── Entities ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def _sample_execution():
@@ -40,13 +40,14 @@ def _sample_plan():
 
 # ── Mock repository builder ───────────────────────────────────────────────────
 
+
 def build_mocked_client(
     settings,
     plan_tests: list[Test],
-    exec_test_keys: Optional[list[str]] = None,
-    sample_execution: Optional[TestExecution] = None,
-    sample_test_set: Optional[TestSet] = None,
-    sample_plan: Optional[TestPlan] = None,
+    exec_test_keys: list[str] | None = None,
+    sample_execution: TestExecution | None = None,
+    sample_test_set: TestSet | None = None,
+    sample_plan: TestPlan | None = None,
 ) -> PyJX2:
     """Build a PyJX2 instance with all repositories mocked."""
     execution = sample_execution or TestExecution(
@@ -90,10 +91,7 @@ def build_mocked_client(
     exec_repo.update.return_value = execution
     exec_repo.add_test_set.return_value = True
     keys = exec_test_keys if exec_test_keys is not None else ["PROJ-10", "PROJ-11", "PROJ-12"]
-    exec_repo.get_tests.return_value = [
-        all_tests.get(k, Test(key=k, summary=k))
-        for k in keys
-    ]
+    exec_repo.get_tests.return_value = [all_tests.get(k, Test(key=k, summary=k)) for k in keys]
 
     plan_repo = MagicMock()
     plan_repo.get.return_value = plan
@@ -110,23 +108,24 @@ def build_mocked_client(
 
 # ── Shared Background step ────────────────────────────────────────────────────
 
+
 @given("un cliente PyJX2 configurado")
 def _(ctx, settings):
     """Build a default client with 2-test plan; overridden by more specific steps."""
-    ctx.setdefault("plan_tests", [
-        Test(key="PROJ-10", summary="Login flow"),
-        Test(key="PROJ-11", summary="Logout flow"),
-    ])
+    ctx.setdefault(
+        "plan_tests",
+        [
+            Test(key="PROJ-10", summary="Login flow"),
+            Test(key="PROJ-11", summary="Logout flow"),
+        ],
+    )
     ctx["client"] = build_mocked_client(settings, ctx["plan_tests"])
     ctx["settings"] = settings
 
 
 @given(parsers.parse('el plan de pruebas "{plan_key}" tiene {n:d} tests'))
 def _(ctx, settings, plan_key, n):
-    tests = [
-        Test(key=f"PROJ-{10 + i}", summary=f"Test {i}")
-        for i in range(n)
-    ]
+    tests = [Test(key=f"PROJ-{10 + i}", summary=f"Test {i}") for i in range(n)]
     ctx["plan_tests"] = tests
     ctx["plan_key"] = plan_key
     ctx["client"] = build_mocked_client(settings, tests)

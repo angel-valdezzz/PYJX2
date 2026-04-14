@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from pyjx2.infrastructure.config.settings import JiraSettings, XraySettings
 from pyjx2.infrastructure.jira.client import JiraClient
 from pyjx2.infrastructure.xray.client import XrayClient
-from pyjx2.infrastructure.config.settings import JiraSettings, XraySettings
 
 
 class _FakeResponse:
@@ -64,7 +64,9 @@ def test_xray_client_retries_once_after_401(monkeypatch):
     request_headers: list[str] = []
     responses = iter(
         [
-            _FakeResponse(status_code=401, json_data={"error": "expired"}, content=b'{"error":"expired"}'),
+            _FakeResponse(
+                status_code=401, json_data={"error": "expired"}, content=b'{"error":"expired"}'
+            ),
             _FakeResponse(status_code=200, json_data={"ok": True}, content=b'{"ok": true}'),
         ]
     )
@@ -72,7 +74,7 @@ def test_xray_client_retries_once_after_401(monkeypatch):
     def fake_post(url, json, headers, timeout):
         auth_calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         token = f"token-{len(auth_calls)}"
-        return _FakeResponse(text=f'"{token}"', content=f'"{token}"'.encode("utf-8"))
+        return _FakeResponse(text=f'"{token}"', content=f'"{token}"'.encode())
 
     def fake_request(method, url, headers, timeout, **kwargs):
         request_headers.append(headers["Authorization"])

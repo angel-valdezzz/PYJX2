@@ -1,4 +1,5 @@
 import base64
+
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -39,19 +40,18 @@ class SymmetricEncryptionService(EncryptionService):
         if not encrypted_text.startswith(self.prefix):
             return encrypted_text  # Not encrypted
 
-        token_str = encrypted_text[len(self.prefix):]
+        token_str = encrypted_text[len(self.prefix) :]
         token_bytes = token_str.encode("utf-8")
 
         # Strict Base64 validation to prevent "excess data after padding" issues
         try:
             # Fernet uses urlsafe base64, so we replace characters correctly before validation
-            standard_b64 = token_str.replace('-', '+').replace('_', '/')
+            standard_b64 = token_str.replace("-", "+").replace("_", "/")
             base64.b64decode(standard_b64, validate=True)
-        except Exception:
+        except Exception as e:
             # If base64 is invalid or has trailing garbage, raise error
             # This is caught by the TUI/CLI and reported as a corrupted token
-            raise ValueError("Invalid token: encoding or padding error")
+            raise ValueError("Invalid token: encoding or padding error") from e
 
         decrypted_bytes = self.fernet.decrypt(token_bytes)
         return decrypted_bytes.decode("utf-8")
-

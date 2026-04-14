@@ -17,7 +17,7 @@ Usage example::
     pjx.update_test_set("PROJ-789", summary="Updated set")
 """
 
-from .client import PyJX2
 from ..infrastructure.config import load_settings
+from .client import PyJX2
 
 __all__ = ["PyJX2", "load_settings"]

@@ -1,39 +1,37 @@
 from __future__ import annotations
 
-import os
 import platform
+import re
 import subprocess
 import threading
-import re
-from typing import Optional, List, Dict
+from contextlib import suppress
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
+from textual.reactive import reactive
 from textual.widgets import (
-    Header,
+    Button,
+    Checkbox,
     Footer,
+    Header,
+    Input,
+    Label,
+    Log,
+    ProgressBar,
+    RadioButton,
+    RadioSet,
+    Select,
+    Static,
     TabbedContent,
     TabPane,
-    Input,
-    Button,
-    Label,
-    Checkbox,
-    Log,
-    Static,
-    Select,
-    RadioSet,
-    RadioButton,
     TextArea,
-    ProgressBar,
 )
-from textual.reactive import reactive
 
 from ..api.client import PyJX2
 from ..bootstrap import build_api_from_config
 from ..docs_runtime import bundled_docs_index, open_docs_target, repo_root
 from ..domain.value_objects import Status
-
 
 STATUSES = list(Status.allowed_values())
 
@@ -100,7 +98,7 @@ class PyJX2App(App):
         height: auto;
         margin-bottom: 2;
     }
-    
+
     .-narrow .field-label {
         width: 100%;
         padding-top: 0;
@@ -285,7 +283,7 @@ class PyJX2App(App):
     .-dark Select {
         border: solid $primary-dark 50%;
     }
-    
+
     Select:focus {
         border: solid $accent-light;
     }
@@ -349,26 +347,30 @@ class PyJX2App(App):
     TITLE = "pyjx2 — Jira/Xray Automation"
     SUB_TITLE = "Herramienta de Preparación y Sincronización"
 
-    def __init__(self, config_file: Optional[str] = None) -> None:
+    def __init__(self, config_file: str | None = None) -> None:
         super().__init__()
         self._config_file = config_file
-        self._pjx: Optional[PyJX2] = None
+        self._pjx: PyJX2 | None = None
         self.mkdocs_process = None
 
     def on_mount(self) -> None:
         import atexit
+
         atexit.register(self._kill_mkdocs)
         try:
             self.query_one("#setup-source-xray-row").display = False
             self.query_one("#setup-source-manual-row").display = False
             self.query_one("#setup-source-manual-error-row").display = False
             self.query_one("#setup-concat-row").display = False
-        except Exception: pass
-        
+        except Exception:
+            pass
+
     def on_resize(self, event) -> None:
-        if event.size.width <= 95: self.add_class("-narrow")
-        else: self.remove_class("-narrow")
-        
+        if event.size.width <= 95:
+            self.add_class("-narrow")
+        else:
+            self.remove_class("-narrow")
+
     def _kill_mkdocs(self):
         if getattr(self, "mkdocs_process", None) and self.mkdocs_process.poll() is None:
             self.mkdocs_process.terminate()
@@ -385,22 +387,33 @@ class PyJX2App(App):
     def _copy_to_clipboard(self, text: str) -> None:
         try:
             os_name = platform.system()
-            if os_name == "Windows": subprocess.run("clip", input=text, text=True, check=True)
-            elif os_name == "Darwin": subprocess.run("pbcopy", input=text, text=True, check=True)
-            else: subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, check=True)
+            if os_name == "Windows":
+                subprocess.run("clip", input=text, text=True, check=True)
+            elif os_name == "Darwin":
+                subprocess.run("pbcopy", input=text, text=True, check=True)
+            else:
+                subprocess.run(
+                    ["xclip", "-selection", "clipboard"], input=text, text=True, check=True
+                )
         except Exception as e:
-            try: self._log("sec-log", f"[ERROR] No se pudo copiar: {e}")
-            except Exception: pass
+            with suppress(Exception):
+                self._log("sec-log", f"[ERROR] No se pudo copiar: {e}")
 
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent(initial="home", id="tabs"):
-            with TabPane("Inicio", id="home"): yield from self._compose_home_tab()
-            with TabPane("Autenticación (F1)", id="auth"): yield from self._compose_auth_tab()
-            with TabPane("Preparación (F2)", id="setup"): yield from self._compose_setup_tab()
-            with TabPane("Sincronización (F3)", id="sync"): yield from self._compose_sync_tab()
-            with TabPane("Seguridad (F4)", id="security"): yield from self._compose_security_tab()
-            with TabPane("Configuración (F5)", id="config", disabled=True): yield from self._compose_config_tab()
+            with TabPane("Inicio", id="home"):
+                yield from self._compose_home_tab()
+            with TabPane("Autenticación (F1)", id="auth"):
+                yield from self._compose_auth_tab()
+            with TabPane("Preparación (F2)", id="setup"):
+                yield from self._compose_setup_tab()
+            with TabPane("Sincronización (F3)", id="sync"):
+                yield from self._compose_sync_tab()
+            with TabPane("Seguridad (F4)", id="security"):
+                yield from self._compose_security_tab()
+            with TabPane("Configuración (F5)", id="config", disabled=True):
+                yield from self._compose_config_tab()
         yield Static("", id="status-bar", classes="status-bar")
         yield Footer()
 
@@ -415,54 +428,100 @@ class PyJX2App(App):
                         RadioButton("QA", id="auth-env-qa", value=True),
                         RadioButton("DEV", id="auth-env-dev"),
                         id="auth-env",
-                        classes="field-input", # Usamos field-input para consistencia visual
+                        classes="field-input",  # Usamos field-input para consistencia visual
                     )
                 with Horizontal(classes="field-row"):
                     yield Label("Usuario Jira", classes="field-label")
-                    yield Input(placeholder="usuario@ejemplo.com", id="auth-jira-username", classes="field-input")
+                    yield Input(
+                        placeholder="usuario@ejemplo.com",
+                        id="auth-jira-username",
+                        classes="field-input",
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Contraseña/Token", classes="field-label")
-                    yield Input(placeholder="Contraseña o Token API", id="auth-jira-password", password=True, classes="field-input")
-                
-                yield Static("⚠️ Nota: Las credenciales se utilizan para todas las operaciones de Preparación y Sincronización.", classes="field-hint")
+                    yield Input(
+                        placeholder="Contraseña o Token API",
+                        id="auth-jira-password",
+                        password=True,
+                        classes="field-input",
+                    )
+
+                yield Static(
+                    "⚠️ Nota: Las credenciales se utilizan para todas las operaciones de Preparación y Sincronización.",
+                    classes="field-hint",
+                )
         return []
 
     def _compose_home_tab(self) -> ComposeResult:
         with ScrollableContainer(id="home-container"):
             yield Static("PYJX2", id="logo-art")
             with Horizontal(id="home-btn-container"):
-                yield Button("📖 Visualizar Documentación (MkDocs)", id="btn-docs", classes="run-btn", variant="primary")
+                yield Button(
+                    "📖 Visualizar Documentación (MkDocs)",
+                    id="btn-docs",
+                    classes="run-btn",
+                    variant="primary",
+                )
         return []
 
     def _compose_setup_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Preparación — Crear Test Execution y Test Set desde un Test Plan", classes="panel-title")
+            yield Static(
+                "Preparación — Crear Test Execution y Test Set desde un Test Plan",
+                classes="panel-title",
+            )
             with Container(classes="panel"):
                 yield Static("Parámetros de Preparación", classes="panel-title")
                 with Horizontal(classes="field-row"):
                     yield Label("Test Plan", classes="field-label")
-                    yield Input(placeholder="eje. PROJ-100", id="setup-test-plan", classes="field-input")
+                    yield Input(
+                        placeholder="eje. PROJ-100", id="setup-test-plan", classes="field-input"
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Titulo Test Execution", classes="field-label")
-                    yield Input(placeholder="Resumen para el nuevo Test Execution", id="setup-exec-summary", classes="field-input")
+                    yield Input(
+                        placeholder="Resumen para el nuevo Test Execution",
+                        id="setup-exec-summary",
+                        classes="field-input",
+                    )
 
                 yield Static("⚙ Configuración de Tests", classes="section-subtitle")
                 with Horizontal(classes="field-row"):
                     yield Label("Modo de Tests", classes="field-label")
-                    yield RadioSet(RadioButton("📄 Clonar", id="test-mode-clone", value=True), RadioButton("🔗 Agregar", id="test-mode-add"), id="setup-test-mode")
+                    yield RadioSet(
+                        RadioButton("📄 Clonar", id="test-mode-clone", value=True),
+                        RadioButton("🔗 Agregar", id="test-mode-add"),
+                        id="setup-test-mode",
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Fuente de Tests", classes="field-label")
-                    yield RadioSet(RadioButton("Archivo", id="source-file", value=True), RadioButton("ID Xray", id="source-xray"), RadioButton("Manual", id="source-manual"), id="setup-source-mode")
+                    yield RadioSet(
+                        RadioButton("Archivo", id="source-file", value=True),
+                        RadioButton("ID Xray", id="source-xray"),
+                        RadioButton("Manual", id="source-manual"),
+                        id="setup-source-mode",
+                    )
                 with Horizontal(classes="field-row", id="setup-source-file-row"):
                     yield Label("", classes="field-label")
                     yield Button("📂", id="btn-file-picker", classes="browse-btn")
-                    yield Input(placeholder=".txt o .csv seleccionado...", id="setup-source-file-path", classes="field-input", disabled=True)
+                    yield Input(
+                        placeholder=".txt o .csv seleccionado...",
+                        id="setup-source-file-path",
+                        classes="field-input",
+                        disabled=True,
+                    )
                 with Horizontal(classes="field-row", id="setup-source-xray-row"):
                     yield Label("", classes="field-label")
-                    yield Input(placeholder="ID Numerico", id="setup-source-xray-id", classes="field-input")
+                    yield Input(
+                        placeholder="ID Numerico", id="setup-source-xray-id", classes="field-input"
+                    )
                 with Horizontal(classes="field-row", id="setup-source-manual-row"):
                     yield Label("", classes="field-label")
-                    yield Input(placeholder="PROJ-1, PROJ-2", id="setup-source-manual-text", classes="field-input")
+                    yield Input(
+                        placeholder="PROJ-1, PROJ-2",
+                        id="setup-source-manual-text",
+                        classes="field-input",
+                    )
                 with Horizontal(classes="field-row", id="setup-source-manual-error-row"):
                     yield Label("", classes="field-label")
                     yield Static("", id="setup-manual-error", classes="field-error")
@@ -474,7 +533,9 @@ class PyJX2App(App):
                     yield TextArea("", id="setup-source-log-area")
                 with Horizontal(classes="field-row"):
                     yield Label("Aplicación", classes="field-label")
-                    yield Input(placeholder="e.g. APP_WEB", id="setup-application", classes="field-input")
+                    yield Input(
+                        placeholder="e.g. APP_WEB", id="setup-application", classes="field-input"
+                    )
 
             with Horizontal(classes="btn-row"):
                 yield Button("Ejecutar", id="btn-setup-run", classes="run-btn", variant="primary")
@@ -487,33 +548,46 @@ class PyJX2App(App):
 
     def _compose_sync_tab(self) -> ComposeResult:
         with ScrollableContainer():
-            yield Static("Sincronización — Rastrear evidencias y actualizar Jira", classes="panel-title")
+            yield Static(
+                "Sincronización — Rastrear evidencias y actualizar Jira", classes="panel-title"
+            )
             with Container(classes="panel"):
                 yield Static("Parámetros de Sincronización", classes="panel-title")
                 with Horizontal(classes="field-row"):
                     yield Label("Test Execution", classes="field-label")
-                    yield Input(placeholder="ID Ej: PROJ-200", id="sync-exec-key", classes="field-input")
+                    yield Input(
+                        placeholder="ID Ej: PROJ-200", id="sync-exec-key", classes="field-input"
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Evidencias", classes="field-label")
-                    yield Input(placeholder="/ruta/carpeta", id="sync-folder", classes="field-input")
+                    yield Input(
+                        placeholder="/ruta/carpeta", id="sync-folder", classes="field-input"
+                    )
                     yield Button("📁", id="btn-sync-browse", classes="browse-btn")
-                
+
                 yield Static("⚙ Matching y Estados", classes="section-subtitle")
                 with Horizontal(classes="field-row"):
                     yield Label("Estatus Default", classes="field-label")
                     yield Select(options=[(s, s) for s in STATUSES], id="sync-status", value="PASS")
                 with Horizontal(classes="field-row"):
                     yield Label("Subida", classes="field-label")
-                    yield RadioSet(RadioButton("Append", id="sync-mode-append", value=True), RadioButton("Replace", id="sync-mode-replace"), id="sync-upload-mode")
+                    yield RadioSet(
+                        RadioButton("Append", id="sync-mode-append", value=True),
+                        RadioButton("Replace", id="sync-mode-replace"),
+                        id="sync-upload-mode",
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Extensiones", classes="field-label")
-                    yield Input(placeholder=".pdf, .png...", id="sync-extensions", classes="field-input")
+                    yield Input(
+                        placeholder=".pdf, .png...", id="sync-extensions", classes="field-input"
+                    )
                 with Horizontal(classes="field-row"):
                     yield Label("Recursivo", classes="field-label")
                     yield Checkbox("Habilitar", id="sync-recursive", value=True)
 
                 yield Static("Subgrupos de Estatus (Max. 5)", classes="section-subtitle")
-                with Vertical(id="sync-subgroups-container"): pass
+                with Vertical(id="sync-subgroups-container"):
+                    pass
                 with Horizontal(classes="btn-row"):
                     yield Button("➕ Añadir", id="btn-sync-add-subgroup", variant="success")
 
@@ -529,9 +603,13 @@ class PyJX2App(App):
     def _compose_config_tab(self) -> ComposeResult:
         with ScrollableContainer():
             yield Static("Archivo de Configuración", classes="panel-title")
-            with Container(classes="panel"): yield Static("PYJX2 buscará pyjx2.toml o pyjx2.json en la raíz.", markup=True)
             with Container(classes="panel"):
-                yield Static("[b][sync][/b]\nexecution_key = 'PROJ-200'\nfolder = './evidencias'\nstatus = 'PASS'\nrecursive = true", markup=True)
+                yield Static("PYJX2 buscará pyjx2.toml o pyjx2.json en la raíz.", markup=True)
+            with Container(classes="panel"):
+                yield Static(
+                    "[b][sync][/b]\nexecution_key = 'PROJ-200'\nfolder = './evidencias'\nstatus = 'PASS'\nrecursive = true",
+                    markup=True,
+                )
         return []
 
     def _compose_security_tab(self) -> ComposeResult:
@@ -546,8 +624,12 @@ class PyJX2App(App):
                     yield Input(placeholder="ENC:...", id="sec-encrypted", classes="field-input")
                 with Horizontal(classes="btn-row"):
                     yield Button("Copiar", id="btn-sec-copy", classes="clear-btn")
-                    yield Button("Encriptar", id="btn-sec-encrypt", classes="run-btn", variant="primary")
-                    yield Button("Desencriptar", id="btn-sec-decrypt", classes="run-btn", variant="warning")
+                    yield Button(
+                        "Encriptar", id="btn-sec-encrypt", classes="run-btn", variant="primary"
+                    )
+                    yield Button(
+                        "Desencriptar", id="btn-sec-decrypt", classes="run-btn", variant="warning"
+                    )
             yield Log(id="sec-log")
         return []
 
@@ -556,34 +638,43 @@ class PyJX2App(App):
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
         if event.radio_set.id == "setup-source-mode":
             p = event.pressed.id
-            self.query_one("#setup-source-file-row").display = (p == "source-file")
-            self.query_one("#setup-source-xray-row").display = (p == "source-xray")
-            self.query_one("#setup-source-manual-row").display = (p == "source-manual")
-            self.query_one("#setup-concat-row").display = (p != "source-file")
+            self.query_one("#setup-source-file-row").display = p == "source-file"
+            self.query_one("#setup-source-xray-row").display = p == "source-xray"
+            self.query_one("#setup-source-manual-row").display = p == "source-manual"
+            self.query_one("#setup-concat-row").display = p != "source-file"
 
     def on_input_changed(self, event: Input.Changed) -> None:
         is_sub = event.input.id and event.input.id.startswith("sync-sub-qaxs-")
         if is_sub or event.input.id == "setup-source-manual-text":
-            has_err = bool(event.value and re.search(r'[^a-zA-Z0-9\-,\s]', event.value))
+            has_err = bool(event.value and re.search(r"[^a-zA-Z0-9\-,\s]", event.value))
             event.input.set_class(has_err, "input-error")
             if is_sub:
                 idx = int(event.input.id.split("-")[-1])
-                if idx < len(self.sync_subgroups): self.sync_subgroups[idx]["qaxs"] = event.value
+                if idx < len(self.sync_subgroups):
+                    self.sync_subgroups[idx]["qaxs"] = event.value
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id and event.select.id.startswith("sync-sub-status-"):
             idx = int(event.select.id.split("-")[-1])
-            if idx < len(self.sync_subgroups): self.sync_subgroups[idx]["status"] = str(event.value)
+            if idx < len(self.sync_subgroups):
+                self.sync_subgroups[idx]["status"] = str(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
-        if bid == "btn-docs": self._toggle_docs(event.button)
-        elif bid == "btn-file-picker": self._open_picker("file")
-        elif bid == "btn-sync-browse": self._open_picker("folder")
-        elif bid == "btn-sync-add-subgroup": self._add_subgroup()
-        elif bid and bid.startswith("btn-remove-subgroup-"): self._remove_subgroup(int(bid.split("-")[-1]))
-        elif bid == "btn-setup-run": self.run_worker(self._run_setup, thread=True)
-        elif bid == "btn-sync-run": self.run_worker(self._run_sync, thread=True)
+        if bid == "btn-docs":
+            self._toggle_docs(event.button)
+        elif bid == "btn-file-picker":
+            self._open_picker("file")
+        elif bid == "btn-sync-browse":
+            self._open_picker("folder")
+        elif bid == "btn-sync-add-subgroup":
+            self._add_subgroup()
+        elif bid and bid.startswith("btn-remove-subgroup-"):
+            self._remove_subgroup(int(bid.split("-")[-1]))
+        elif bid == "btn-setup-run":
+            self.run_worker(self._run_setup, thread=True)
+        elif bid == "btn-sync-run":
+            self.run_worker(self._run_sync, thread=True)
 
         elif bid == "btn-setup-clear":
             self.query_one("#setup-log", Log).clear()
@@ -593,22 +684,25 @@ class PyJX2App(App):
             self._reset_progress("sync")
         elif bid == "btn-sec-copy":
             val = self.query_one("#sec-encrypted", Input).value
-            if val: self._copy_to_clipboard(val)
-        elif bid == "btn-sec-encrypt": self._run_encrypt()
-        elif bid == "btn-sec-decrypt": self._run_decrypt()
+            if val:
+                self._copy_to_clipboard(val)
+        elif bid == "btn-sec-encrypt":
+            self._run_encrypt()
+        elif bid == "btn-sec-decrypt":
+            self._run_decrypt()
 
     def _open_picker(self, mode: str) -> None:
         def _pick():
-            import sys
             import subprocess
-            
+            import sys
+
             # Universal Python-native picker using tkinter (looks native and Image 2 style on Windows)
             py_code = ""
             if mode == "file":
                 py_code = "import tkinter as tk; from tkinter import filedialog; root=tk.Tk(); root.withdraw(); print(filedialog.askopenfilename(title='Seleccionar Archivo de Tests', filetypes=[('Tests', '*.txt;*.csv'), ('Todos', '*.*')]))"
             else:
                 py_code = "import tkinter as tk; from tkinter import filedialog; root=tk.Tk(); root.withdraw(); print(filedialog.askdirectory(title='Seleccionar Carpeta de Evidencias'))"
-            
+
             cmd = [sys.executable, "-c", py_code]
             try:
                 # Run the picker in its own process to avoid GUI/Thread conflicts
@@ -620,8 +714,11 @@ class PyJX2App(App):
                 # Simple PowerShell fallback as last resort
                 if platform.system() == "Windows":
                     cmd_back = "powershell -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.ShowDialog(); $d.SelectedPath\""
-                    res = subprocess.run(cmd_back, shell=True, capture_output=True, text=True).stdout.strip()
-                    if res: self.call_from_thread(self._set_path, mode, res)
+                    res = subprocess.run(
+                        cmd_back, shell=True, capture_output=True, text=True
+                    ).stdout.strip()
+                    if res:
+                        self.call_from_thread(self._set_path, mode, res)
 
         threading.Thread(target=_pick, daemon=True).start()
 
@@ -629,18 +726,23 @@ class PyJX2App(App):
         if mode == "file":
             self.query_one("#setup-source-file-path", Input).value = path
             self._load_file(path)
-        else: self.query_one("#sync-folder", Input).value = path
+        else:
+            self.query_one("#sync-folder", Input).value = path
 
     def _load_file(self, path: str):
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 content = f.read()
-            keys = re.findall(r'[a-zA-Z]+-\d+', content)
-            self.query_one("#setup-source-log-area", TextArea).text = "\n".join(list(dict.fromkeys(keys)))
-        except Exception: pass
+            keys = re.findall(r"[a-zA-Z]+-\d+", content)
+            self.query_one("#setup-source-log-area", TextArea).text = "\n".join(
+                list(dict.fromkeys(keys))
+            )
+        except Exception:
+            pass
 
     def _add_subgroup(self):
-        if len(self.sync_subgroups) >= 5: return
+        if len(self.sync_subgroups) >= 5:
+            return
         self.sync_subgroups = self.sync_subgroups + [{"qaxs": "", "status": "PASS"}]
         self._refresh_subgroups()
 
@@ -653,36 +755,49 @@ class PyJX2App(App):
     def _refresh_subgroups(self):
         c = self.query_one("#sync-subgroups-container", Vertical)
         c.remove_children()
-        
+
         widgets = []
         for i, g in enumerate(self.sync_subgroups):
-            widgets.append(Horizontal(
-                Input(value=g["qaxs"], placeholder="PROJ-1...", classes="subgroup-qaxs", id=f"sync-sub-qaxs-{i}"),
-                Select(options=[(s, s) for s in STATUSES], value=g["status"], classes="subgroup-status", id=f"sync-sub-status-{i}"),
-                Button("🗑️", id=f"btn-remove-subgroup-{i}", classes="remove-btn"),
-                classes="subgroup-row"
-            ))
-        
+            widgets.append(
+                Horizontal(
+                    Input(
+                        value=g["qaxs"],
+                        placeholder="PROJ-1...",
+                        classes="subgroup-qaxs",
+                        id=f"sync-sub-qaxs-{i}",
+                    ),
+                    Select(
+                        options=[(s, s) for s in STATUSES],
+                        value=g["status"],
+                        classes="subgroup-status",
+                        id=f"sync-sub-status-{i}",
+                    ),
+                    Button("🗑️", id=f"btn-remove-subgroup-{i}", classes="remove-btn"),
+                    classes="subgroup-row",
+                )
+            )
+
         if widgets:
             c.mount(*widgets)
-            
-        self.query_one("#btn-sync-add-subgroup", Button).disabled = (len(self.sync_subgroups) >= 5)
+
+        self.query_one("#btn-sync-add-subgroup", Button).disabled = len(self.sync_subgroups) >= 5
 
     def _run_setup(self):
         log = "setup-log"
         prefix = "setup"
         pjx = self._build_pjx("setup", log)
-        if not pjx: return
+        if not pjx:
+            return
         self._log(log, "Iniciando Preparación...")
         self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         try:
             # Steps: validate(10%) → fetch plan(25%) → create exec(50%) → create set(70%) → add tests(90%) → done(100%)
             _setup_steps = [
-                (10,  "Validando parámetros..."),
-                (25,  "Obteniendo Test Plan..."),
-                (50,  "Creando Test Execution..."),
-                (70,  "Creando Test Set..."),
-                (90,  "Asociando tests..."),
+                (10, "Validando parámetros..."),
+                (25, "Obteniendo Test Plan..."),
+                (50, "Creando Test Execution..."),
+                (70, "Creando Test Set..."),
+                (90, "Asociando tests..."),
                 (100, "Finalizando..."),
             ]
             _step_iter = iter(_setup_steps)
@@ -695,11 +810,13 @@ class PyJX2App(App):
                 except StopIteration:
                     pass
 
-            res = pjx.setup(
+            pjx.setup(
                 test_plan_key=self._get_input("setup-test-plan"),
                 execution_summary=self._get_input("setup-exec-summary"),
                 application=self._get_input("setup-application"),
-                test_mode="add" if self.query_one("#setup-test-mode", RadioSet).pressed_button.id == "test-mode-add" else "clone",
+                test_mode="add"
+                if self.query_one("#setup-test-mode", RadioSet).pressed_button.id == "test-mode-add"
+                else "clone",
                 progress_callback=_setup_cb,
             )
             self.call_from_thread(self._show_progress, prefix, 100, "✔ Preparación completada")
@@ -712,20 +829,27 @@ class PyJX2App(App):
         log = "sync-log"
         prefix = "sync"
         pjx = self._build_pjx("sync", log)
-        if not pjx: return
+        if not pjx:
+            return
         self._log(log, "Iniciando Sincronización...")
         self.call_from_thread(self._show_progress, prefix, 0, "Iniciando...")
         overrides = {}
         for g in self.sync_subgroups:
-            for k in re.findall(r'[a-zA-Z]+-\d+', g["qaxs"]): overrides[k] = g["status"]
-        mode = "replace" if self.query_one("#sync-upload-mode", RadioSet).pressed_button.id == "sync-mode-replace" else "append"
+            for k in re.findall(r"[a-zA-Z]+-\d+", g["qaxs"]):
+                overrides[k] = g["status"]
+        mode = (
+            "replace"
+            if self.query_one("#sync-upload-mode", RadioSet).pressed_button.id
+            == "sync-mode-replace"
+            else "append"
+        )
         # Steps: validate(10%) → scan files(30%) → match tests(55%) → upload evidence(80%) → update statuses(95%) → done(100%)
         _sync_steps = [
-            (10,  "Validando parámetros..."),
-            (30,  "Escaneando archivos..."),
-            (55,  "Emparejando tests..."),
-            (80,  "Subiendo evidencias..."),
-            (95,  "Actualizando estados..."),
+            (10, "Validando parámetros..."),
+            (30, "Escaneando archivos..."),
+            (55, "Emparejando tests..."),
+            (80, "Subiendo evidencias..."),
+            (95, "Actualizando estados..."),
             (100, "Finalizando..."),
         ]
         _step_iter = iter(_sync_steps)
@@ -739,13 +863,17 @@ class PyJX2App(App):
                 pass
 
         try:
-            res = pjx.sync(
+            pjx.sync(
                 execution_key=self._get_input("sync-exec-key"),
                 folder=self._get_input("sync-folder"),
                 status=str(self.query_one("#sync-status", Select).value or "PASS"),
                 status_overrides=overrides,
                 upload_mode=mode,
-                allowed_extensions=[e.strip() for e in self._get_input("sync-extensions").split(",")] if self._get_input("sync-extensions") else [".pdf"],
+                allowed_extensions=[
+                    e.strip() for e in self._get_input("sync-extensions").split(",")
+                ]
+                if self._get_input("sync-extensions")
+                else [".pdf"],
                 progress_callback=_sync_cb,
             )
             self.call_from_thread(self._show_progress, prefix, 100, "✔ Sincronización completada")
@@ -761,61 +889,65 @@ class PyJX2App(App):
                 open_docs_target(bundled_index.as_uri())
                 self._log("setup-log", "[ÉXITO] Documentación empaquetada abierta.")
             except Exception as e:
-                self._log("setup-log", f"[ERROR] No se pudo abrir la documentación empaquetada: {e}")
+                self._log(
+                    "setup-log", f"[ERROR] No se pudo abrir la documentación empaquetada: {e}"
+                )
             return
 
         if not self.mkdocs_process:
             root = repo_root()
             if root is None:
-                self._log("setup-log", "[ERROR] No se encontró documentación empaquetada ni un proyecto MkDocs local.")
+                self._log(
+                    "setup-log",
+                    "[ERROR] No se encontró documentación empaquetada ni un proyecto MkDocs local.",
+                )
                 return
 
             base_dir = str(root)
 
             try:
                 self.mkdocs_process = subprocess.Popen(["mkdocs", "serve"], cwd=base_dir)
-                btn.label = "Cerrar Docs"; btn.add_class("warning-btn")
-                
+                btn.label = "Cerrar Docs"
+                btn.add_class("warning-btn")
+
                 # Wait a bit for the server to initialize and open browser in full screen
                 def open_browser():
                     import time
+
                     time.sleep(1.0)
-                    try:
+                    with suppress(Exception):
                         open_docs_target("http://127.0.0.1:8000")
-                    except Exception:
-                        pass
 
-
-                
                 threading.Thread(target=open_browser, daemon=True).start()
 
-                
             except Exception as e:
-
                 # Fallback if somehow base_dir doesn't exist
-                try: self._log("setup-log", f"[ERROR] No se pudo iniciar MkDocs: {e}")
-                except Exception: pass
+                with suppress(Exception):
+                    self._log("setup-log", f"[ERROR] No se pudo iniciar MkDocs: {e}")
         else:
             self._kill_mkdocs()
             btn.label = "📖 Visualizar Documentación (MkDocs)"
             btn.remove_class("warning-btn")
 
-
     def _run_encrypt(self):
         p = self._get_input("sec-plain")
-        if not p: return
+        if not p:
+            return
         from ..infrastructure.security.encryption import SymmetricEncryptionService
+
         self.query_one("#sec-encrypted", Input).value = SymmetricEncryptionService().encrypt(p)
         self._log("sec-log", "[ÉXITO] Encriptado.")
 
     def _run_decrypt(self):
         e = self._get_input("sec-encrypted")
-        if not e: return
+        if not e:
+            return
         if not e.startswith("ENC:"):
             self._log("sec-log", "[ERROR] Formato inválido: debe iniciar con 'ENC:'.")
             return
 
         from ..infrastructure.security.encryption import SymmetricEncryptionService
+
         try:
             self.query_one("#sec-plain", Input).value = SymmetricEncryptionService().decrypt(e)
             self._log("sec-log", "[ÉXITO] Desencriptado.")
@@ -824,8 +956,10 @@ class PyJX2App(App):
             self._log("sec-log", "[ERROR] Token corrupto o llave incorrecta.")
 
     def _get_input(self, id: str) -> str:
-        try: return str(self.query_one(f"#{id}", Input).value or "").strip()
-        except Exception: return ""
+        try:
+            return str(self.query_one(f"#{id}", Input).value or "").strip()
+        except Exception:
+            return ""
 
     def _show_progress(self, prefix: str, percent: int, label: str) -> None:
         """Show/update the progress bar and label for a given section (setup/sync)."""
@@ -852,8 +986,8 @@ class PyJX2App(App):
             pass
 
     def _log(self, id: str, msg: str):
-        try: self.query_one(f"#{id}", Log).write(msg + "\n")
-        except Exception: pass
+        with suppress(Exception):
+            self.query_one(f"#{id}", Log).write(msg + "\n")
 
     def _build_pjx(self, mode, log_id):
         try:
@@ -877,13 +1011,13 @@ class PyJX2App(App):
 
     def _kill_mkdocs(self):
         if self.mkdocs_process:
-            try: self.mkdocs_process.terminate()
-            except Exception: pass
+            with suppress(Exception):
+                self.mkdocs_process.terminate()
             self.mkdocs_process = None
 
     def _copy_to_clipboard(self, text: str):
         import subprocess
-        try:
+
+        with suppress(Exception):
             # Use PowerShell to set clipboard to avoid potential issues with CMD/Shell
             subprocess.run(["powershell", "-Command", f"Set-Clipboard -Value '{text}'"], shell=True)
-        except Exception: pass

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -17,7 +17,7 @@ class XrayClient:
         self._base_url = settings.base_url.rstrip("/")
         self._graphql_url = settings.graphql_url.rstrip("/")
         self._timeout = timeout
-        self._token: Optional[str] = None
+        self._token: str | None = None
 
     def _authenticate(self) -> str:
         url = f"{self._base_url}/authenticate"
@@ -45,26 +45,30 @@ class XrayClient:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         url = f"{self._base_url}/{path.lstrip('/')}"
-        resp = requests.request(method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs)
+        resp = requests.request(
+            method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs
+        )
         if resp.status_code == 401:
             self._token = None
-            resp = requests.request(method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs)
+            resp = requests.request(
+                method.upper(), url, headers=self._headers(), timeout=self._timeout, **kwargs
+            )
         resp.raise_for_status()
         return resp.json() if resp.content else None
 
-    def get(self, path: str, params: Optional[dict] = None) -> Any:
+    def get(self, path: str, params: dict | None = None) -> Any:
         return self._request("get", path, params=params)
 
-    def post(self, path: str, data: Optional[dict] = None) -> Any:
+    def post(self, path: str, data: dict | None = None) -> Any:
         return self._request("post", path, json=data)
 
-    def put(self, path: str, data: Optional[dict] = None) -> Any:
+    def put(self, path: str, data: dict | None = None) -> Any:
         return self._request("put", path, json=data)
 
     def delete(self, path: str) -> Any:
         return self._request("delete", path)
 
-    def graphql(self, query: str, variables: Optional[dict] = None) -> dict:
+    def graphql(self, query: str, variables: dict | None = None) -> dict:
         resp = requests.post(
             self._graphql_url,
             headers=self._headers(),

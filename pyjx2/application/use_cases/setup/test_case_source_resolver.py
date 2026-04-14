@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 from ....domain.repositories import TestRepository
 from ....domain.value_objects import TestKey
@@ -12,10 +12,10 @@ class TestCaseSourceResolver:
     def resolve(
         self,
         source: SetupSourceConfig,
-        valid_keys: List[TestKey],
-        logger: Optional[Callable] = None,
-    ) -> List[TestKey]:
-        keys: List[TestKey] = []
+        valid_keys: list[TestKey],
+        logger: Callable | None = None,
+    ) -> list[TestKey]:
+        keys: list[TestKey] = []
         if source.type == "test_plan":
             keys = valid_keys
         elif source.type == "list":
@@ -27,7 +27,9 @@ class TestCaseSourceResolver:
                 fetched = self.test_repo.list_from_folder(source.path)
                 keys.extend([t.key for t in fetched if getattr(t, "key", None)])
             elif logger:
-                logger("[WARN] Metodo `list_from_folder` no implementado en el TestRepository, omitiendo.")
+                logger(
+                    "[WARN] Metodo `list_from_folder` no implementado en el TestRepository, omitiendo."
+                )
 
         if valid_keys:
             filtered = []
@@ -35,7 +37,9 @@ class TestCaseSourceResolver:
                 if key in valid_keys:
                     filtered.append(key)
                 elif logger:
-                    logger(f"[WARN] El TestCase {key} no pertenece al Test Plan subyacente y sera descartado.")
+                    logger(
+                        f"[WARN] El TestCase {key} no pertenece al Test Plan subyacente y sera descartado."
+                    )
             return filtered
 
         return keys

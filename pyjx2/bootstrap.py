@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .application.services.sync_service import SyncService
 from .application.use_cases.setup.setup_interactor import SetupInteractor
@@ -68,8 +67,8 @@ def build_runtime(settings: Settings) -> PyJX2Runtime:
 
 
 def build_runtime_from_config(
-    config_file: Optional[str] = None,
-    overrides: Optional[dict] = None,
+    config_file: str | None = None,
+    overrides: dict | None = None,
 ) -> PyJX2Runtime:
     return build_runtime(load_settings(config_file=config_file, overrides=overrides))
 
@@ -85,8 +84,8 @@ def build_api(settings: Settings):
 
 
 def build_api_from_config(
-    config_file: Optional[str] = None,
-    overrides: Optional[dict] = None,
+    config_file: str | None = None,
+    overrides: dict | None = None,
 ):
     from .api.client import PyJX2
 
