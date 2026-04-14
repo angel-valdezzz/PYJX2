@@ -12,6 +12,8 @@ class XrayClient:
     """Low-level Xray Cloud REST API client with automatic token refresh."""
 
     def __init__(self, settings: XraySettings, timeout: float = 30.0) -> None:
+        if settings.base_url is None or settings.graphql_url is None:
+            raise ValueError("Xray settings require base_url and graphql_url")
         self._client_id = settings.client_id
         self._client_secret = settings.client_secret
         self._base_url = settings.base_url.rstrip("/")

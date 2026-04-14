@@ -1,4 +1,4 @@
-def get_ascii_logo(file_path: str = None) -> str:
+def get_ascii_logo(file_path: str | None = None) -> str:
     """
     Renderea el ASCII art exacto delineado por el usuario final,
     respetando los márgenes, formas y antialiasing, pero inyectando

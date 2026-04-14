@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 from ..application.services.sync_service import SyncInput, SyncResult, SyncService
 from ..domain.entities import Test, TestExecution, TestPlan, TestSet
 from ..domain.value_objects import (
+    Application,
     ExecutionKey,
     ProjectKey,
     Status,
@@ -12,6 +13,7 @@ from ..domain.value_objects import (
     TestPlanKey,
     TestSetKey,
     TestType,
+    UploadMode,
 )
 from ..infrastructure.config.settings import Settings
 
@@ -186,17 +188,19 @@ class PyJX2:
         )
 
         effective_mode = test_mode if test_mode in ("clone", "link", "add") else "clone"
+        effective_mode_literal = cast(Literal["clone", "link", "add"], effective_mode)
         interactor = self._get_setup_interactor()
-        normalized_plan_key = str(TestPlanKey.from_value(test_plan_key))
-        project_key = self.resolve_project_key(normalized_plan_key)
+        plan_key = TestPlanKey.from_value(test_plan_key)
+        project_key = self.resolve_project_key(str(plan_key))
         if not project_key:
             raise ValueError(
                 "Missing project key. Configure project.key or provide a test plan key with format PROJ-123."
             )
+        project_key_vo = ProjectKey.from_value(project_key)
 
         config = SetupConfig(
-            project_key=project_key,
-            test_plan=SetupTestPlanConfig(key=normalized_plan_key),
+            project_key=project_key_vo,
+            test_plan=SetupTestPlanConfig(key=plan_key),
             test_executions=[
                 SetupTestExecutionConfig(
                     mode="create",
@@ -204,11 +208,11 @@ class PyJX2:
                     test_sets=[
                         SetupTestSetConfig(
                             mode="create",
-                            application=application,
+                            application=Application.from_value(application),
                             key=execution_summary,
                             apply_source=True,
                             source=SetupSourceConfig(type="test_plan"),
-                            test_case_mode=effective_mode,
+                            test_case_mode=effective_mode_literal,
                         )
                     ],
                 )
@@ -229,13 +233,17 @@ class PyJX2:
         progress_callback=None,
     ) -> SyncResult:
         service = self._get_sync_service()
+        status_overrides_vo = {
+            TestKey.from_value(test_key): Status.from_value(test_status)
+            for test_key, test_status in (status_overrides or {}).items()
+        }
         sync_input = SyncInput(
-            execution_key=execution_key,
+            execution_key=ExecutionKey.from_value(execution_key),
             folder=folder,
-            default_status=status,
-            status_overrides=status_overrides or {},
+            default_status=Status.from_value(status),
+            status_overrides=status_overrides_vo,
             allowed_extensions=allowed_extensions,
-            upload_mode=upload_mode,
+            upload_mode=UploadMode.from_value(upload_mode),
             recursive=recursive,
         )
         return service.run(sync_input, progress_callback=progress_callback)
