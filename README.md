@@ -154,3 +154,25 @@ pyjx2/
 ├── cli/                  # Comandos de consola (Typer)
 └── tui/                  # Aplicación de interfaz gráfica (Textual)
 ```
+
+## Calidad De Código
+
+El proyecto incluye análisis estático y de arquitectura:
+
+```bash
+poetry run ruff format pyjx2 tests
+poetry run ruff check pyjx2 tests
+poetry run mypy
+poetry run lint-imports
+```
+
+### Integración con VS Code
+
+Se añadió configuración en `.vscode/` para:
+
+- formatear Python al guardar con Ruff
+- organizar imports y aplicar `fix` de Ruff al guardar
+- ejecutar mypy con la configuración del proyecto
+- dejar `import-linter` disponible como tarea del editor
+
+`mypy` e `import-linter` no formatean archivos; el autoformato lo hace Ruff.

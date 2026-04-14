@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -24,23 +24,35 @@ class JiraClient:
     def _url(self, path: str) -> str:
         return f"{self._base_url}/rest/api/3/{path.lstrip('/')}"
 
-    def get(self, path: str, params: Optional[dict] = None) -> Any:
+    def get(self, path: str, params: dict | None = None) -> Any:
         resp = requests.get(
-            self._url(path), headers=self._headers, auth=self._auth, params=params, timeout=self._timeout
+            self._url(path),
+            headers=self._headers,
+            auth=self._auth,
+            params=params,
+            timeout=self._timeout,
         )
         resp.raise_for_status()
         return resp.json()
 
     def post(self, path: str, data: dict) -> Any:
         resp = requests.post(
-            self._url(path), headers=self._headers, auth=self._auth, json=data, timeout=self._timeout
+            self._url(path),
+            headers=self._headers,
+            auth=self._auth,
+            json=data,
+            timeout=self._timeout,
         )
         resp.raise_for_status()
         return resp.json()
 
     def put(self, path: str, data: dict) -> Any:
         resp = requests.put(
-            self._url(path), headers=self._headers, auth=self._auth, json=data, timeout=self._timeout
+            self._url(path),
+            headers=self._headers,
+            auth=self._auth,
+            json=data,
+            timeout=self._timeout,
         )
         resp.raise_for_status()
         return resp.json()
@@ -62,13 +74,18 @@ class JiraClient:
         resp.raise_for_status()
 
     def add_link(self, issue_key: str, linked_issue_key: str, link_type: str = "Test") -> dict:
-        return self.post("issueLink", {
-            "type": {"name": link_type},
-            "inwardIssue": {"key": issue_key},
-            "outwardIssue": {"key": linked_issue_key},
-        })
+        return self.post(
+            "issueLink",
+            {
+                "type": {"name": link_type},
+                "inwardIssue": {"key": issue_key},
+                "outwardIssue": {"key": linked_issue_key},
+            },
+        )
 
-    def search_issues(self, jql: str, fields: Optional[list[str]] = None, max_results: int = 100) -> list[dict]:
+    def search_issues(
+        self, jql: str, fields: list[str] | None = None, max_results: int = 100
+    ) -> list[dict]:
         payload: dict = {"jql": jql, "maxResults": max_results}
         if fields:
             payload["fields"] = fields

@@ -1,9 +1,9 @@
-from .entities import Test, TestSet, TestExecution, TestPlan
+from .entities import Test, TestExecution, TestPlan, TestSet
 from .repositories import (
-    TestRepository,
-    TestSetRepository,
     TestExecutionRepository,
     TestPlanRepository,
+    TestRepository,
+    TestSetRepository,
 )
 from .value_objects import (
     Application,

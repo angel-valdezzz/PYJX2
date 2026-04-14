@@ -1,9 +1,9 @@
 from .client import XrayClient
 from .repositories import (
-    XrayTestRepository,
-    XrayTestSetRepository,
     XrayTestExecutionRepository,
     XrayTestPlanRepository,
+    XrayTestRepository,
+    XrayTestSetRepository,
 )
 
 __all__ = [

@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..value_objects import Status, TestKey, TestType
 
@@ -9,12 +8,12 @@ class Test:
     key: TestKey
     summary: str
     test_type: TestType = field(default_factory=lambda: TestType.from_value("Manual"))
-    status: Optional[Status] = None
+    status: Status | None = None
     labels: list[str] = field(default_factory=list)
-    description: Optional[str] = None
+    description: str | None = None
     steps: list[dict] = field(default_factory=list)
-    precondition: Optional[str] = None
-    issue_id: Optional[str] = None
+    precondition: str | None = None
+    issue_id: str | None = None
 
     def __post_init__(self) -> None:
         self.key = TestKey.from_value(self.key)

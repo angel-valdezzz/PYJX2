@@ -2,15 +2,11 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Optional
-from unittest.mock import MagicMock
 
-import pytest
-from pytest_bdd import scenarios, given, when, then, parsers
-
-from pyjx2.api.client import PyJX2
 from pyjx2.domain.entities import Test
 from pyjx2.domain.value_objects import TestKey
+from pytest_bdd import given, parsers, scenarios, then, when
+
 from .conftest import build_mocked_client
 
 scenarios("../features/sync_flow.feature")
@@ -18,7 +14,12 @@ scenarios("../features/sync_flow.feature")
 
 # ── Given ─────────────────────────────────────────────────────────────────────
 
-@given(parsers.parse('una test execution "{exec_key}" con los tests "PROJ-10" (Login), "PROJ-11" (Logout), "PROJ-12" (Register)'))
+
+@given(
+    parsers.parse(
+        'una test execution "{exec_key}" con los tests "PROJ-10" (Login), "PROJ-11" (Logout), "PROJ-12" (Register)'
+    )
+)
 def _(ctx, settings, exec_key):
     ctx["exec_key"] = exec_key
     # Mapeo explícito para que el mock devuelva tests con estos summaries
@@ -87,7 +88,10 @@ def _(ctx):
 
 # ── When ──────────────────────────────────────────────────────────────────────
 
-@when(parsers.parse('ejecuto el comando sync para la execution "{exec_key}" con el status "{status}"'))
+
+@when(
+    parsers.parse('ejecuto el comando sync para la execution "{exec_key}" con el status "{status}"')
+)
 def _(ctx, exec_key, status):
     folder = ctx.get("folder", tempfile.mkdtemp())
     try:
@@ -158,19 +162,18 @@ def _(ctx, folder_path):
 
 # ── Then ──────────────────────────────────────────────────────────────────────
 
+
 @then(parsers.parse("{n:d} tests son emparejados"))
 def _(ctx, n):
     result = ctx["sync_result"]
     assert result is not None, f"Sync failed with: {ctx.get('sync_error')}"
     # updated_tests representa cuántos tests únicos tuvieron matches
-    assert result.updated_tests == n, (
-        f"Expected {n} matches, got {result.updated_tests}"
-    )
+    assert result.updated_tests == n, f"Expected {n} matches, got {result.updated_tests}"
 
 
 @then(parsers.parse('los tests emparejados son "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
-    # En el nuevo SyncResult no guardamos la lista de matches directos por key, 
+    # En el nuevo SyncResult no guardamos la lista de matches directos por key,
     # pero podemos inferir por tests_without_evidence
     without = ctx["sync_result"].tests_without_evidence
     assert TestKey.from_value(key1) not in without, f"{key1} matches not found"
@@ -216,8 +219,12 @@ def _(ctx, key):
 @then(parsers.parse('los tests sin emparejar incluyen "{key1}" y "{key2}"'))
 def _(ctx, key1, key2):
     unmatched = ctx["sync_result"].tests_without_evidence
-    assert TestKey.from_value(key1) in unmatched, f"{key1} not in tests_without_evidence: {unmatched}"
-    assert TestKey.from_value(key2) in unmatched, f"{key2} not in tests_without_evidence: {unmatched}"
+    assert TestKey.from_value(key1) in unmatched, (
+        f"{key1} not in tests_without_evidence: {unmatched}"
+    )
+    assert TestKey.from_value(key2) in unmatched, (
+        f"{key2} not in tests_without_evidence: {unmatched}"
+    )
 
 
 @then(parsers.parse('los archivos no utilizados incluyen "{filename}"'))

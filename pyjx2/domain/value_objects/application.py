@@ -20,4 +20,6 @@ class Application(_StringValueObject):
     def _validate(cls, value: str) -> None:
         super()._validate(value)
         if not cls.pattern.fullmatch(value):
-            raise ValueError(f"Invalid {cls.label}: {value!r}. Allowed characters: A-Z, 0-9, _ and -")
+            raise ValueError(
+                f"Invalid {cls.label}: {value!r}. Allowed characters: A-Z, 0-9, _ and -"
+            )

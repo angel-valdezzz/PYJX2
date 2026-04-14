@@ -1,6 +1,6 @@
 """Unit tests for domain entities."""
-import pytest
-from pyjx2.domain.entities import Test, TestSet, TestExecution, TestPlan
+
+from pyjx2.domain.entities import Test, TestExecution, TestPlan, TestSet
 from pyjx2.domain.value_objects import (
     ExecutionKey,
     Status,

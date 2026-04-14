@@ -41,5 +41,9 @@ poetry.toml
 # Editors and OS files
 .idea/
 .vscode/
+!.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
 .DS_Store
 Thumbs.db

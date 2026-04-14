@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..value_objects import TestKey, TestSetKey
 
@@ -8,7 +7,7 @@ from ..value_objects import TestKey, TestSetKey
 class TestSet:
     key: TestSetKey
     summary: str
-    issue_id: Optional[str] = None
+    issue_id: str | None = None
     test_keys: list[TestKey] = field(default_factory=list)
 
     def __post_init__(self) -> None:

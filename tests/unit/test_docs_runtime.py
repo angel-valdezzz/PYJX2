@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from pyjx2.docs_runtime import bundled_docs_index, package_root, repo_root
 
 

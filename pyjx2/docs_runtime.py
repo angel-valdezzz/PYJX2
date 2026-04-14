@@ -4,7 +4,6 @@ import os
 import subprocess
 import webbrowser
 from pathlib import Path
-from typing import Optional
 
 
 def package_root(base_file: str | None = None) -> Path:
@@ -12,12 +11,12 @@ def package_root(base_file: str | None = None) -> Path:
     return origin.resolve().parent
 
 
-def bundled_docs_index(base_file: str | None = None) -> Optional[Path]:
+def bundled_docs_index(base_file: str | None = None) -> Path | None:
     index = package_root(base_file) / "_bundled_docs" / "index.html"
     return index if index.is_file() else None
 
 
-def repo_root(base_file: str | None = None) -> Optional[Path]:
+def repo_root(base_file: str | None = None) -> Path | None:
     root = package_root(base_file).parent
     if (root / "mkdocs.yml").is_file() and (root / "docs").is_dir():
         return root

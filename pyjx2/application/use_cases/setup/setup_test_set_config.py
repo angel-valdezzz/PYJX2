@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 from ....domain.value_objects import Application, TestSetKey
 from .setup_source_config import SetupSourceConfig
@@ -9,9 +9,9 @@ from .setup_source_config import SetupSourceConfig
 class SetupTestSetConfig:
     mode: Literal["create", "reuse"]
     application: Application
-    key: Optional[str] = None
+    key: str | TestSetKey | None = None
     apply_source: bool = False
-    source: Optional[SetupSourceConfig] = None
+    source: SetupSourceConfig | None = None
     test_case_mode: Literal["clone", "link", "add"] = "clone"
 
     def __post_init__(self) -> None:

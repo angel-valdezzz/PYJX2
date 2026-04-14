@@ -3,13 +3,10 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
 from pyjx2.application.use_cases.setup import (
     SetupSourceConfig,
     SetupTestExecutionConfig,
     SetupTestSetConfig,
-)
-from pyjx2.application.use_cases.setup import (
     TestCaseSourceResolver,
     TestExecutionResolver,
     TestSetResolver,

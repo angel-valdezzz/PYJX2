@@ -1,4 +1,5 @@
 """Unit tests for configuration loading and validation."""
+
 from __future__ import annotations
 
 import json
@@ -6,8 +7,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-
-from pyjx2.infrastructure.config.settings import load_settings, _apply_env_overrides
+from pyjx2.infrastructure.config.settings import _apply_env_overrides, load_settings
 
 
 class TestLoadSettingsFromOverrides:
@@ -188,9 +188,9 @@ password = "token"
 
     def test_json_without_xray_section_recycles_and_passes(self, tmp_path):
         cfg = tmp_path / "pyjx2.json"
-        cfg.write_text(json.dumps({
-            "auth": {"env": "QA", "username": "u@test.com", "password": "token"}
-        }))
+        cfg.write_text(
+            json.dumps({"auth": {"env": "QA", "username": "u@test.com", "password": "token"}})
+        )
         s = load_settings(config_file=str(cfg))
         assert s.jira.username == "u@test.com"
         assert s.xray.client_id == "u@test.com"
@@ -220,9 +220,11 @@ class TestEnvironmentVariableOverrides:
             "PYJX2_AUTH_PASSWORD": "env_token",
         }
         with patch.dict(os.environ, env):
-            s = load_settings(overrides={
-                "auth": {"env": "QA"},
-            })
+            s = load_settings(
+                overrides={
+                    "auth": {"env": "QA"},
+                }
+            )
         assert "qa" in s.jira.url.lower()
 
     def test_apply_env_overrides_returns_merged_dict(self):

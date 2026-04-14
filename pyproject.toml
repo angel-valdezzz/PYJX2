@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "pyjx2"
-version = "0.1.2"
+version = "0.1.3"
 description = "Jira/Xray automation tool with CLI, TUI, and scripting API"
 authors = [
     { name = "pyjx2" }
@@ -28,14 +28,40 @@ pyjx2 = "pyjx2.cli.app:app"
 packages = [{ include = "pyjx2" }]
 include = [
     { path = "pyjx2/infrastructure/config/schema.json", format = ["sdist", "wheel"] },
-    { path = "pyjx2/_bundled_docs/**/*", format = ["sdist", "wheel"] }
+    { path = "pyjx2/_bundled_docs", format = ["sdist", "wheel"] }
 ]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0"
 pytest-bdd = ">=6.1"
 pytest-mock = ">=3.10"
+mypy = "^1.20.1"
+ruff = "^0.15.10"
+import-linter = "^2.11"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = ">=9.0"
 pymdown-extensions = ">=10.0"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["pyjx2", "tests"]
+exclude = ["dist", "pyjx2/_bundled_docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "SIM"]
+ignore = ["E501", "E701"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.10"
+files = ["pyjx2/domain", "pyjx2/application"]
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+namespace_packages = true
