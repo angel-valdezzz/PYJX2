@@ -1,3 +1,5 @@
+repo_url: https://github.com/angel-valdezzz/PYJX2
+repo_name: angel-valdezzz/PYJX2
 site_name: PYJX2
 docs_dir: docs
 site_dir: pyjx2/_bundled_docs
@@ -35,6 +37,7 @@ theme:
     - content.code.annotate
 
   icon:
+    repo: fontawesome/brands/github
     annotation: material/plus-circle
 
   palette:
